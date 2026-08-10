@@ -17,14 +17,23 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Refs for scrolling
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevMessagesLength = useRef(messages.length);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    // Only scroll when a NEW message is added, not on initial render
+    if (messages.length > prevMessagesLength.current) {
+      scrollToBottom();
+    }
+    prevMessagesLength.current = messages.length;
   }, [messages]);
 
   const sendMessage = async () => {
@@ -74,7 +83,7 @@ export default function ChatPage() {
     <main className="min-h-screen pt-20 pb-4 flex flex-col">
       <div className="max-w-3xl mx-auto w-full px-4 flex-1 flex flex-col">
         {/* Header */}
-        <div className="text-center py-6">
+        <div className="text-center py-6 shrink-0">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-3">
             <Sparkles className="w-4 h-4 text-gold-400" />
             <span className="text-sm text-gold-400">AI-Powered Vedic Astrologer</span>
@@ -85,7 +94,10 @@ export default function ChatPage() {
         {/* Chat Container */}
         <div className="flex-1 glass rounded-2xl flex flex-col overflow-hidden min-h-[60vh]">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+          >
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "assistant" && (
@@ -121,12 +133,11 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Quick Questions */}
           {messages.length === 1 && (
-            <div className="px-4 pb-3">
+            <div className="px-4 pb-3 shrink-0">
               <p className="text-xs text-slate-500 mb-2">Try asking:</p>
               <div className="flex flex-wrap gap-2">
                 {quickQuestions.map((q, i) => (
@@ -143,7 +154,7 @@ export default function ChatPage() {
           )}
 
           {/* Input */}
-          <div className="p-4 border-t border-white/10">
+          <div className="p-4 border-t border-white/10 shrink-0">
             <div className="flex gap-2">
               <textarea
                 value={input}
