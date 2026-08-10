@@ -1,27 +1,29 @@
 # AstroSage AI
 
-Vedic Astrology Web App with AI-powered birth chart analysis.
+Premium Vedic Astrology Web App with AI-powered birth chart analysis.
 
 ## Features
 
-- Generate Vedic birth charts (Kundali)
-- Planet positions with Nakshatra and Pada
-- AI-powered astrology Q&A
-- Responsive design
+- **Free Kundali** — Generate detailed Vedic birth charts
+- **Daily Horoscope** — Personalized zodiac predictions
+- **Match Making** — Traditional Ashtakoot Guna Milan
+- **AI Astrologer** — Chat with Moonshot AI-powered astrologer
+- **Spiritual Store** — Gemstones, Rudraksha, Yantras
 
 ## Tech Stack
 
-- Next.js 14
-- React + TypeScript
-- Tailwind CSS
-- Supabase (optional)
+- Next.js 14 + React + TypeScript
+- Tailwind CSS (Cosmic Dark Theme)
+- Supabase (Auth + Database)
+- Moonshot AI (Chat API)
+- Framer Motion (Animations)
 
 ## Deployment
 
-1. Push this code to GitHub
+1. Push to GitHub
 2. Connect to Vercel
-3. Set Root Directory to `apps/web`
-4. Add environment variables (optional):
+3. Set Root Directory: `apps/web`
+4. Add Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `MOONSHOT_API_KEY`
