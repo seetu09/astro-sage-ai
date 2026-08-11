@@ -1,5 +1,6 @@
 export type Language = 'en' | 'hi';
 
+// Define the shape with all string types (no literals)
 interface TranslationShape {
   nav: {
     home: string;
@@ -149,7 +150,9 @@ interface TranslationShape {
   };
 }
 
-export const translations = {
+// CRITICAL: No 'as const' here! This allows TypeScript to infer string types
+// instead of literal types like "Home" | "होम"
+export const translations: Record<Language, TranslationShape> = {
   en: {
     nav: {
       home: 'Home',
