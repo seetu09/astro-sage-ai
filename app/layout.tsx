@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
-import ClientProviders from './components/ClientProviders';
+import { LanguageProvider } from './context/LanguageContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import StarBackground from './components/StarBackground';
@@ -22,14 +23,16 @@ export default function RootLayout({
   return (
     <html lang="en" data-theme="dark">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
-        <ClientProviders>
-          <StarBackground />
-          <div className="relative z-10 min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-        </ClientProviders>
+        <LanguageProvider>
+          <ThemeProvider>
+            <StarBackground />
+            <div className="relative z-10 min-h-screen flex flex-col">
+              <Navbar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
