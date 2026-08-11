@@ -1,5 +1,154 @@
 export type Language = 'en' | 'hi';
 
+interface TranslationShape {
+  nav: {
+    home: string;
+    dailyHoroscope: string;
+    chat: string;
+    about: string;
+    contact: string;
+    store: string;
+    blog: string;
+    social: string;
+  };
+  hero: {
+    title: string;
+    subtitle: string;
+    ctaPrimary: string;
+    ctaSecondary: string;
+  };
+  chat: {
+    title: string;
+    subtitle: string;
+    placeholder: string;
+    send: string;
+    loading: string;
+    welcome: string;
+    error: string;
+  };
+  horoscope: {
+    title: string;
+    subtitle: string;
+    selectSign: string;
+    reading: string;
+    luckyNumber: string;
+    luckyColor: string;
+    luckyTime: string;
+    mantra: string;
+    rating: string;
+    overall: string;
+    career: string;
+    love: string;
+    health: string;
+    finance: string;
+  };
+  about: {
+    title: string;
+    subtitle: string;
+    mission: {
+      title: string;
+      text: string;
+    };
+    vision: {
+      title: string;
+      text: string;
+    };
+    values: {
+      title: string;
+      authenticity: string;
+      accessibility: string;
+      innovation: string;
+      privacy: string;
+    };
+    team: {
+      title: string;
+      description: string;
+    };
+  };
+  contact: {
+    title: string;
+    subtitle: string;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    send: string;
+    success: string;
+    error: string;
+    info: {
+      title: string;
+      email: string;
+      phone: string;
+      address: string;
+    };
+  };
+  store: {
+    title: string;
+    subtitle: string;
+    categories: {
+      all: string;
+      gemstones: string;
+      yantras: string;
+      books: string;
+      rituals: string;
+    };
+    addToCart: string;
+    outOfStock: string;
+    price: string;
+  };
+  blog: {
+    title: string;
+    subtitle: string;
+    readMore: string;
+    publishedOn: string;
+    by: string;
+    categories: {
+      career: string;
+      love: string;
+      health: string;
+      spirituality: string;
+      remedies: string;
+    };
+    relatedPosts: string;
+    backToBlog: string;
+  };
+  social: {
+    title: string;
+    subtitle: string;
+    followUs: string;
+    joinCommunity: string;
+    communityText: string;
+    dailyUpdates: string;
+    updatesText: string;
+    newsletter: {
+      title: string;
+      subtitle: string;
+      placeholder: string;
+      subscribe: string;
+    };
+  };
+  footer: {
+    tagline: string;
+    quickLinks: string;
+    services: string;
+    legal: string;
+    privacy: string;
+    terms: string;
+    disclaimer: string;
+    copyright: string;
+    madeWith: string;
+  };
+  theme: {
+    dark: string;
+    golden: string;
+    warm: string;
+  };
+  language: {
+    en: string;
+    hi: string;
+  };
+}
+
 export const translations = {
   en: {
     nav: {
@@ -297,9 +446,9 @@ export const translations = {
       hi: 'हिन्दी',
     },
   },
-} as const;
+};
 
-export type Translations = typeof translations[Language];
+export type Translations = TranslationShape;
 
 export function getTranslation(lang: Language): Translations {
   return translations[lang];
