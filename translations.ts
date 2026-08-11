@@ -297,10 +297,10 @@ export const translations = {
       hi: 'हिन्दी',
     },
   },
-} as const;
+};
 
-export type Translations = typeof translations.en;
+export type Translations = typeof translations[Language];
 
 export function getTranslation(lang: Language): Translations {
-  return translations[lang];
+  return translations[lang] as Translations;
 }
