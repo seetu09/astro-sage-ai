@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #252525;
+    --accent: #c9a84c;
+    --accent-hover: #b8983c;
+    --text-primary: #f5f5f5;
+    --text-secondary: #a0a0a0;
+    --text-muted: #888888;
+    --border: #333333;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --glow: rgba(201, 168, 76, 0.3);
+  }
+
+  [data-theme="golden"] {
+    --bg-primary: #1a1508;
+    --bg-secondary: #2a2310;
+    --bg-card: #3a3218;
+    --accent: #d4af37;
+    --accent-hover: #c4a030;
+    --text-primary: #f0e6cc;
+    --text-secondary: #c4b896;
+    --text-muted: #a09060;
+    --border: #4a4020;
+    --shadow: rgba(0, 0, 0, 0.6);
+    --glow: rgba(212, 175, 55, 0.3);
+  }
+
+  [data-theme="warm"] {
+    --bg-primary: #2a1810;
+    --bg-secondary: #3a2820;
+    --bg-card: #4a3830;
+    --accent: #e8a87c;
+    --accent-hover: #d8986c;
+    --text-primary: #f5e6d3;
+    --text-secondary: #d4c4b0;
+    --text-muted: #b09880;
+    --border: #5a4840;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --glow: rgba(232, 168, 124, 0.3);
+  }
+
+  * {
+    @apply border-[var(--border)];
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  .astro-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .astro-card:hover {
+    box-shadow: 0 0 20px var(--glow);
+    transform: translateY(-2px);
+  }
+
+  .astro-button {
+    background-color: var(--accent);
+    color: var(--bg-primary);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .astro-button:hover {
+    background-color: var(--accent-hover);
+    box-shadow: 0 0 15px var(--glow);
+  }
+
+  .astro-input {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .astro-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--glow);
+  }
+
+  .astro-text-muted {
+    color: var(--text-muted);
+  }
+
+  .astro-text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .astro-accent-text {
+    color: var(--accent);
+  }
+
+  .astro-bg-surface {
+    background-color: var(--bg-secondary);
+  }
+
+  .astro-bg-card {
+    background-color: var(--bg-card);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--bg-secondary);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px var(--glow);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.hindi-text {
+  font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-card) 50%, var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
