@@ -9,7 +9,14 @@ interface LanguageContextType {
   t: Translations;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+// FIX: Provide a default value instead of undefined
+const defaultValue: LanguageContextType = {
+  language: 'en',
+  setLanguage: () => {},
+  t: {} as Translations,
+};
+
+const LanguageContext = createContext<LanguageContextType>(defaultValue);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
@@ -30,10 +37,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = getTranslation(language);
 
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
       {children}
@@ -43,8 +46,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
-  if (context === undefined) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
+  // Remove the throw — the default value handles server rendering
   return context;
 }
