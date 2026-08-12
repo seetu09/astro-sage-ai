@@ -10,6 +10,8 @@ interface TranslationShape {
     store: string;
     blog: string;
     social: string;
+    kundali: string;
+    matchmaking: string;
   };
   hero: {
     title: string;
@@ -160,6 +162,8 @@ export const translations: Record<Language, TranslationShape> = {
       store: 'Store',
       blog: 'Blog',
       social: 'Social',
+      kundali: 'Kundali',
+      matchmaking: 'Matchmaking',
     },
     hero: {
       title: 'Discover Your Cosmic Path',
@@ -308,6 +312,8 @@ export const translations: Record<Language, TranslationShape> = {
       store: 'स्टोर',
       blog: 'ब्लॉग',
       social: 'सोशल',
+      kundali: 'कुंडली',
+      matchmaking: 'कुंडली मिलान',
     },
     hero: {
       title: 'अपने ब्रह्मांडीय पथ की खोज करें',

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
@@ -21,18 +22,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="dark">
-      <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
-        <LanguageProvider>
-          <ThemeProvider>
-            <StarBackground />
-            <div className="relative z-10 min-h-screen flex flex-col">
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans antialiased">
+        <AuthProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <StarBackground />
               <Navbar />
-              <main className="flex-1">{children}</main>
+              {children}
               <Footer />
-            </div>
-          </ThemeProvider>
-        </LanguageProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   );
