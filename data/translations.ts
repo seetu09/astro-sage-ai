@@ -1,0 +1,461 @@
+export type Language = 'en' | 'hi';
+
+interface TranslationShape {
+  nav: {
+    home: string;
+    dailyHoroscope: string;
+    chat: string;
+    about: string;
+    contact: string;
+    store: string;
+    blog: string;
+    social: string;
+    kundali: string;
+    matchmaking: string;
+  };
+  hero: {
+    title: string;
+    subtitle: string;
+    ctaPrimary: string;
+    ctaSecondary: string;
+  };
+  chat: {
+    title: string;
+    subtitle: string;
+    placeholder: string;
+    send: string;
+    loading: string;
+    welcome: string;
+    error: string;
+  };
+  horoscope: {
+    title: string;
+    subtitle: string;
+    selectSign: string;
+    reading: string;
+    luckyNumber: string;
+    luckyColor: string;
+    luckyTime: string;
+    mantra: string;
+    rating: string;
+    overall: string;
+    career: string;
+    love: string;
+    health: string;
+    finance: string;
+  };
+  about: {
+    title: string;
+    subtitle: string;
+    mission: {
+      title: string;
+      text: string;
+    };
+    vision: {
+      title: string;
+      text: string;
+    };
+    values: {
+      title: string;
+      authenticity: string;
+      accessibility: string;
+      innovation: string;
+      privacy: string;
+    };
+    team: {
+      title: string;
+      description: string;
+    };
+  };
+  contact: {
+    title: string;
+    subtitle: string;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    send: string;
+    success: string;
+    error: string;
+    info: {
+      title: string;
+      email: string;
+      phone: string;
+      address: string;
+    };
+  };
+  store: {
+    title: string;
+    subtitle: string;
+    categories: {
+      all: string;
+      gemstones: string;
+      yantras: string;
+      books: string;
+      rituals: string;
+    };
+    addToCart: string;
+    outOfStock: string;
+    price: string;
+  };
+  blog: {
+    title: string;
+    subtitle: string;
+    readMore: string;
+    publishedOn: string;
+    by: string;
+    categories: {
+      career: string;
+      love: string;
+      health: string;
+      spirituality: string;
+      remedies: string;
+    };
+    relatedPosts: string;
+    backToBlog: string;
+  };
+  social: {
+    title: string;
+    subtitle: string;
+    followUs: string;
+    joinCommunity: string;
+    communityText: string;
+    dailyUpdates: string;
+    updatesText: string;
+    newsletter: {
+      title: string;
+      subtitle: string;
+      placeholder: string;
+      subscribe: string;
+    };
+  };
+  footer: {
+    tagline: string;
+    quickLinks: string;
+    services: string;
+    legal: string;
+    privacy: string;
+    terms: string;
+    disclaimer: string;
+    copyright: string;
+    madeWith: string;
+  };
+  theme: {
+    dark: string;
+    golden: string;
+    warm: string;
+  };
+  language: {
+    en: string;
+    hi: string;
+  };
+}
+
+export const translations: Record<Language, TranslationShape> = {
+  en: {
+    nav: {
+      home: 'Home',
+      dailyHoroscope: 'Daily Horoscope',
+      chat: 'AI Chat',
+      about: 'About Us',
+      contact: 'Contact',
+      store: 'Store',
+      blog: 'Blog',
+      social: 'Social',
+      kundali: 'Kundali',
+      matchmaking: 'Matchmaking',
+    },
+    hero: {
+      title: 'Discover Your Cosmic Path',
+      subtitle: 'Unlock the secrets of the universe with personalized astrological guidance powered by ancient wisdom and modern AI.',
+      ctaPrimary: 'Get Your Reading',
+      ctaSecondary: 'Talk to AI Guru',
+    },
+    chat: {
+      title: 'AI Astrology Guru',
+      subtitle: 'Ask anything about your stars, destiny, or spiritual journey',
+      placeholder: 'Type your question about astrology, career, love, or life...',
+      send: 'Send',
+      loading: 'Consulting the stars...',
+      welcome: 'Welcome! I am your AI Astrology Guru. Ask me about your horoscope, career, relationships, or any spiritual guidance you seek.',
+      error: 'The cosmic connection is weak. Please try again.',
+    },
+    horoscope: {
+      title: 'Daily Horoscope',
+      subtitle: 'What do the stars have in store for you today?',
+      selectSign: 'Select Your Zodiac Sign',
+      reading: "Today's Reading",
+      luckyNumber: 'Lucky Number',
+      luckyColor: 'Lucky Color',
+      luckyTime: 'Lucky Time',
+      mantra: 'Mantra',
+      rating: 'Rating',
+      overall: 'Overall',
+      career: 'Career',
+      love: 'Love',
+      health: 'Health',
+      finance: 'Finance',
+    },
+    about: {
+      title: 'About AstroVeda',
+      subtitle: 'Bridging Ancient Wisdom with Modern Technology',
+      mission: {
+        title: 'Our Mission',
+        text: 'To make authentic Vedic astrology accessible to everyone through the power of artificial intelligence and modern technology.',
+      },
+      vision: {
+        title: 'Our Vision',
+        text: 'A world where everyone can understand their cosmic blueprint and navigate life with confidence and clarity.',
+      },
+      values: {
+        title: 'Our Values',
+        authenticity: 'Authenticity in every reading',
+        accessibility: 'Accessibility for all',
+        innovation: 'Innovation with tradition',
+        privacy: 'Privacy and trust',
+      },
+      team: {
+        title: 'Our Team',
+        description: 'A blend of experienced astrologers, data scientists, and spiritual guides.',
+      },
+    },
+    contact: {
+      title: 'Contact Us',
+      subtitle: "We'd love to hear from you",
+      name: 'Your Name',
+      email: 'Email Address',
+      subject: 'Subject',
+      message: 'Your Message',
+      send: 'Send Message',
+      success: 'Message sent successfully!',
+      error: 'Failed to send message. Please try again.',
+      info: {
+        title: 'Get in Touch',
+        email: 'support@astroveda.com',
+        phone: '+91 98765 43210',
+        address: 'Mumbai, Maharashtra, India',
+      },
+    },
+    store: {
+      title: 'AstroVeda Store',
+      subtitle: 'Spiritual products curated for your cosmic journey',
+      categories: {
+        all: 'All Products',
+        gemstones: 'Gemstones',
+        yantras: 'Yantras',
+        books: 'Books',
+        rituals: 'Ritual Items',
+      },
+      addToCart: 'Add to Cart',
+      outOfStock: 'Out of Stock',
+      price: 'Price',
+    },
+    blog: {
+      title: 'Cosmic Insights',
+      subtitle: 'Explore the mysteries of astrology and spirituality',
+      readMore: 'Read More',
+      publishedOn: 'Published on',
+      by: 'by',
+      categories: {
+        career: 'Career',
+        love: 'Love',
+        health: 'Health',
+        spirituality: 'Spirituality',
+        remedies: 'Remedies',
+      },
+      relatedPosts: 'Related Posts',
+      backToBlog: 'Back to Blog',
+    },
+    social: {
+      title: 'Connect With Us',
+      subtitle: 'Join our cosmic community across the universe',
+      followUs: 'Follow Us',
+      joinCommunity: 'Join Our Community',
+      communityText: 'Connect with fellow astrology enthusiasts, share experiences, and learn together.',
+      dailyUpdates: 'Daily Horoscope Updates',
+      updatesText: 'Get your daily horoscope delivered to your favorite social platform.',
+      newsletter: {
+        title: 'Cosmic Newsletter',
+        subtitle: 'Get weekly horoscope updates and spiritual insights',
+        placeholder: 'Enter your email',
+        subscribe: 'Subscribe',
+      },
+    },
+    footer: {
+      tagline: 'Guiding your cosmic journey with ancient wisdom and modern AI.',
+      quickLinks: 'Quick Links',
+      services: 'Services',
+      legal: 'Legal',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      disclaimer: 'Disclaimer',
+      copyright: 'AstroVeda. All rights reserved.',
+      madeWith: 'Made with',
+    },
+    theme: {
+      dark: 'Dark',
+      golden: 'Golden',
+      warm: 'Warm',
+    },
+    language: {
+      en: 'English',
+      hi: 'हिन्दी',
+    },
+  },
+  hi: {
+    nav: {
+      home: 'होम',
+      dailyHoroscope: 'दैनिक राशिफल',
+      chat: 'AI चैट',
+      about: 'हमारे बारे में',
+      contact: 'संपर्क करें',
+      store: 'स्टोर',
+      blog: 'ब्लॉग',
+      social: 'सोशल',
+      kundali: 'कुंडली',
+      matchmaking: 'कुंडली मिलान',
+    },
+    hero: {
+      title: 'अपने ब्रह्मांडीय पथ की खोज करें',
+      subtitle: 'प्राचीन ज्ञान और आधुनिक AI द्वारा संचालित व्यक्तिगत ज्योतिषीय मार्गदर्शन के साथ ब्रह्मांड के रहस्यों को अनलॉक करें।',
+      ctaPrimary: 'अपनी रीडिंग प्राप्त करें',
+      ctaSecondary: 'AI गुरु से बात करें',
+    },
+    chat: {
+      title: 'AI ज्योतिष गुरु',
+      subtitle: 'अपने सितारों, भाग्य या आध्यात्मिक यात्रा के बारे में कुछ भी पूछें',
+      placeholder: 'ज्योतिष, करियर, प्रेम या जीवन के बारे में अपना प्रश्न टाइप करें...',
+      send: 'भेजें',
+      loading: 'सितारों से परामर्श कर रहा है...',
+      welcome: 'स्वागत है! मैं आपका AI ज्योतिष गुरु हूँ। मुझसे अपने राशिफल, करियर, रिश्तों या किसी भी आध्यात्मिक मार्गदर्शन के बारे में पूछें।',
+      error: 'ब्रह्मांडीय संबंध कमजोर है। कृपया पुनः प्रयास करें।',
+    },
+    horoscope: {
+      title: 'दैनिक राशिफल',
+      subtitle: 'आज सितारे आपके लिए क्या लाए हैं?',
+      selectSign: 'अपनी राशि चुनें',
+      reading: 'आज की भविष्यवाणी',
+      luckyNumber: 'भाग्यशाली संख्या',
+      luckyColor: 'भाग्यशाली रंग',
+      luckyTime: 'भाग्यशाली समय',
+      mantra: 'मंत्र',
+      rating: 'रेटिंग',
+      overall: 'समग्र',
+      career: 'करियर',
+      love: 'प्रेम',
+      health: 'स्वास्थ्य',
+      finance: 'वित्त',
+    },
+    about: {
+      title: 'AstroVeda के बारे में',
+      subtitle: 'प्राचीन ज्ञान को आधुनिक तकनीक के साथ जोड़ना',
+      mission: {
+        title: 'हमारा मिशन',
+        text: 'कृत्रिम बुद्धिमत्ता और आधुनिक तकनीक की शक्ति के माध्यम से प्रामाणिक वैदिक ज्योतिष को सभी के लिए सुलभ बनाना।',
+      },
+      vision: {
+        title: 'हमारा दृष्टिकोण',
+        text: 'एक ऐसी दुनिया जहाँ हर कोई अपने ब्रह्मांडीय ब्लूप्रिंट को समझ सके और आत्मविश्वास और स्पष्टता के साथ जीवन का नेतृत्व कर सके।',
+      },
+      values: {
+        title: 'हमारे मूल्य',
+        authenticity: 'हर रीडिंग में प्रामाणिकता',
+        accessibility: 'सभी के लिए सुलभता',
+        innovation: 'परंपरा के साथ नवीनता',
+        privacy: 'गोपनीयता और विश्वास',
+      },
+      team: {
+        title: 'हमारी टीम',
+        description: 'अनुभवी ज्योतिषियों, डेटा वैज्ञानिकों और आध्यात्मिक मार्गदर्शकों का मिश्रण।',
+      },
+    },
+    contact: {
+      title: 'संपर्क करें',
+      subtitle: 'हम आपसे सुनना पसंद करेंगे',
+      name: 'आपका नाम',
+      email: 'ईमेल पता',
+      subject: 'विषय',
+      message: 'आपका संदेश',
+      send: 'संदेश भेजें',
+      success: 'संदेश सफलतापूर्वक भेजा गया!',
+      error: 'संदेश भेजने में विफल। कृपया पुनः प्रयास करें।',
+      info: {
+        title: 'संपर्क में रहें',
+        email: 'support@astroveda.com',
+        phone: '+91 98765 43210',
+        address: 'मुंबई, महाराष्ट्र, भारत',
+      },
+    },
+    store: {
+      title: 'AstroVeda स्टोर',
+      subtitle: 'आपकी ब्रह्मांडीय यात्रा के लिए क्यूरेटेड आध्यात्मिक उत्पाद',
+      categories: {
+        all: 'सभी उत्पाद',
+        gemstones: 'रत्न',
+        yantras: 'यंत्र',
+        books: 'पुस्तकें',
+        rituals: 'अनुष्ठान सामग्री',
+      },
+      addToCart: 'कार्ट में जोड़ें',
+      outOfStock: 'स्टॉक में नहीं',
+      price: 'मूल्य',
+    },
+    blog: {
+      title: 'ब्रह्मांडीय अंतर्दृष्टि',
+      subtitle: 'ज्योतिष और आध्यात्मिकता के रहस्यों का अन्वेषण करें',
+      readMore: 'और पढ़ें',
+      publishedOn: 'प्रकाशित तिथि',
+      by: 'द्वारा',
+      categories: {
+        career: 'करियर',
+        love: 'प्रेम',
+        health: 'स्वास्थ्य',
+        spirituality: 'आध्यात्मिकता',
+        remedies: 'उपाय',
+      },
+      relatedPosts: 'संबंधित पोस्ट',
+      backToBlog: 'ब्लॉग पर वापस जाएं',
+    },
+    social: {
+      title: 'हमसे जुड़ें',
+      subtitle: 'ब्रह्मांड में हमारी ब्रह्मांडीय समुदाय से जुड़ें',
+      followUs: 'हमें फॉलो करें',
+      joinCommunity: 'हमारी समुदाय में शामिल हों',
+      communityText: 'साथी ज्योतिष उत्साहियों से जुड़ें, अनुभव साझा करें, और एक साथ सीखें।',
+      dailyUpdates: 'दैनिक राशिफल अपडेट',
+      updatesText: 'अपने पसंदीदा सोशल प्लेटफॉर्म पर अपना दैनिक राशिफल प्राप्त करें।',
+      newsletter: {
+        title: 'ब्रह्मांडीय न्यूज़लेटर',
+        subtitle: 'साप्ताहिक राशिफल अपडेट और आध्यात्मिक अंतर्दृष्टि प्राप्त करें',
+        placeholder: 'अपना ईमेल दर्ज करें',
+        subscribe: 'सब्सक्राइब करें',
+      },
+    },
+    footer: {
+      tagline: 'प्राचीन ज्ञान और आधुनिक AI के साथ आपकी ब्रह्मांडीय यात्रा का मार्गदर्शन।',
+      quickLinks: 'त्वरित लिंक',
+      services: 'सेवाएं',
+      legal: 'कानूनी',
+      privacy: 'गोपनीयता नीति',
+      terms: 'सेवा की शर्तें',
+      disclaimer: 'अस्वीकरण',
+      copyright: 'AstroVeda. सर्वाधिकार सुरक्षित।',
+      madeWith: 'के साथ बनाया गया',
+    },
+    theme: {
+      dark: 'डार्क',
+      golden: 'गोल्डन',
+      warm: 'वार्म',
+    },
+    language: {
+      en: 'English',
+      hi: 'हिन्दी',
+    },
+  },
+};
+
+export type Translations = TranslationShape;
+
+export function getTranslation(lang: Language): Translations {
+  return translations[lang];
+}
