@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
-    console.log('Verify request body:', { razorpay_order_id, razorpay_payment_id, razorpay_signature: razorpay_signature ? 'present' : 'missing' });
+    console.log('Verify request:', { razorpay_order_id, razorpay_payment_id, signature_present: !!razorpay_signature });
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return NextResponse.json(
@@ -20,31 +20,27 @@ export async function POST(request: NextRequest) {
 
     const secret = process.env.RAZORPAY_KEY_SECRET;
     if (!secret) {
-      console.error('RAZORPAY_KEY_SECRET not configured');
+      console.error('RAZORPAY_KEY_SECRET missing');
       return NextResponse.json(
         { error: 'Payment verification not configured', success: false },
         { status: 500 }
       );
     }
 
-    // Generate signature
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
     const generatedSignature = hmac.digest('hex');
 
-    console.log('Generated signature:', generatedSignature);
-    console.log('Received signature:', razorpay_signature);
-
     if (generatedSignature === razorpay_signature) {
-      console.log('Signature verified successfully');
+      console.log('Signature verified');
 
-      // Update payment status in Supabase (non-blocking)
+      // Update Supabase
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         if (supabaseUrl && serviceRoleKey) {
           const supabase = createClient(supabaseUrl, serviceRoleKey);
-          const { error: dbError } = await supabase
+          await supabase
             .from('payments')
             .update({ 
               status: 'paid',
@@ -52,21 +48,12 @@ export async function POST(request: NextRequest) {
               paid_at: new Date().toISOString(),
             })
             .eq('razorpay_order_id', razorpay_order_id);
-
-          if (dbError) {
-            console.error('Supabase update warning:', dbError);
-          } else {
-            console.log('Payment status updated in Supabase');
-          }
         }
-      } catch (dbError: any) {
-        console.error('Supabase update warning:', dbError);
+      } catch (e) {
+        console.error('DB update warning:', e);
       }
 
-      return NextResponse.json({
-        success: true,
-        message: 'Payment verified successfully',
-      });
+      return NextResponse.json({ success: true, message: 'Payment verified' });
     } else {
       console.error('Signature mismatch');
       return NextResponse.json(
@@ -75,9 +62,9 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Payment verification error:', error);
+    console.error('Verify error:', error);
     return NextResponse.json(
-      { error: 'Payment verification failed: ' + error.message, success: false },
+      { error: error.message || 'Verification failed', success: false },
       { status: 500 }
     );
   }
