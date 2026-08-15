@@ -37,14 +37,16 @@ export default function PaymentButton({
           amount,
           currency: "INR",
           userEmail,
+          userName,
           paymentType,
         }),
       });
 
       const orderData = await orderResponse.json();
 
-      if (!orderData.success) {
-        throw new Error("Failed to create order");
+      // ✅ FIXED: Check for orderId instead of success
+      if (!orderData.orderId) {
+        throw new Error(orderData.error || "Failed to create order");
       }
 
       const options = {
@@ -69,12 +71,15 @@ export default function PaymentButton({
             const verifyData = await verifyResponse.json();
 
             if (verifyData.success) {
+              setIsLoading(false);  // ✅ FIXED
               onSuccess?.();
             } else {
+              setIsLoading(false);  // ✅ FIXED
               onFailure?.();
             }
           } catch (error) {
             console.error("Payment verification error:", error);
+            setIsLoading(false);  // ✅ FIXED
             onFailure?.();
           }
         },
@@ -95,14 +100,14 @@ export default function PaymentButton({
       const razorpay = new (window as any).Razorpay(options);
       razorpay.on("payment.failed", function (response: any) {
         console.error("Payment failed:", response.error);
-        onFailure?.();
         setIsLoading(false);
+        onFailure?.();
       });
       razorpay.open();
     } catch (error) {
       console.error("Payment error:", error);
-      onFailure?.();
       setIsLoading(false);
+      onFailure?.();
     }
   };
 
