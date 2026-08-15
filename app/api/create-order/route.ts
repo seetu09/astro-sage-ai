@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import Razorpay from 'razorpay';
 
 export async function POST(req: NextRequest) {
   console.log('=== CREATE ORDER API START ===');
@@ -16,7 +15,7 @@ export async function POST(req: NextRequest) {
     if (!keyId || !keySecret) {
       console.error('Missing Razorpay credentials');
       return NextResponse.json(
-        { error: 'Razorpay credentials not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel env vars.' },
+        { error: 'Razorpay credentials not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel env vars.' },
         { status: 500 }
       );
     }
@@ -52,49 +51,47 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Initialize Razorpay (STATIC IMPORT — this is the fix!)
-    console.log('Initializing Razorpay...');
-    let razorpay;
-    try {
-      razorpay = new Razorpay({ 
-        key_id: keyId, 
-        key_secret: keySecret 
-      });
-      console.log('Razorpay initialized successfully');
-    } catch (rzpError: any) {
-      console.error('Razorpay initialization failed:', rzpError);
-      return NextResponse.json(
-        { error: 'Payment gateway initialization failed: ' + rzpError.message },
-        { status: 500 }
-      );
-    }
-
-    // 4. Create order
-    const options = {
-      amount: Math.round(Number(amount) * 100), // Convert to paise
+    // 3. Call Razorpay API directly using fetch (NO npm package!)
+    console.log('Calling Razorpay API directly...');
+    
+    const authString = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    
+    const razorpayBody = {
+      amount: Math.round(Number(amount) * 100), // paise
       currency: currency.toUpperCase(),
-      receipt: `receipt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      notes: { 
-        userEmail: userEmail || 'unknown', 
-        productType: paymentType 
+      receipt: `rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      notes: {
+        userEmail: userEmail || 'unknown',
+        productType: paymentType,
       },
     };
 
-    console.log('Creating Razorpay order with options:', options);
-    
-    let order;
-    try {
-      order = await razorpay.orders.create(options);
-      console.log('Razorpay order created:', order.id);
-    } catch (orderError: any) {
-      console.error('Razorpay order creation failed:', orderError);
+    console.log('Razorpay request body:', JSON.stringify(razorpayBody));
+
+    const razorpayResponse = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(razorpayBody),
+    });
+
+    console.log('Razorpay response status:', razorpayResponse.status);
+
+    if (!razorpayResponse.ok) {
+      const errorData = await razorpayResponse.json().catch(() => ({}));
+      console.error('Razorpay API error:', errorData);
       return NextResponse.json(
-        { error: 'Failed to create payment order: ' + (orderError.error?.description || orderError.message) },
+        { error: `Razorpay error: ${errorData.error?.description || razorpayResponse.statusText}` },
         { status: 500 }
       );
     }
 
-    // 5. Save to Supabase (non-blocking — don't fail if DB insert fails)
+    const order = await razorpayResponse.json();
+    console.log('Razorpay order created:', order.id);
+
+    // 4. Save to Supabase (non-blocking)
     try {
       const supabase = createClient(supabaseUrl, serviceRoleKey);
       const { error: dbError } = await supabase.from('payments').insert({
@@ -110,13 +107,12 @@ export async function POST(req: NextRequest) {
       });
 
       if (dbError) {
-        console.error('Supabase insert warning (non-critical):', dbError);
+        console.error('Supabase insert warning:', dbError);
       } else {
         console.log('Saved to Supabase successfully');
       }
     } catch (dbError: any) {
-      console.error('Supabase save warning (non-critical):', dbError);
-      // Don't fail the payment if DB save fails
+      console.error('Supabase save warning:', dbError);
     }
 
     console.log('=== CREATE ORDER API SUCCESS ===');
@@ -125,7 +121,7 @@ export async function POST(req: NextRequest) {
         orderId: order.id,
         amount: order.amount,
         currency: order.currency,
-        keyId: keyId, // Send keyId so frontend doesn't need env var
+        keyId: keyId,
       },
       { status: 200 }
     );
