@@ -6,7 +6,6 @@ export async function POST(req: NextRequest) {
   console.log('=== API START ===');
 
   try {
-    // Check env vars first
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -33,11 +32,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Initialize Supabase
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     console.log('Supabase client created');
 
-    // Parse request body
     let body;
     try {
       body = await req.json();
@@ -60,7 +57,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Razorpay order
     console.log('Creating Razorpay order...');
     const { default: Razorpay } = await import('razorpay');
     const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
@@ -76,7 +72,6 @@ export async function POST(req: NextRequest) {
     const order = await razorpay.orders.create(options);
     console.log('Razorpay order created:', order.id);
 
-    // Save to Supabase
     console.log('Saving to Supabase...');
     const { error: dbError } = await supabase.from('payments').insert({
       razorpay_order_id: order.id,
@@ -91,7 +86,6 @@ export async function POST(req: NextRequest) {
 
     if (dbError) {
       console.error('Supabase insert error:', dbError);
-      // Don't fail - payment can still proceed
     } else {
       console.log('Saved to Supabase successfully');
     }
