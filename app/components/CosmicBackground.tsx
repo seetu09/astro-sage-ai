@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 interface Particle {
   x: number;
@@ -40,6 +41,7 @@ interface SacredGeometry {
 
 export default function CosmicBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -53,6 +55,17 @@ export default function CosmicBackground() {
     let chakras: ChakraSymbol[] = [];
     let sacredGeometries: SacredGeometry[] = [];
 
+    // Theme-based colors
+    const isDark = resolvedTheme === 'night';
+    
+    const colors = {
+      star: isDark ? '251, 191, 36' : '201, 150, 80',      // fbbf24 vs c99650
+      glow: isDark ? '245, 158, 11' : '201, 150, 80',      // f59e0b vs c99650
+      line: isDark ? '180, 130, 70' : '180, 130, 70',       // same but used differently
+      bgStart: isDark ? '#1a1209' : '#faf6f0',
+      bgEnd: isDark ? '#0f0a05' : '#faf6f0',
+    };
+
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -60,16 +73,16 @@ export default function CosmicBackground() {
 
     const createParticles = () => {
       particles = [];
-      const count = Math.min(50, Math.floor((canvas.width * canvas.height) / 25000));
-      
+      const count = Math.min(isDark ? 80 : 50, Math.floor((canvas.width * canvas.height) / 25000));
+
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 2 + 0.5,
+          size: Math.random() * (isDark ? 2.5 : 2) + 0.5,
           speedX: (Math.random() - 0.5) * 0.15,
           speedY: (Math.random() - 0.5) * 0.15,
-          opacity: Math.random() * 0.4 + 0.1,
+          opacity: Math.random() * (isDark ? 0.6 : 0.4) + (isDark ? 0.2 : 0.1),
           twinkleSpeed: Math.random() * 0.02 + 0.005,
           twinklePhase: Math.random() * Math.PI * 2,
           type: Math.random() > 0.7 ? 'star' : 'dot',
@@ -80,13 +93,13 @@ export default function CosmicBackground() {
     const createChakras = () => {
       chakras = [];
       const chakraData = [
-        { color: 'rgba(220, 60, 60, 0.1)', petals: 4, label: 'Muladhara' },
-        { color: 'rgba(230, 130, 50, 0.1)', petals: 6, label: 'Svadhisthana' },
-        { color: 'rgba(230, 190, 50, 0.1)', petals: 10, label: 'Manipura' },
-        { color: 'rgba(60, 170, 90, 0.1)', petals: 12, label: 'Anahata' },
-        { color: 'rgba(60, 150, 200, 0.1)', petals: 16, label: 'Vishuddha' },
+        { color: isDark ? 'rgba(220, 60, 60, 0.15)' : 'rgba(220, 60, 60, 0.1)', petals: 4, label: 'Muladhara' },
+        { color: isDark ? 'rgba(230, 130, 50, 0.15)' : 'rgba(230, 130, 50, 0.1)', petals: 6, label: 'Svadhisthana' },
+        { color: isDark ? 'rgba(230, 190, 50, 0.15)' : 'rgba(230, 190, 50, 0.1)', petals: 10, label: 'Manipura' },
+        { color: isDark ? 'rgba(60, 170, 90, 0.15)' : 'rgba(60, 170, 90, 0.1)', petals: 12, label: 'Anahata' },
+        { color: isDark ? 'rgba(60, 150, 200, 0.15)' : 'rgba(60, 150, 200, 0.1)', petals: 16, label: 'Vishuddha' },
       ];
-      
+
       for (let i = 0; i < 4; i++) {
         const data = chakraData[i % chakraData.length];
         chakras.push({
@@ -95,7 +108,7 @@ export default function CosmicBackground() {
           size: Math.random() * 50 + 40,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.002,
-          opacity: Math.random() * 0.06 + 0.04,
+          opacity: Math.random() * (isDark ? 0.1 : 0.06) + (isDark ? 0.06 : 0.04),
           pulseSpeed: Math.random() * 0.008 + 0.003,
           pulsePhase: Math.random() * Math.PI * 2,
           color: data.color,
@@ -108,7 +121,7 @@ export default function CosmicBackground() {
     const createSacredGeometries = () => {
       sacredGeometries = [];
       const types: SacredGeometry['type'][] = ['mandala', 'sriyantra', 'om', 'mandala'];
-      
+
       for (let i = 0; i < 4; i++) {
         sacredGeometries.push({
           x: Math.random() * canvas.width,
@@ -116,7 +129,7 @@ export default function CosmicBackground() {
           size: Math.random() * 100 + 70,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.0015,
-          opacity: Math.random() * 0.05 + 0.03,
+          opacity: Math.random() * (isDark ? 0.08 : 0.05) + (isDark ? 0.05 : 0.03),
           type: types[i % types.length],
         });
       }
@@ -134,7 +147,7 @@ export default function CosmicBackground() {
         else ctx.lineTo(px, py);
       }
       ctx.closePath();
-      ctx.fillStyle = `rgba(201, 150, 80, ${opacity})`;
+      ctx.fillStyle = `rgba(${colors.star}, ${opacity})`;
       ctx.fill();
       ctx.restore();
     };
@@ -149,9 +162,9 @@ export default function CosmicBackground() {
       ctx.translate(x, y);
       ctx.rotate(rotation + time * 0.0003);
 
-      // Outer glow
+      // Outer glow - brighter in dark mode
       const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 1.5);
-      glowGradient.addColorStop(0, color.replace('0.1', String(currentOpacity * 0.5)));
+      glowGradient.addColorStop(0, color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 0.7 : 0.5))));
       glowGradient.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = glowGradient;
       ctx.fillRect(-currentSize * 1.5, -currentSize * 1.5, currentSize * 3, currentSize * 3);
@@ -159,14 +172,14 @@ export default function CosmicBackground() {
       // Outer circle
       ctx.beginPath();
       ctx.arc(0, 0, currentSize, 0, Math.PI * 2);
-      ctx.strokeStyle = color.replace('0.1', String(currentOpacity * 1.2));
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 1.5 : 1.2)));
+      ctx.lineWidth = isDark ? 2 : 1.5;
       ctx.stroke();
 
       // Inner circle
       ctx.beginPath();
       ctx.arc(0, 0, currentSize * 0.55, 0, Math.PI * 2);
-      ctx.strokeStyle = color.replace('0.1', String(currentOpacity * 0.8));
+      ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 1.0 : 0.8)));
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -178,8 +191,8 @@ export default function CosmicBackground() {
           ctx.rotate(angle);
           ctx.beginPath();
           ctx.ellipse(0, -currentSize * 0.75, currentSize * 0.12, currentSize * 0.35, 0, 0, Math.PI * 2);
-          ctx.strokeStyle = color.replace('0.1', String(currentOpacity * 0.6));
-          ctx.lineWidth = 0.8;
+          ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 0.9 : 0.6)));
+          ctx.lineWidth = isDark ? 1.2 : 0.8;
           ctx.stroke();
           ctx.restore();
         }
@@ -188,17 +201,17 @@ export default function CosmicBackground() {
       // Center bindu (divine point)
       ctx.beginPath();
       ctx.arc(0, 0, currentSize * 0.12, 0, Math.PI * 2);
-      ctx.fillStyle = color.replace('0.1', String(currentOpacity * 2));
+      ctx.fillStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 2.5 : 2)));
       ctx.fill();
 
-      // Inner triangle (for spiritual symbolism)
+      // Inner triangle
       ctx.beginPath();
       ctx.moveTo(0, -currentSize * 0.3);
       ctx.lineTo(-currentSize * 0.26, currentSize * 0.15);
       ctx.lineTo(currentSize * 0.26, currentSize * 0.15);
       ctx.closePath();
-      ctx.strokeStyle = color.replace('0.1', String(currentOpacity * 0.8));
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 1.0 : 0.8)));
+      ctx.lineWidth = isDark ? 1 : 0.8;
       ctx.stroke();
 
       ctx.restore();
@@ -210,49 +223,45 @@ export default function CosmicBackground() {
       ctx.translate(x, y);
       ctx.rotate(rotation + time * 0.0002);
 
-      // Outer ring with decorative pattern
       const rings = 5;
       for (let r = 1; r <= rings; r++) {
         const radius = (size * r) / rings;
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * (1 - r / (rings + 1)) * 0.6})`;
-        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (1 - r / (rings + 1)) * (isDark ? 0.9 : 0.6)})`;
+        ctx.lineWidth = isDark ? 0.8 : 0.6;
         ctx.stroke();
 
-        // Dots on each ring
         const dots = r * 8;
         for (let i = 0; i < dots; i++) {
           const angle = (i * 2 * Math.PI) / dots + time * 0.0001 * r;
           const dx = Math.cos(angle) * radius;
           const dy = Math.sin(angle) * radius;
           ctx.beginPath();
-          ctx.arc(dx, dy, 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(201, 150, 80, ${opacity * 0.7})`;
+          ctx.arc(dx, dy, isDark ? 2 : 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${colors.star}, ${opacity * (isDark ? 1.0 : 0.7)})`;
           ctx.fill();
         }
       }
 
-      // Radial lines
       const lines = 16;
       for (let i = 0; i < lines; i++) {
         const angle = (i * 2 * Math.PI) / lines;
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(Math.cos(angle) * size, Math.sin(angle) * size);
-        ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.25})`;
-        ctx.lineWidth = 0.4;
+        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.4 : 0.25)})`;
+        ctx.lineWidth = isDark ? 0.6 : 0.4;
         ctx.stroke();
       }
 
-      // Center lotus pattern
       for (let i = 0; i < 8; i++) {
         const angle = (i * 2 * Math.PI) / 8;
         ctx.save();
         ctx.rotate(angle);
         ctx.beginPath();
         ctx.ellipse(0, -size * 0.25, size * 0.08, size * 0.2, 0, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(201, 150, 80, ${opacity * 0.15})`;
+        ctx.fillStyle = `rgba(${colors.star}, ${opacity * (isDark ? 0.25 : 0.15)})`;
         ctx.fill();
         ctx.restore();
       }
@@ -266,65 +275,58 @@ export default function CosmicBackground() {
       ctx.translate(x, y);
       ctx.rotate(rotation + time * 0.00015);
 
-      // Outer circle
       ctx.beginPath();
       ctx.arc(0, 0, size, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.5})`;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.8 : 0.5)})`;
+      ctx.lineWidth = isDark ? 1.2 : 1;
       ctx.stroke();
 
-      // Outer downward triangle
       ctx.beginPath();
       ctx.moveTo(0, -size * 0.9);
       ctx.lineTo(-size * 0.78, size * 0.45);
       ctx.lineTo(size * 0.78, size * 0.45);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.6})`;
-      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.9 : 0.6)})`;
+      ctx.lineWidth = isDark ? 1.5 : 1.2;
       ctx.stroke();
 
-      // Outer upward triangle
       ctx.beginPath();
       ctx.moveTo(0, size * 0.9);
       ctx.lineTo(-size * 0.78, -size * 0.45);
       ctx.lineTo(size * 0.78, -size * 0.45);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.5})`;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.8 : 0.5)})`;
+      ctx.lineWidth = isDark ? 1.2 : 1;
       ctx.stroke();
 
-      // Inner downward triangle
       ctx.beginPath();
       ctx.moveTo(0, -size * 0.5);
       ctx.lineTo(-size * 0.43, size * 0.25);
       ctx.lineTo(size * 0.43, size * 0.25);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.45})`;
-      ctx.lineWidth = 0.9;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.7 : 0.45)})`;
+      ctx.lineWidth = isDark ? 1.1 : 0.9;
       ctx.stroke();
 
-      // Inner upward triangle
       ctx.beginPath();
       ctx.moveTo(0, size * 0.5);
       ctx.lineTo(-size * 0.43, -size * 0.25);
       ctx.lineTo(size * 0.43, -size * 0.25);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.4})`;
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.6 : 0.4)})`;
+      ctx.lineWidth = isDark ? 1 : 0.8;
       ctx.stroke();
 
-      // Center bindu (divine point)
       ctx.beginPath();
       ctx.arc(0, 0, size * 0.06, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(201, 120, 42, ${opacity * 1.2})`;
+      ctx.fillStyle = `rgba(${isDark ? '245, 158, 11' : '201, 120, 42'}, ${opacity * (isDark ? 1.5 : 1.2)})`;
       ctx.fill();
 
-      // Inner circles
       [0.2, 0.35].forEach((r) => {
         ctx.beginPath();
         ctx.arc(0, 0, size * r, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.3})`;
-        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.5 : 0.3)})`;
+        ctx.lineWidth = isDark ? 0.7 : 0.5;
         ctx.stroke();
       });
 
@@ -339,52 +341,36 @@ export default function CosmicBackground() {
       ctx.rotate(rotation);
       ctx.scale(pulse, pulse);
 
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity})`;
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity})`;
+      ctx.lineWidth = isDark ? 3 : 2.5;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Stylized Om symbol
       ctx.beginPath();
-      
-      // Lower curve (3-like shape)
       ctx.moveTo(-size * 0.35, size * 0.15);
       ctx.bezierCurveTo(-size * 0.55, size * 0.15, -size * 0.55, -size * 0.15, -size * 0.35, -size * 0.15);
       ctx.bezierCurveTo(-size * 0.15, -size * 0.15, -size * 0.15, size * 0.05, -size * 0.25, size * 0.05);
-      
-      // Upper curve connecting to vertical
       ctx.bezierCurveTo(-size * 0.1, size * 0.05, -size * 0.05, -size * 0.1, 0, -size * 0.1);
-      
-      // Vertical stroke of Ma
       ctx.moveTo(size * 0.02, -size * 0.1);
       ctx.lineTo(size * 0.02, size * 0.2);
-      
-      // Right curve of Ma
       ctx.moveTo(size * 0.02, -size * 0.05);
       ctx.quadraticCurveTo(size * 0.15, -size * 0.05, size * 0.2, size * 0.05);
       ctx.lineTo(size * 0.2, size * 0.2);
-      
-      // Chandra bindu (crescent moon above)
       ctx.moveTo(-size * 0.05, -size * 0.35);
       ctx.quadraticCurveTo(size * 0.08, -size * 0.5, size * 0.2, -size * 0.35);
-      
-      // Dot above crescent
       ctx.moveTo(size * 0.08, -size * 0.55);
       ctx.arc(size * 0.08, -size * 0.55, size * 0.06, 0, Math.PI * 2);
-
       ctx.stroke();
 
-      // Soft glow
-      ctx.shadowColor = 'rgba(201, 150, 80, 0.25)';
-      ctx.shadowBlur = 20;
+      ctx.shadowColor = `rgba(${colors.glow}, ${isDark ? 0.4 : 0.25})`;
+      ctx.shadowBlur = isDark ? 30 : 20;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Decorative circle around Om
       ctx.beginPath();
       ctx.arc(0, 0, size * 0.65, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(180, 130, 70, ${opacity * 0.3})`;
-      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.5 : 0.3)})`;
+      ctx.lineWidth = isDark ? 1 : 0.8;
       ctx.setLineDash([5, 5]);
       ctx.stroke();
       ctx.setLineDash([]);
@@ -393,7 +379,19 @@ export default function CosmicBackground() {
     };
 
     const draw = (time: number) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Background fill
+      if (isDark) {
+        const gradient = ctx.createRadialGradient(
+          canvas.width / 2, canvas.height / 2, 0,
+          canvas.width / 2, canvas.height / 2, canvas.width
+        );
+        gradient.addColorStop(0, colors.bgStart);
+        gradient.addColorStop(1, colors.bgEnd);
+        ctx.fillStyle = gradient;
+      } else {
+        ctx.fillStyle = colors.bgStart;
+      }
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw particles
       particles.forEach((p) => {
@@ -413,7 +411,7 @@ export default function CosmicBackground() {
         } else {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(201, 150, 80, ${currentOpacity})`;
+          ctx.fillStyle = `rgba(${colors.star}, ${currentOpacity})`;
           ctx.fill();
         }
 
@@ -421,20 +419,18 @@ export default function CosmicBackground() {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
           const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
-          gradient.addColorStop(0, `rgba(201, 150, 80, ${currentOpacity * 0.2})`);
-          gradient.addColorStop(1, 'rgba(201, 150, 80, 0)');
+          gradient.addColorStop(0, `rgba(${colors.star}, ${currentOpacity * (isDark ? 0.4 : 0.2)})`);
+          gradient.addColorStop(1, `rgba(${colors.star}, 0)`);
           ctx.fillStyle = gradient;
           ctx.fill();
         }
       });
 
-      // Draw chakras
       chakras.forEach((chakra) => {
         chakra.rotation += chakra.rotationSpeed;
         drawChakra(chakra, time);
       });
 
-      // Draw sacred geometries
       sacredGeometries.forEach((geo) => {
         geo.rotation += geo.rotationSpeed;
         switch (geo.type) {
@@ -472,13 +468,13 @@ export default function CosmicBackground() {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [resolvedTheme]);
 
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ opacity: 0.85 }}
+      style={{ opacity: 0.6 }}
     />
   );
 }
