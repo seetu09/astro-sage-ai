@@ -72,6 +72,32 @@ export const metadata: Metadata = {
     google: "your-google-verification-code",
   },
   category: "astrology",
+  
+  // ========== PWA METADATA ==========
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AstroVeda",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512" },
+    ],
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192" },
+    ],
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "application-name": "AstroVeda",
+    "apple-mobile-web-app-title": "AstroVeda",
+    "msapplication-TileColor": "#d97706",
+    "msapplication-TileImage": "/icons/icon-192x192.png",
+  },
+  // ========== END PWA METADATA ==========
 };
 
 const structuredData = {
@@ -93,34 +119,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={`${inter.className} relative`}>
-        {/* Cosmic background layers */}
-        <WarmGlow />
-        <CosmicBackground />
-        
-        {/* Content layer */}
-        <div className="relative z-10">
-          <ErrorBoundary>
-            <LanguageProvider>
-              <AuthProvider>
-                <Navbar />
-                <main className="pt-14 sm:pt-16">
-                  {children}
-                </main>
-                <Footer />
-              </AuthProvider>
-            </LanguageProvider>
-          </ErrorBoundary>
+      <body className={inter.className}>
+        <ErrorBoundary>
+          <LanguageProvider>
+            <AuthProvider>
+              <CosmicBackground />
+              <WarmGlow />
+              <Navbar />
+              <main className="min-h-screen relative z-10">{children}</main>
+              <Footer />
+            </AuthProvider>
+          </LanguageProvider>
+        </ErrorBoundary>
         <PWARegister />
         <InstallPrompt />
-        </div>
       </body>
     </html>
   );
