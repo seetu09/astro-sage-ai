@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, User, Bot, Sparkles, Loader2 } from 'lucide-react';
+import { Send, User, Bot, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
+import EmptyState from '@/app/components/EmptyState';
+import { SkeletonChat } from '@/app/components/SkeletonLoader';
 
 interface Message {
   id: string;
@@ -39,16 +41,27 @@ function getMockResponse(lang: string): string {
 
 export default function ChatPage() {
   const { language, t } = useLanguage();
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 'welcome', role: 'assistant', content: t.chat.welcome, timestamp: new Date() },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Simulate initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMessages([
+        { id: 'welcome', role: 'assistant', content: t.chat.welcome, timestamp: new Date() },
+      ]);
+      setIsInitializing(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [t.chat.welcome]);
+
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => { if (!isInitializing) inputRef.current?.focus(); }, [isInitializing]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -56,6 +69,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setHasError(false);
 
     try {
       const DEV_MODE = true;
@@ -71,6 +85,7 @@ export default function ChatPage() {
         setMessages((prev) => [...prev, assistantMessage]);
       }
     } catch {
+      setHasError(true);
       setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: t.chat.error, timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
@@ -79,57 +94,88 @@ export default function ChatPage() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
 
+  const handleRetry = () => {
+    setHasError(false);
+    // Remove the error message and retry last user message
+    const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+    if (lastUserMsg) {
+      setMessages(prev => prev.filter(m => m.id !== lastUserMsg.id));
+      setInput(lastUserMsg.content);
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([{ id: 'welcome', role: 'assistant', content: t.chat.welcome, timestamp: new Date() }]);
+    setHasError(false);
+  };
+
   return (
     <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col">
       {/* Header */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
-        <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
-          <div className="p-1.5 sm:p-2 rounded-full bg-[var(--accent)]/10">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 rounded-full bg-[var(--accent)]/10">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{t.chat.title}</h1>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)]">{t.chat.subtitle}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{t.chat.title}</h1>
-            <p className="text-xs sm:text-sm text-[var(--text-muted)]">{t.chat.subtitle}</p>
-          </div>
+          {messages.length > 1 && (
+            <button
+              onClick={clearChat}
+              className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              title="Clear chat"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 py-4 sm:py-6">
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-          <AnimatePresence>
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
-                    <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--accent)]" />
-                  </div>
-                )}
-                <div className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl ${
-                  message.role === 'user'
+          {isInitializing ? (
+            <SkeletonChat />
+          ) : messages.length === 0 ? (
+            <EmptyState type="no-messages" />
+          ) : (
+            <AnimatePresence>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {message.role === 'assistant' && (
+                    <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+                      <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--accent)]" />
+                    </div>
+                  )}
+                  <div className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl ${message.role === 'user'
                     ? 'bg-[var(--accent)] text-[var(--bg-primary)] rounded-br-md'
-                    : 'bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] rounded-bl-md'
-                }`}>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                  <div className={`text-[10px] sm:text-xs mt-1.5 ${
-                    message.role === 'user' ? 'text-[var(--bg-primary)]/60' : 'text-[var(--text-muted)]'
+                    : message.content === t.chat.error
+                      ? 'bg-red-500/10 border border-red-500/20 text-red-600 rounded-bl-md'
+                      : 'bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-primary)] rounded-bl-md'
                   }`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    <div className={`text-[10px] sm:text-xs mt-1.5 ${message.role === 'user' ? 'text-[var(--bg-primary)]/60' : message.content === t.chat.error ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                   </div>
-                </div>
-                {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--bg-primary)]" />
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  {message.role === 'user' && (
+                    <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--bg-primary)]" />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
 
           {isLoading && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 sm:gap-3">
@@ -144,6 +190,19 @@ export default function ChatPage() {
               </div>
             </motion.div>
           )}
+
+          {hasError && (
+            <div className="flex justify-center">
+              <button
+                onClick={handleRetry}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-lg hover:bg-red-500/20 transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Retry
+              </button>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -158,14 +217,14 @@ export default function ChatPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t.chat.placeholder}
-            disabled={isLoading}
+            disabled={isLoading || isInitializing}
             className="flex-1 astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
           />
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleSend}
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || isInitializing || !input.trim()}
             className="p-2.5 sm:p-3 rounded-lg bg-[var(--accent)] text-[var(--bg-primary)] hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
           >
             <Send className="w-4 h-4 sm:w-5 sm:h-5" />
