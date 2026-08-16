@@ -8,6 +8,8 @@ import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CosmicBackground from "./components/CosmicBackground";
 import WarmGlow from "./components/WarmGlow";
+import PWARegister from "./components/PWARegister";
+import InstallPrompt from "./components/InstallPrompt";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,7 +17,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#faf6f0",
+  themeColor: "#d97706",
 };
 
 export const metadata: Metadata = {
@@ -116,6 +118,8 @@ export default function RootLayout({
               </AuthProvider>
             </LanguageProvider>
           </ErrorBoundary>
+        <PWARegister />
+        <InstallPrompt />
         </div>
       </body>
     </html>
