@@ -36,19 +36,12 @@
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-  body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
 }
 
 @layer components {
@@ -202,7 +195,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     radial-gradient(1px 1px at 20px 30px, var(--accent-light), transparent),
     radial-gradient(1px 1px at 40px 70px, var(--accent-light), transparent),
     radial-gradient(1px 1px at 90px 40px, var(--accent-light), transparent),
