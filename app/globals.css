@@ -2,38 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+:root {
+  /* Day mode (warm Vedic) */
+  --bg-primary: #faf6f0;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #451a03;
+  --text-secondary: #78350f;
+  --text-muted: #a16207;
+  --accent: #d97706;
+  --accent-light: #fbbf24;
+  --accent-dark: #b45309;
+  --border: #fde68a;
+  --shadow: rgba(217, 119, 6, 0.1);
+}
 
-@layer base {
-  :root {
-    /* nakshatraai.ai inspired warm cosmic palette */
-    --bg-primary: #faf6f0;
-    --bg-secondary: #f5efe6;
-    --bg-card: #ffffff;
-    --bg-warm: #fdf8f0;
-    
-    --accent: #c9782a;
-    --accent-hover: #b56a20;
-    --accent-light: #e8a85c;
-    
-    --text-primary: #2d2416;
-    --text-secondary: #6b5d4d;
-    --text-muted: #a09080;
-    
-    --border: #e8ddd0;
-    --border-light: #f0e6d8;
-    
-    --shadow: rgba(139, 90, 43, 0.08);
-    --glow: rgba(201, 120, 42, 0.15);
-    
-    --success: #2d8a4e;
-    --error: #c94a4a;
-    --warning: #c9782a;
-  }
+.dark {
+  /* Night mode (cosmic dark) */
+  --bg-primary: #0f0a05;
+  --bg-secondary: #1a1209;
+  --bg-card: #1e160d;
+  --text-primary: #fef3c7;
+  --text-secondary: #fde68a;
+  --text-muted: #d97706;
+  --accent: #f59e0b;
+  --accent-light: #fbbf24;
+  --accent-dark: #d97706;
+  --border: #3d2808;
+  --shadow: rgba(245, 158, 11, 0.15);
+}
 
-  * {
-    @apply border-[var(--border)];
-  }
+/* Apply variables */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
   body {
     background-color: var(--bg-primary);
