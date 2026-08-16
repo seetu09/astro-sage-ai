@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
-import ThemeToggle from "./ThemeToggle";
 import LanguageToggle from "./LanguageToggle";
 import { Menu, X, ChevronDown } from "lucide-react";
 
