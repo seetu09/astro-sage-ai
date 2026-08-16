@@ -1,39 +1,38 @@
-import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
-import './globals.css';
-import { AuthProvider } from './context/AuthContext';
-import { LanguageProvider } from './context/LanguageContext';
-import { ThemeProvider } from './context/ThemeContext';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import StarBackground from './components/StarBackground';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { LanguageProvider } from "./context/LanguageContext";
+import { AuthProvider } from "./context/AuthContext";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'AstroVeda - AI-Powered Vedic Astrology',
-  description: 'Discover your cosmic path with AI-powered Vedic astrology readings, daily horoscopes, and personalized spiritual guidance.',
+  title: "AstroVeda - AI-Powered Vedic Astrology",
+  description: "Generate your Kundli, get daily horoscopes, matchmaking, and AI astrology guidance with AstroVeda.",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans antialiased">
-        <AuthProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ErrorBoundary>
           <LanguageProvider>
-            <ThemeProvider>
-              <StarBackground />
+            <AuthProvider>
               <Navbar />
-              {children}
+              <main className="pt-14 sm:pt-16">
+                {children}
+              </main>
               <Footer />
-            </ThemeProvider>
+            </AuthProvider>
           </LanguageProvider>
-        </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
