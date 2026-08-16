@@ -22,7 +22,7 @@ export default function InstallBanner() {
     }
 
     // Check if dismissed before
-    const dismissed = localStorage.getItem('install-banner-dismissed');
+    const dismissed = sessionStorage.getItem('install-banner-dismissed');
     if (dismissed) return;
 
     const handleBeforeInstall = (e: Event) => {
@@ -60,7 +60,7 @@ export default function InstallBanner() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('install-banner-dismissed', 'true');
+    sessionStorage.setItem('install-banner-dismissed', 'true');
     setShowBanner(false);
   };
 
