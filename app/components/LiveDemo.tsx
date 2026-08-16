@@ -68,7 +68,7 @@ export default function LiveDemo() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [hasStarted, setHasStarted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer to start animation when scrolled into view
   useEffect(() => {
@@ -91,7 +91,6 @@ export default function LiveDemo() {
   useEffect(() => {
     if (!hasStarted || !isPlaying) return;
     if (visibleMessages >= demoConversation.length) {
-      // Restart after a pause
       const restartTimer = setTimeout(() => {
         setVisibleMessages(0);
       }, 4000);
@@ -105,14 +104,19 @@ export default function LiveDemo() {
     return () => clearTimeout(timer);
   }, [visibleMessages, hasStarted, isPlaying]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll WITHIN the chat container (not the page)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [visibleMessages]);
 
   const handleReplay = () => {
     setVisibleMessages(0);
     setIsPlaying(true);
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
   };
 
   const title = language === 'en' ? 'See the Magic in Action' : 'जादू को करीब से देखें';
@@ -205,8 +209,11 @@ export default function LiveDemo() {
               </button>
             </div>
 
-            {/* Messages Area */}
-            <div className="h-[420px] overflow-y-auto scrollbar-thin px-3 py-2 space-y-4 bg-[var(--bg-primary)]/50 rounded-lg">
+            {/* Messages Area — FIXED: internal scroll only */}
+            <div
+              ref={messagesContainerRef}
+              className="h-[420px] overflow-y-auto scrollbar-thin px-3 py-2 space-y-4 bg-[var(--bg-primary)]/50 rounded-lg"
+            >
               <AnimatePresence mode="popLayout">
                 {demoConversation.slice(0, visibleMessages).map((msg, index) => (
                   <motion.div
@@ -282,8 +289,6 @@ export default function LiveDemo() {
                   </div>
                 </motion.div>
               )}
-
-              <div ref={bottomRef} />
             </div>
 
             {/* Input Area (Decorative) */}
