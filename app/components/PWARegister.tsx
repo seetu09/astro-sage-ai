@@ -9,7 +9,6 @@ export default function PWARegister() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
@@ -21,7 +20,6 @@ export default function PWARegister() {
         });
     }
 
-    // Listen for install prompt
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -30,14 +28,12 @@ export default function PWARegister() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    // Check if already installed
     window.addEventListener('appinstalled', () => {
       setIsInstalled(true);
       setShowInstall(false);
       setDeferredPrompt(null);
     });
 
-    // Check display mode
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
