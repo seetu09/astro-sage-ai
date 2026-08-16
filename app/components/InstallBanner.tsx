@@ -9,6 +9,12 @@ export default function InstallBanner() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    // Only run on mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+    if (!isMobile) return;
+
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -22,7 +28,6 @@ export default function InstallBanner() {
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Show banner after 3 seconds
       setTimeout(() => setShowBanner(true), 3000);
     };
 
@@ -40,7 +45,6 @@ export default function InstallBanner() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
-      // If no deferred prompt, show manual instructions
       alert('Tap the menu (⋮) → "Add to Home Screen"');
       return;
     }
@@ -63,7 +67,7 @@ export default function InstallBanner() {
   if (isInstalled || !showBanner) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50">
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
       <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-2xl shadow-2xl p-4 animate-slide-up">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-2.5 rounded-xl shrink-0">
