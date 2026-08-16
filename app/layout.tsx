@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
@@ -9,7 +10,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import CosmicBackground from "./components/CosmicBackground";
 import WarmGlow from "./components/WarmGlow";
 import InstallBanner from "./components/InstallBanner";
-import InstallPrompt from "./components/InstallPrompt";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -73,7 +73,6 @@ export const metadata: Metadata = {
   },
   category: "astrology",
   
-  // ========== PWA METADATA ==========
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -97,7 +96,6 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#d97706",
     "msapplication-TileImage": "/icons/icon-192x192.png",
   },
-  // ========== END PWA METADATA ==========
 };
 
 const structuredData = {
@@ -119,28 +117,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-      </head>
-      <body className={inter.className}>
-        <ErrorBoundary>
-          <LanguageProvider>
-            <AuthProvider>
-              <CosmicBackground />
-              <WarmGlow />
-              <Navbar />
-              <main className="min-h-screen relative z-10">{children}</main>
-              <Footer />
-            </AuthProvider>
-          </LanguageProvider>
-        </ErrorBoundary>
-        <InstallBanner />
-        <InstallPrompt />
-      </body>
-    </html>
+    <ThemeProvider>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          />
+        </head>
+        <body className={inter.className}>
+          <ErrorBoundary>
+            <LanguageProvider>
+              <AuthProvider>
+                <CosmicBackground />
+                <WarmGlow />
+                <Navbar />
+                <main className="min-h-screen relative z-10">{children}</main>
+                <Footer />
+              </AuthProvider>
+            </LanguageProvider>
+          </ErrorBoundary>
+          <InstallBanner />
+        </body>
+      </html>
+    </ThemeProvider>
   );
 }
