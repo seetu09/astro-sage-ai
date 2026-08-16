@@ -4,7 +4,18 @@ import { Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, mounted } = useTheme();
+
+  // Don't render until mounted (prevents hydration mismatch)
+  if (!mounted) {
+    return (
+      <div className="flex items-center gap-1 bg-amber-100/50 rounded-lg p-1 opacity-50">
+        <div className="p-1.5 rounded-md">
+          <Sun className="w-4 h-4 text-amber-700" />
+        </div>
+      </div>
+    );
+  }
 
   const options: { value: 'day' | 'night' | 'auto'; icon: typeof Sun; label: string }[] = [
     { value: 'day', icon: Sun, label: 'Day' },
