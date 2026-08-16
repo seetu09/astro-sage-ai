@@ -6,6 +6,8 @@ import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
+import CosmicBackground from "./components/CosmicBackground";
+import WarmGlow from "./components/WarmGlow";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -96,18 +98,25 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={inter.className}>
-        <ErrorBoundary>
-          <LanguageProvider>
-            <AuthProvider>
-              <Navbar />
-              <main className="pt-14 sm:pt-16">
-                {children}
-              </main>
-              <Footer />
-            </AuthProvider>
-          </LanguageProvider>
-        </ErrorBoundary>
+      <body className={`${inter.className} relative`}>
+        {/* Cosmic background layers */}
+        <WarmGlow />
+        <CosmicBackground />
+        
+        {/* Content layer */}
+        <div className="relative z-10">
+          <ErrorBoundary>
+            <LanguageProvider>
+              <AuthProvider>
+                <Navbar />
+                <main className="pt-14 sm:pt-16">
+                  {children}
+                </main>
+                <Footer />
+              </AuthProvider>
+            </LanguageProvider>
+          </ErrorBoundary>
+        </div>
       </body>
     </html>
   );
