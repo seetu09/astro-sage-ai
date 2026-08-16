@@ -101,9 +101,6 @@ export default function Navbar() {
               <div className="hidden sm:block">
                 <LanguageToggle />
               </div>
-              <div className="hidden sm:block">
-                <ThemeToggle />
-              </div>
 
               {isAuthenticated ? (
                 <button
@@ -144,7 +141,6 @@ export default function Navbar() {
             <div className="px-3 sm:px-4 py-3 space-y-1">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)] sm:hidden">
                 <LanguageToggle />
-                <ThemeToggle />
               </div>
               <div className="grid grid-cols-2 gap-1 pt-2">
                 {allLinks.map((link) => (
