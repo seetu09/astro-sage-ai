@@ -68,12 +68,11 @@ export const metadata: Metadata = {
     creator: "@astroveda",
   },
   verification: {
-    google: "your-google-verification-code", // Add when you get from Search Console
+    google: "your-google-verification-code",
   },
   category: "astrology",
 };
 
-// JSON-LD Structured Data
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebSite",
