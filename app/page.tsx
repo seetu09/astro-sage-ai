@@ -6,16 +6,13 @@ import { useLanguage } from "./context/LanguageContext";
 import { motion } from "framer-motion";
 import { Sparkles, MessageCircle, Scroll, Star, Heart, Calendar, Users } from "lucide-react";
 import LiveDemo from './components/LiveDemo';
+import HowItWorks from './components/HowItWorks';
+import StatsSection from './components/StatsSection';
+import KundaliPreview from './components/KundaliPreview';
+import Testimonials from './components/Testimonials';
 
 export default function HomePage() {
   const { t, language } = useLanguage();
-
-  const stats = [
-    { value: "50K+", label: { en: "Daily Users", hi: "दैनिक उपयोगकर्ता" } },
-    { value: "1M+", label: { en: "Readings Delivered", hi: "रीडिंग्स वितरित" } },
-    { value: "99%", label: { en: "Accuracy Rate", hi: "सटीकता दर" } },
-    { value: "24/7", label: { en: "AI Support", hi: "AI सहायता" } },
-  ];
 
   const features = [
     {
@@ -95,20 +92,23 @@ export default function HomePage() {
               </Link>
             </div>
           </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.8 }} className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
-            {stats.map((stat, index) => (
-              <div key={index} className="p-6 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl">
-                <p className="text-3xl font-bold text-amber-500">{stat.value}</p>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">{stat.label[language]}</p>
-              </div>
-            ))}
-          </motion.div>
         </div>
       </section>
 
-      {/* ===== LIVE DEMO SECTION ===== */}
+      {/* ===== LIVE DEMO ===== */}
       <LiveDemo />
+
+      {/* ===== HOW IT WORKS ===== */}
+      <HowItWorks />
+
+      {/* ===== STATS (FIXED) ===== */}
+      <StatsSection />
+
+      {/* ===== KUNDALI PREVIEW ===== */}
+      <KundaliPreview />
+
+      {/* ===== TESTIMONIALS ===== */}
+      <Testimonials />
 
       {/* ===== EXPLORE THE COSMOS ===== */}
       <section className="py-20 px-4">
@@ -138,7 +138,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== CTA SECTION ===== */}
+      {/* ===== FINAL CTA ===== */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="p-12 bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-3xl">
