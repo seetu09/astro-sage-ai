@@ -7,6 +7,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
 import LanguageToggle from "./LanguageToggle";
+import ThemeToggle from "./ThemeToggle";
 import { Menu, X, ChevronDown } from "lucide-react";
 
 export default function Navbar() {
@@ -99,6 +100,9 @@ export default function Navbar() {
 
             <div className="flex items-center gap-1 sm:gap-2">
               <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
+              <div className="hidden sm:block">
                 <LanguageToggle />
               </div>
 
@@ -139,7 +143,8 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-[var(--bg-primary)] border-b border-[var(--border-color)] max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="px-3 sm:px-4 py-3 space-y-1">
-              <div className="flex items-center gap-2 pb-2 border-b border-[var(--border-color)] sm:hidden">
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-[var(--border-color)] sm:hidden">
+                <ThemeToggle />
                 <LanguageToggle />
               </div>
               <div className="grid grid-cols-2 gap-1 pt-2">
