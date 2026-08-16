@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "./context/LanguageContext";
 import { motion } from "framer-motion";
 import { Sparkles, MessageCircle, Scroll, Star, Heart, Calendar, Users } from "lucide-react";
+import LiveDemo from './components/LiveDemo';
 
 export default function HomePage() {
   const { t, language } = useLanguage();
@@ -75,6 +76,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
+      {/* ===== HERO SECTION ===== */}
       <section className="relative pt-32 pb-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
@@ -105,6 +107,10 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== LIVE DEMO SECTION ===== */}
+      <LiveDemo />
+
+      {/* ===== EXPLORE THE COSMOS ===== */}
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
@@ -132,6 +138,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== CTA SECTION ===== */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="p-12 bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-3xl">
