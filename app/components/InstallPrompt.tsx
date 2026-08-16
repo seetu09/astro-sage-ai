@@ -7,13 +7,11 @@ export default function InstallPrompt() {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
 
   useEffect(() => {
-    // Detect iOS Safari (not installed, not in standalone)
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     
     if (isIOS && !isStandalone && isSafari) {
-      // Show after 3 seconds, only if not dismissed before
       const dismissed = localStorage.getItem('ios-install-dismissed');
       if (!dismissed) {
         const timer = setTimeout(() => setShowIOSPrompt(true), 3000);
@@ -40,7 +38,7 @@ export default function InstallPrompt() {
           <p className="text-xs text-amber-700 mt-1">
             Tap <Share className="w-3 h-3 inline mx-0.5" /> then 
             <Plus className="w-3 h-3 inline mx-0.5" /> 
-            "Add to Home Screen"
+            &quot;Add to Home Screen&quot;
           </p>
         </div>
         <button
