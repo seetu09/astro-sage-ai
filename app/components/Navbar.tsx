@@ -8,27 +8,33 @@ import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
 import ThemeToggle from "./ThemeToggle";
 import LanguageToggle from "./LanguageToggle";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 
 export default function Navbar() {
   const { t } = useLanguage();
   const { user, isAuthenticated } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  const navLinks = [
+  const mainLinks = [
     { href: "/", label: t.nav.home },
     { href: "/daily-horoscope", label: t.nav.dailyHoroscope },
     { href: "/kundali", label: t.nav.kundali },
     { href: "/matchmaking", label: t.nav.matchmaking },
     { href: "/chat", label: t.nav.chat },
+  ];
+
+  const moreLinks = [
     { href: "/blog", label: t.nav.blog },
     { href: "/store", label: t.nav.store },
+    { href: "/social", label: t.nav.social },
     { href: "/about", label: t.nav.about },
     { href: "/contact", label: t.nav.contact },
-    { href: "/social", label: t.nav.social },
   ];
+
+  const allLinks = [...mainLinks, ...moreLinks];
 
   return (
     <>
@@ -41,8 +47,9 @@ export default function Navbar() {
               </span>
             </Link>
 
+            {/* Desktop: Main links + More dropdown */}
             <div className="hidden md:flex items-center gap-1">
-              {navLinks.map((link) => (
+              {mainLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -55,6 +62,40 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+
+              {/* More Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
+                  onBlur={() => setTimeout(() => setMoreDropdownOpen(false), 150)}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    moreLinks.some(l => pathname === l.href)
+                      ? "text-amber-500 bg-amber-500/10"
+                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]"
+                  }`}
+                >
+                  More
+                  <ChevronDown className={`w-4 h-4 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {moreDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl shadow-lg py-1 z-50">
+                    {moreLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMoreDropdownOpen(false)}
+                        className={`block px-4 py-2 text-sm transition-colors ${
+                          pathname === link.href
+                            ? "text-amber-500 bg-amber-500/10"
+                            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2">
@@ -107,7 +148,7 @@ export default function Navbar() {
                 <ThemeToggle />
               </div>
               <div className="grid grid-cols-2 gap-1 pt-2">
-                {navLinks.map((link) => (
+                {allLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
