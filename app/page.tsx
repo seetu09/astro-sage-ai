@@ -11,11 +11,6 @@ import StatsSection from './components/StatsSection';
 import KundaliPreview from './components/KundaliPreview';
 import Testimonials from './components/Testimonials';
 import { Metadata } from "next";
-import { generatePageMetadata } from "./components/SEOWrapper";
-
-export const metadata: Metadata = generatePageMetadata({
-  path: "/",
-});
 
 export default function HomePage() {
   const { t, language } = useLanguage();
