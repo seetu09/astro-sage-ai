@@ -1,90 +1,121 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Sparkles, Heart } from 'lucide-react';
-import { useLanguage } from '@/app/context/LanguageContext';
-
-const quickLinks = [
-  { href: '/', label: 'home' },
-  { href: '/daily-horoscope', label: 'dailyHoroscope' },
-  { href: '/chat', label: 'chat' },
-  { href: '/blog', label: 'blog' },
-];
-
-const serviceLinks = [
-  { href: '/store', label: 'store' },
-  { href: '/about', label: 'about' },
-  { href: '/contact', label: 'contact' },
-  { href: '/social', label: 'social' },
-];
+import Link from "next/link";
+import { Sparkles, Heart } from "lucide-react";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function Footer() {
   const { t } = useLanguage();
 
+  const quickLinks = [
+    { label: t("home") || "होम", href: "/" },
+    { label: t("dailyHoroscope") || "दैनिक राशिफल", href: "/horoscope" },
+    { label: t("aiChat") || "AI चैट", href: "/chat" },
+    { label: t("blog") || "ब्लॉग", href: "/blog" },
+  ];
+
+  const services = [
+    { label: t("store") || "स्टोर", href: "/store" },
+    { label: t("aboutUs") || "हमारे बारे में", href: "/about" },
+    { label: t("contact") || "संपर्क करें", href: "/contact" },
+    { label: t("social") || "सोशल", href: "/social" },
+  ];
+
+  const legal = [
+    { label: t("privacyPolicy") || "गोपनीयता नीति", href: "/privacy" },
+    { label: t("termsOfService") || "सेवा की शर्तें", href: "/terms" },
+    { label: t("disclaimer") || "अस्वीकरण", href: "/disclaimer" },
+  ];
+
+  const linkClasses = `
+    text-sm
+    text-amber-800/80           /* Day: readable warm dark */
+    hover:text-amber-700         /* Day hover: solid */
+    dark:text-amber-200/80       /* Night: bright enough, NOT faded */
+    dark:hover:text-amber-100    /* Night hover: crisp bright */
+    transition-colors duration-200
+  `;
+
+  const headingClasses = `
+    text-sm font-semibold uppercase tracking-wider
+    text-amber-900 dark:text-amber-100
+  `;
+
   return (
-    <footer className="border-t border-[var(--border)] bg-[var(--bg-secondary)]/50">
+    <footer className="relative border-t border-amber-900/10 dark:border-amber-100/10 bg-amber-50/80 dark:bg-[#0a0805]/90 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-5 h-5 text-[var(--accent)]" />
-              <span className="text-lg font-bold font-serif text-[var(--text-primary)]">
-                Astro<span className="text-[var(--accent)]">Veda</span>
+          {/* Brand Column */}
+          <div className="space-y-4">
+            <Link href="/" className="flex items-center gap-2 group">
+              <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <span className="text-lg font-bold text-amber-900 dark:text-amber-100">
+                AstroVeda
               </span>
             </Link>
-            <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-              {t.footer.tagline}
+            <p className="text-sm text-amber-800/70 dark:text-amber-200/60 leading-relaxed">
+              {t("footerTagline") ||
+                "प्राचीन ज्ञान और आधुनिक AI के साथ आपकी ब्रह्मांडीय यात्रा का मार्गदर्शन।"}
             </p>
           </div>
 
-          <div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider mb-4">
-              {t.footer.quickLinks}
+          {/* Quick Links */}
+          <div className="space-y-4">
+            <h3 className={headingClasses}>
+              {t("quickLinks") || "त्वरित लिंक"}
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {quickLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
-                    {t.nav[link.label as keyof typeof t.nav]}
+                  <Link href={link.href} className={linkClasses}>
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider mb-4">
-              {t.footer.services}
+          {/* Services */}
+          <div className="space-y-4">
+            <h3 className={headingClasses}>
+              {t("services") || "सेवाएं"}
             </h3>
-            <ul className="space-y-2">
-              {serviceLinks.map((link) => (
+            <ul className="space-y-2.5">
+              {services.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
-                    {t.nav[link.label as keyof typeof t.nav]}
+                  <Link href={link.href} className={linkClasses}>
+                    {link.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider mb-4">
-              {t.footer.legal}
+          {/* Legal */}
+          <div className="space-y-4">
+            <h3 className={headingClasses}>
+              {t("legal") || "कानूनी"}
             </h3>
-            <ul className="space-y-2">
-              <li><span className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors cursor-pointer">{t.footer.privacy}</span></li>
-              <li><span className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors cursor-pointer">{t.footer.terms}</span></li>
-              <li><span className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors cursor-pointer">{t.footer.disclaimer}</span></li>
+            <ul className="space-y-2.5">
+              {legal.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={linkClasses}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-[var(--text-muted)]">
-            &copy; {new Date().getFullYear()} {t.footer.copyright}
+        {/* Bottom Bar */}
+        <div className="mt-10 pt-6 border-t border-amber-900/10 dark:border-amber-100/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-amber-800/60 dark:text-amber-200/50">
+            © 2025 AstroVeda. {t("allRightsReserved") || "सर्वाधिकार सुरक्षित।"}
           </p>
-          <p className="text-sm text-[var(--text-muted)] flex items-center gap-1">
-            {t.footer.madeWith} <Heart className="w-3 h-3 text-red-500 fill-red-500" /> AstroVeda
+          <p className="text-xs text-amber-800/60 dark:text-amber-200/50 flex items-center gap-1">
+            {t("madeWith") || "के साथ बनाया गया"}{" "}
+            <Heart className="w-3 h-3 text-red-500 fill-red-500" /> AstroVeda
           </p>
         </div>
       </div>
