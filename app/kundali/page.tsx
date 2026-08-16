@@ -194,7 +194,7 @@ export default function KundaliPage() {
               </p>
             </div>
 
-            {/* Info Cards - Stack on mobile, grid on tablet+ */}
+            {/* Info Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
               {[
                 { label: 'Date of Birth', value: kundliData?.dateOfBirth },
@@ -212,7 +212,7 @@ export default function KundaliPage() {
               ))}
             </div>
 
-            {/* Planetary Table - Horizontal scroll on mobile */}
+            {/* Planetary Table */}
             <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl overflow-hidden">
               <div className="px-3 sm:px-4 py-3 border-b border-[var(--border)]">
                 <h3 className="text-sm sm:text-base font-semibold text-[var(--text-primary)]">Planetary Positions</h3>
@@ -264,48 +264,18 @@ export default function KundaliPage() {
 
             {showPDF && kundliData && (
               <KundliPDF
-                report={{
-                  personalInfo: {
-                    name: kundliData.name,
-                    dateOfBirth: kundliData.dateOfBirth,
-                    timeOfBirth: kundliData.timeOfBirth,
-                    placeOfBirth: kundliData.placeOfBirth,
-                    ascendant: kundliData.ascendant,
-                    moonSign: kundliData.moonSign,
-                    sunSign: kundliData.sunSign,
-                    nakshatra: kundliData.nakshatra,
-                  },
-                  planetaryPositions: kundliData.planets,
-                  dashas: [
-                    { planet: 'Jupiter', startYear: 2024, endYear: 2040, years: 16 },
-                    { planet: 'Saturn', startYear: 2040, endYear: 2059, years: 19 },
-                    { planet: 'Mercury', startYear: 2059, endYear: 2076, years: 17 },
-                  ],
-                  predictions: [
-                    'Your Jupiter dasha indicates a period of growth and expansion in career and wisdom.',
-                    'Saturn transit suggests discipline and hard work will yield long-term rewards.',
-                    'Venus influence brings harmony in relationships and creative pursuits.',
-                  ],
-                  yogas: [
-                    { name: 'Gaja Kesari Yoga', description: 'Moon and Jupiter in favorable positions bring wisdom, prosperity, and good fortune.' },
-                    { name: 'Budha-Aditya Yoga', description: 'Sun and Mercury conjunction enhances intelligence and communication skills.' },
-                  ],
-                  doshas: [
-                    { name: 'Mangal Dosha', present: Math.random() > 0.5, severity: 'Low' },
-                    { name: 'Kaal Sarp Dosha', present: Math.random() > 0.7, severity: 'Moderate' },
-                  ],
-                  gemstones: [
-                    { name: 'Yellow Sapphire (Pukhraj)', planet: 'Jupiter', benefit: 'Wisdom and prosperity', finger: 'Index', metal: 'Gold', day: 'Thursday' },
-                    { name: 'Blue Sapphire (Neelam)', planet: 'Saturn', benefit: 'Discipline and focus', finger: 'Middle', metal: 'Silver', day: 'Saturday' },
-                  ],
-                  remedies: [
-                    'Chant the Guru Beej Mantra 108 times every Thursday.',
-                    'Donate yellow items to Brahmins on Thursdays.',
-                    'Wear yellow clothes on Thursdays for Jupiter blessings.',
-                  ],
-                  favorableColors: ['Yellow', 'Orange', 'Golden'],
-                  favorableNumbers: ['3', '12', '21'],
-                  favorableDirections: ['East', 'North'],
+                userEmail={kundliData.email}
+                userName={kundliData.name}
+                kundliData={{
+                  name: kundliData.name,
+                  dateOfBirth: kundliData.dateOfBirth,
+                  timeOfBirth: kundliData.timeOfBirth,
+                  placeOfBirth: kundliData.placeOfBirth,
+                  ascendant: kundliData.ascendant,
+                  moonSign: kundliData.moonSign,
+                  sunSign: kundliData.sunSign,
+                  nakshatra: kundliData.nakshatra,
+                  planets: kundliData.planets,
                 }}
               />
             )}
