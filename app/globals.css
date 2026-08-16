@@ -6,45 +6,29 @@
 
 @layer base {
   :root {
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #1a1a1a;
-    --bg-card: #252525;
-    --accent: #c9a84c;
-    --accent-hover: #b8983c;
-    --text-primary: #f5f5f5;
-    --text-secondary: #a0a0a0;
-    --text-muted: #888888;
-    --border: #333333;
-    --shadow: rgba(0, 0, 0, 0.5);
-    --glow: rgba(201, 168, 76, 0.3);
-  }
-
-  [data-theme="golden"] {
-    --bg-primary: #1a1508;
-    --bg-secondary: #2a2310;
-    --bg-card: #3a3218;
-    --accent: #d4af37;
-    --accent-hover: #c4a030;
-    --text-primary: #f0e6cc;
-    --text-secondary: #c4b896;
-    --text-muted: #a09060;
-    --border: #4a4020;
-    --shadow: rgba(0, 0, 0, 0.6);
-    --glow: rgba(212, 175, 55, 0.3);
-  }
-
-  [data-theme="warm"] {
-    --bg-primary: #2a1810;
-    --bg-secondary: #3a2820;
-    --bg-card: #4a3830;
-    --accent: #e8a87c;
-    --accent-hover: #d8986c;
-    --text-primary: #f5e6d3;
-    --text-secondary: #d4c4b0;
-    --text-muted: #b09880;
-    --border: #5a4840;
-    --shadow: rgba(0, 0, 0, 0.5);
-    --glow: rgba(232, 168, 124, 0.3);
+    /* nakshatraai.ai inspired warm cosmic palette */
+    --bg-primary: #faf6f0;
+    --bg-secondary: #f5efe6;
+    --bg-card: #ffffff;
+    --bg-warm: #fdf8f0;
+    
+    --accent: #c9782a;
+    --accent-hover: #b56a20;
+    --accent-light: #e8a85c;
+    
+    --text-primary: #2d2416;
+    --text-secondary: #6b5d4d;
+    --text-muted: #a09080;
+    
+    --border: #e8ddd0;
+    --border-light: #f0e6d8;
+    
+    --shadow: rgba(139, 90, 43, 0.08);
+    --glow: rgba(201, 120, 42, 0.15);
+    
+    --success: #2d8a4e;
+    --error: #c94a4a;
+    --warning: #c9782a;
   }
 
   * {
@@ -67,28 +51,28 @@
   .astro-card {
     background-color: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 1.5rem;
     transition: all 0.3s ease;
   }
 
   .astro-card:hover {
-    box-shadow: 0 0 20px var(--glow);
+    box-shadow: 0 4px 24px var(--shadow);
     transform: translateY(-2px);
   }
 
   .astro-button {
     background-color: var(--accent);
-    color: var(--bg-primary);
+    color: #ffffff;
     padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    border-radius: 12px;
     font-weight: 600;
     transition: all 0.3s ease;
   }
 
   .astro-button:hover {
     background-color: var(--accent-hover);
-    box-shadow: 0 0 15px var(--glow);
+    box-shadow: 0 4px 16px var(--glow);
   }
 
   .astro-input {
@@ -96,14 +80,14 @@
     border: 1px solid var(--border);
     color: var(--text-primary);
     padding: 0.75rem 1rem;
-    border-radius: 8px;
+    border-radius: 12px;
     outline: none;
     transition: all 0.3s ease;
   }
 
   .astro-input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 10px var(--glow);
+    box-shadow: 0 0 0 3px var(--glow);
   }
 
   .astro-text-muted {
@@ -140,7 +124,7 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: var(--accent);
+    background: var(--accent-light);
     border-radius: 3px;
   }
 }
@@ -168,12 +152,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent);
+  background: var(--accent-light);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-hover);
+  background: var(--accent);
 }
 
 @keyframes twinkle {
@@ -183,7 +167,7 @@
 
 .star {
   position: absolute;
-  background: white;
+  background: var(--accent-light);
   border-radius: 50%;
   animation: twinkle 3s ease-in-out infinite;
 }
@@ -202,4 +186,32 @@
   background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-card) 50%, var(--bg-secondary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* Cosmic background particles */
+.cosmic-bg {
+  position: relative;
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-warm) 50%, var(--bg-primary) 100%);
+}
+
+.cosmic-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 40px 70px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 90px 40px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 130px 80px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 160px 20px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 200px 60px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 250px 30px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 280px 90px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 320px 50px, var(--accent-light), transparent),
+    radial-gradient(1px 1px at 350px 70px, var(--accent-light), transparent);
+  background-repeat: repeat;
+  background-size: 400px 120px;
+  opacity: 0.4;
+  pointer-events: none;
+  animation: twinkle 4s ease-in-out infinite;
 }
