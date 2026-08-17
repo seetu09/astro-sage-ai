@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Sparkles, Heart } from "lucide-react";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function Footer() {
   const { t } = useLanguage();
+  const pathname = usePathname();
+
+  if (pathname === "/chat") return null;
 
   const quickLinks = [
     { label: t.nav?.home || "होम", href: "/" },

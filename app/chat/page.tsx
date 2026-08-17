@@ -46,8 +46,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Simulate initial load
   useEffect(() => {
@@ -60,8 +59,17 @@ export default function ChatPage() {
     return () => clearTimeout(timer);
   }, [t.chat.welcome]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
-  useEffect(() => { if (!isInitializing) inputRef.current?.focus(); }, [isInitializing]);
+  // Scroll within the messages container only — never scroll the page
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || isInitializing) return;
+
+    if (messages.length <= 1 && !isLoading) {
+      container.scrollTop = 0;
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, [messages, isLoading, isInitializing]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -110,7 +118,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col">
+    <div className="fixed inset-x-0 bottom-0 top-14 sm:top-16 flex flex-col overflow-hidden z-10">
       {/* Header */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -136,7 +144,10 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-3 sm:px-4 py-4 sm:py-6">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto overscroll-y-contain scrollbar-thin px-3 sm:px-4 py-4 sm:py-6"
+      >
         <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
           {isInitializing ? (
             <SkeletonChat />
@@ -203,7 +214,6 @@ export default function ChatPage() {
             </div>
           )}
 
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -211,7 +221,6 @@ export default function ChatPage() {
       <div className="border-t border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
           <input
-            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
