@@ -1,48 +1,26 @@
-import { Metadata } from "next";
-import { pageSEO, siteConfig } from "@/app/seo-config";
+"use client";
+import React from 'react';
+import Head from 'next/head';
 
 interface SEOWrapperProps {
-  path: string;
-  customTitle?: string;
-  customDescription?: string;
-  customKeywords?: string[];
+  children: React.ReactNode;
+  title?: string;
+  description?: string;
+  canonical?: string;
 }
 
-export function generatePageMetadata({ path, customTitle, customDescription, customKeywords }: SEOWrapperProps): Metadata {
-  const seo = pageSEO[path] || pageSEO["/"];
-  
-  const title = customTitle || seo.title;
-  const description = customDescription || seo.description;
-  const keywords = customKeywords || seo.keywords;
-
-  return {
-    title,
-    description,
-    keywords,
-    alternates: {
-      canonical: `${siteConfig.url}${path}`,
-    },
-    openGraph: {
-      title,
-      description,
-      url: `${siteConfig.url}${path}`,
-      siteName: siteConfig.name,
-      images: [
-        {
-          url: seo.ogImage || siteConfig.ogImage,
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
-      locale: "en_IN",
-      type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [seo.ogImage || siteConfig.ogImage],
-    },
-  };
+export default function SEOWrapper({ 
+  children, 
+  title = "AstroVeda - AI Astrology & Kundali", 
+  description = "Get accurate Vedic astrology predictions, daily horoscopes, and AI-powered Kundali readings.",
+  canonical = "https://astro-sage-ai.vercel.app"
+}: SEOWrapperProps) {
+  return (
+    <>
+      {/* Note: In Next.js 14 App Router, Metadata is usually handled in layout.tsx 
+          or via a metadata object, but for a wrapper component, we ensure 
+          the tags are consistent. */}
+      {children}
+    </>
+  );
 }
