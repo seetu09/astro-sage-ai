@@ -1,7 +1,7 @@
 import React from 'react';
 import ZodiacSelector from '@/app/components/ZodiacSelector';
 import LiveTicker from '@/app/components/LiveTicker';
-import SEOWrapper from '@/app/components/SEOWrapper';
+import { SEOWrapper } from '@/app/components/SEOWrapper';
 
 export default function HoroscopePage() {
   const today = new Date().toLocaleDateString('en-US', { 
