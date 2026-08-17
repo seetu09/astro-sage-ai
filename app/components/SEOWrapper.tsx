@@ -1,7 +1,34 @@
 "use client";
 import React from 'react';
-import Head from 'next/head';
 
+// 1. The Helper Function (Needed by your layouts)
+export function generatePageMetadata({ 
+  title, 
+  description, 
+  path 
+}: { 
+  title: string; 
+  description: string; 
+  path: string; 
+}) {
+  return {
+    title: `${title} | AstroVeda`,
+    description,
+    alternates: {
+      canonical: `https://astro-sage-ai.vercel.app${path}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `https://astro-sage-ai.vercel.app${path}`,
+      siteName: 'AstroVeda',
+      locale: 'en_IN',
+      type: 'website',
+    },
+  };
+}
+
+// 2. The Component (Needed by your pages)
 interface SEOWrapperProps {
   children: React.ReactNode;
   title?: string;
@@ -10,16 +37,10 @@ interface SEOWrapperProps {
 }
 
 export default function SEOWrapper({ 
-  children, 
-  title = "AstroVeda - AI Astrology & Kundali", 
-  description = "Get accurate Vedic astrology predictions, daily horoscopes, and AI-powered Kundali readings.",
-  canonical = "https://astro-sage-ai.vercel.app"
+  children 
 }: SEOWrapperProps) {
   return (
     <>
-      {/* Note: In Next.js 14 App Router, Metadata is usually handled in layout.tsx 
-          or via a metadata object, but for a wrapper component, we ensure 
-          the tags are consistent. */}
       {children}
     </>
   );
