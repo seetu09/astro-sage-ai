@@ -24,7 +24,7 @@ interface ChakraSymbol {
   opacity: number;
   pulseSpeed: number;
   pulsePhase: number;
-  color: string;
+  color: string; // RGB triplet, e.g. "220, 60, 60"
   petals: number;
   label: string;
 }
@@ -45,7 +45,7 @@ export default function CosmicBackground() {
 
   useEffect(() => {
     if (!mounted) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -58,11 +58,14 @@ export default function CosmicBackground() {
     let sacredGeometries: SacredGeometry[] = [];
 
     const isDark = resolvedTheme === 'night';
-    
+
+    // FIX: day-mode colors darkened for contrast against the light #faf6f0
+    // background — the old values (201,150,80 / 180,130,70) were nearly
+    // invisible on cream.
     const colors = {
-      star: isDark ? '251, 191, 36' : '201, 150, 80',
-      glow: isDark ? '245, 158, 11' : '201, 150, 80',
-      line: isDark ? '180, 130, 70' : '180, 130, 70',
+      star: isDark ? '251, 191, 36' : '146, 64, 14',
+      glow: isDark ? '245, 158, 11' : '180, 83, 9',
+      line: isDark ? '180, 130, 70' : '120, 53, 15',
       bgStart: isDark ? '#1a1209' : '#faf6f0',
       bgEnd: isDark ? '#0f0a05' : '#faf6f0',
     };
@@ -74,16 +77,18 @@ export default function CosmicBackground() {
 
     const createParticles = () => {
       particles = [];
-      const count = Math.min(isDark ? 80 : 50, Math.floor((canvas.width * canvas.height) / 25000));
+      // FIX: more particles in day mode
+      const count = Math.min(isDark ? 80 : 90, Math.floor((canvas.width * canvas.height) / 25000));
 
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * (isDark ? 2.5 : 2) + 0.5,
+          size: Math.random() * (isDark ? 2.5 : 2.5) + 0.5,
           speedX: (Math.random() - 0.5) * 0.15,
           speedY: (Math.random() - 0.5) * 0.15,
-          opacity: Math.random() * (isDark ? 0.6 : 0.4) + (isDark ? 0.2 : 0.1),
+          // FIX: day opacity raised from 0.1–0.5 to 0.35–0.85
+          opacity: Math.random() * (isDark ? 0.6 : 0.5) + (isDark ? 0.2 : 0.35),
           twinkleSpeed: Math.random() * 0.02 + 0.005,
           twinklePhase: Math.random() * Math.PI * 2,
           type: Math.random() > 0.7 ? 'star' : 'dot',
@@ -93,12 +98,14 @@ export default function CosmicBackground() {
 
     const createChakras = () => {
       chakras = [];
+      // FIX: colors are now plain RGB triplets (no alpha baked into the
+      // string, so no fragile .replace() hack); alpha is applied at draw time.
       const chakraData = [
-        { color: isDark ? 'rgba(220, 60, 60, 0.15)' : 'rgba(220, 60, 60, 0.1)', petals: 4, label: 'Muladhara' },
-        { color: isDark ? 'rgba(230, 130, 50, 0.15)' : 'rgba(230, 130, 50, 0.1)', petals: 6, label: 'Svadhisthana' },
-        { color: isDark ? 'rgba(230, 190, 50, 0.15)' : 'rgba(230, 190, 50, 0.1)', petals: 10, label: 'Manipura' },
-        { color: isDark ? 'rgba(60, 170, 90, 0.15)' : 'rgba(60, 170, 90, 0.1)', petals: 12, label: 'Anahata' },
-        { color: isDark ? 'rgba(60, 150, 200, 0.15)' : 'rgba(60, 150, 200, 0.1)', petals: 16, label: 'Vishuddha' },
+        { color: '220, 60, 60', petals: 4, label: 'Muladhara' },
+        { color: '230, 130, 50', petals: 6, label: 'Svadhisthana' },
+        { color: '200, 160, 20', petals: 10, label: 'Manipura' },
+        { color: '60, 170, 90', petals: 12, label: 'Anahata' },
+        { color: '60, 150, 200', petals: 16, label: 'Vishuddha' },
       ];
 
       for (let i = 0; i < 4; i++) {
@@ -109,7 +116,8 @@ export default function CosmicBackground() {
           size: Math.random() * 50 + 40,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.002,
-          opacity: Math.random() * (isDark ? 0.1 : 0.06) + (isDark ? 0.06 : 0.04),
+          // FIX: day opacity raised from 0.04–0.10 to 0.18–0.32
+          opacity: Math.random() * (isDark ? 0.1 : 0.14) + (isDark ? 0.06 : 0.18),
           pulseSpeed: Math.random() * 0.008 + 0.003,
           pulsePhase: Math.random() * Math.PI * 2,
           color: data.color,
@@ -130,7 +138,8 @@ export default function CosmicBackground() {
           size: Math.random() * 100 + 70,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.0015,
-          opacity: Math.random() * (isDark ? 0.08 : 0.05) + (isDark ? 0.05 : 0.03),
+          // FIX: day opacity raised from 0.03–0.08 to 0.12–0.22
+          opacity: Math.random() * (isDark ? 0.08 : 0.10) + (isDark ? 0.05 : 0.12),
           type: types[i % types.length],
         });
       }
@@ -164,20 +173,20 @@ export default function CosmicBackground() {
       ctx.rotate(rotation + time * 0.0003);
 
       const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, currentSize * 1.5);
-      glowGradient.addColorStop(0, color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 0.7 : 0.5))));
+      glowGradient.addColorStop(0, `rgba(${color}, ${currentOpacity * (isDark ? 0.7 : 0.6)})`);
       glowGradient.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = glowGradient;
       ctx.fillRect(-currentSize * 1.5, -currentSize * 1.5, currentSize * 3, currentSize * 3);
 
       ctx.beginPath();
       ctx.arc(0, 0, currentSize, 0, Math.PI * 2);
-      ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 1.5 : 1.2)));
-      ctx.lineWidth = isDark ? 2 : 1.5;
+      ctx.strokeStyle = `rgba(${color}, ${currentOpacity * (isDark ? 1.5 : 1.3)})`;
+      ctx.lineWidth = isDark ? 2 : 1.8;
       ctx.stroke();
 
       ctx.beginPath();
       ctx.arc(0, 0, currentSize * 0.55, 0, Math.PI * 2);
-      ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 1.0 : 0.8)));
+      ctx.strokeStyle = `rgba(${color}, ${currentOpacity})`;
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -188,8 +197,8 @@ export default function CosmicBackground() {
           ctx.rotate(angle);
           ctx.beginPath();
           ctx.ellipse(0, -currentSize * 0.75, currentSize * 0.12, currentSize * 0.35, 0, 0, Math.PI * 2);
-          ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 0.9 : 0.6)));
-          ctx.lineWidth = isDark ? 1.2 : 0.8;
+          ctx.strokeStyle = `rgba(${color}, ${currentOpacity * (isDark ? 0.9 : 0.8)})`;
+          ctx.lineWidth = isDark ? 1.2 : 1;
           ctx.stroke();
           ctx.restore();
         }
@@ -197,7 +206,7 @@ export default function CosmicBackground() {
 
       ctx.beginPath();
       ctx.arc(0, 0, currentSize * 0.12, 0, Math.PI * 2);
-      ctx.fillStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 2.5 : 2)));
+      ctx.fillStyle = `rgba(${color}, ${currentOpacity * (isDark ? 2.5 : 2.2)})`;
       ctx.fill();
 
       ctx.beginPath();
@@ -205,8 +214,8 @@ export default function CosmicBackground() {
       ctx.lineTo(-currentSize * 0.26, currentSize * 0.15);
       ctx.lineTo(currentSize * 0.26, currentSize * 0.15);
       ctx.closePath();
-      ctx.strokeStyle = color.replace(isDark ? '0.15' : '0.1', String(currentOpacity * (isDark ? 1.0 : 0.8)));
-      ctx.lineWidth = isDark ? 1 : 0.8;
+      ctx.strokeStyle = `rgba(${color}, ${currentOpacity})`;
+      ctx.lineWidth = isDark ? 1 : 0.9;
       ctx.stroke();
 
       ctx.restore();
@@ -223,8 +232,8 @@ export default function CosmicBackground() {
         const radius = (size * r) / rings;
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (1 - r / (rings + 1)) * (isDark ? 0.9 : 0.6)})`;
-        ctx.lineWidth = isDark ? 0.8 : 0.6;
+        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (1 - r / (rings + 1)) * (isDark ? 0.9 : 0.8)})`;
+        ctx.lineWidth = isDark ? 0.8 : 0.7;
         ctx.stroke();
 
         const dots = r * 8;
@@ -233,8 +242,8 @@ export default function CosmicBackground() {
           const dx = Math.cos(angle) * radius;
           const dy = Math.sin(angle) * radius;
           ctx.beginPath();
-          ctx.arc(dx, dy, isDark ? 2 : 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${colors.star}, ${opacity * (isDark ? 1.0 : 0.7)})`;
+          ctx.arc(dx, dy, isDark ? 2 : 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${colors.star}, ${opacity * (isDark ? 1.0 : 0.9)})`;
           ctx.fill();
         }
       }
@@ -245,8 +254,8 @@ export default function CosmicBackground() {
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(Math.cos(angle) * size, Math.sin(angle) * size);
-        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.4 : 0.25)})`;
-        ctx.lineWidth = isDark ? 0.6 : 0.4;
+        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.4 : 0.35)})`;
+        ctx.lineWidth = isDark ? 0.6 : 0.5;
         ctx.stroke();
       }
 
@@ -256,7 +265,7 @@ export default function CosmicBackground() {
         ctx.rotate(angle);
         ctx.beginPath();
         ctx.ellipse(0, -size * 0.25, size * 0.08, size * 0.2, 0, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${colors.star}, ${opacity * (isDark ? 0.25 : 0.15)})`;
+        ctx.fillStyle = `rgba(${colors.star}, ${opacity * (isDark ? 0.25 : 0.22)})`;
         ctx.fill();
         ctx.restore();
       }
@@ -272,8 +281,8 @@ export default function CosmicBackground() {
 
       ctx.beginPath();
       ctx.arc(0, 0, size, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.8 : 0.5)})`;
-      ctx.lineWidth = isDark ? 1.2 : 1;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.8 : 0.7)})`;
+      ctx.lineWidth = isDark ? 1.2 : 1.1;
       ctx.stroke();
 
       ctx.beginPath();
@@ -281,8 +290,8 @@ export default function CosmicBackground() {
       ctx.lineTo(-size * 0.78, size * 0.45);
       ctx.lineTo(size * 0.78, size * 0.45);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.9 : 0.6)})`;
-      ctx.lineWidth = isDark ? 1.5 : 1.2;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.9 : 0.8)})`;
+      ctx.lineWidth = isDark ? 1.5 : 1.3;
       ctx.stroke();
 
       ctx.beginPath();
@@ -290,8 +299,8 @@ export default function CosmicBackground() {
       ctx.lineTo(-size * 0.78, -size * 0.45);
       ctx.lineTo(size * 0.78, -size * 0.45);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.8 : 0.5)})`;
-      ctx.lineWidth = isDark ? 1.2 : 1;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.8 : 0.7)})`;
+      ctx.lineWidth = isDark ? 1.2 : 1.1;
       ctx.stroke();
 
       ctx.beginPath();
@@ -299,8 +308,8 @@ export default function CosmicBackground() {
       ctx.lineTo(-size * 0.43, size * 0.25);
       ctx.lineTo(size * 0.43, size * 0.25);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.7 : 0.45)})`;
-      ctx.lineWidth = isDark ? 1.1 : 0.9;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.7 : 0.6)})`;
+      ctx.lineWidth = isDark ? 1.1 : 1;
       ctx.stroke();
 
       ctx.beginPath();
@@ -308,20 +317,20 @@ export default function CosmicBackground() {
       ctx.lineTo(-size * 0.43, -size * 0.25);
       ctx.lineTo(size * 0.43, -size * 0.25);
       ctx.closePath();
-      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.6 : 0.4)})`;
-      ctx.lineWidth = isDark ? 1 : 0.8;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.6 : 0.55)})`;
+      ctx.lineWidth = isDark ? 1 : 0.9;
       ctx.stroke();
 
       ctx.beginPath();
       ctx.arc(0, 0, size * 0.06, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${isDark ? '245, 158, 11' : '201, 120, 42'}, ${opacity * (isDark ? 1.5 : 1.2)})`;
+      ctx.fillStyle = `rgba(${isDark ? '245, 158, 11' : '180, 83, 9'}, ${opacity * (isDark ? 1.5 : 1.3)})`;
       ctx.fill();
 
       [0.2, 0.35].forEach((r) => {
         ctx.beginPath();
         ctx.arc(0, 0, size * r, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.5 : 0.3)})`;
-        ctx.lineWidth = isDark ? 0.7 : 0.5;
+        ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.5 : 0.45)})`;
+        ctx.lineWidth = isDark ? 0.7 : 0.6;
         ctx.stroke();
       });
 
@@ -357,15 +366,15 @@ export default function CosmicBackground() {
       ctx.arc(size * 0.08, -size * 0.55, size * 0.06, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.shadowColor = `rgba(${colors.glow}, ${isDark ? 0.4 : 0.25})`;
+      ctx.shadowColor = `rgba(${colors.glow}, ${isDark ? 0.4 : 0.3})`;
       ctx.shadowBlur = isDark ? 30 : 20;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
       ctx.beginPath();
       ctx.arc(0, 0, size * 0.65, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.5 : 0.3)})`;
-      ctx.lineWidth = isDark ? 1 : 0.8;
+      ctx.strokeStyle = `rgba(${colors.line}, ${opacity * (isDark ? 0.5 : 0.4)})`;
+      ctx.lineWidth = isDark ? 1 : 0.9;
       ctx.setLineDash([5, 5]);
       ctx.stroke();
       ctx.setLineDash([]);
@@ -397,7 +406,10 @@ export default function CosmicBackground() {
         if (p.y > canvas.height) p.y = 0;
 
         const twinkle = Math.sin(time * p.twinkleSpeed + p.twinklePhase);
-        const currentOpacity = p.opacity * (0.5 + 0.5 * twinkle);
+        // FIX: gentler twinkle floor in day mode so particles never vanish
+        const currentOpacity = isDark
+          ? p.opacity * (0.5 + 0.5 * twinkle)
+          : p.opacity * (0.7 + 0.3 * twinkle);
 
         if (p.type === 'star') {
           drawStar(p.x, p.y, p.size * 1.5, currentOpacity);
@@ -412,7 +424,7 @@ export default function CosmicBackground() {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
           const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
-          gradient.addColorStop(0, `rgba(${colors.star}, ${currentOpacity * (isDark ? 0.4 : 0.2)})`);
+          gradient.addColorStop(0, `rgba(${colors.star}, ${currentOpacity * (isDark ? 0.4 : 0.25)})`);
           gradient.addColorStop(1, `rgba(${colors.star}, 0)`);
           ctx.fillStyle = gradient;
           ctx.fill();
@@ -466,18 +478,15 @@ export default function CosmicBackground() {
   // Don't render canvas until mounted (prevents SSR issues)
   if (!mounted) {
     return (
-      <div 
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{ backgroundColor: '#faf6f0' }}
-      />
+      <div className="fixed inset-0 -z-10" style={{ background: 'var(--bg-primary)' }} />
     );
   }
 
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-0"
-      style={{ opacity: 0.6 }}
+      className="fixed inset-0 -z-10 pointer-events-none"
+      aria-hidden="true"
     />
   );
 }
