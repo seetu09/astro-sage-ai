@@ -8,23 +8,23 @@ export default function Footer() {
   const { t } = useLanguage();
 
   const quickLinks = [
-    { label: t.home || "होम", href: "/" },
-    { label: t.dailyHoroscope || "दैनिक राशिफल", href: "/horoscope" },
-    { label: t.aiChat || "AI चैट", href: "/chat" },
-    { label: t.blog || "ब्लॉग", href: "/blog" },
+    { label: t.nav?.home || "होम", href: "/" },
+    { label: t.nav?.dailyHoroscope || "दैनिक राशिफल", href: "/horoscope" },
+    { label: t.nav?.chat || "AI चैट", href: "/chat" },
+    { label: t.nav?.blog || "ब्लॉग", href: "/blog" },
   ];
 
   const services = [
-    { label: t.store || "स्टोर", href: "/store" },
-    { label: t.aboutUs || "हमारे बारे में", href: "/about" },
-    { label: t.contact || "संपर्क करें", href: "/contact" },
-    { label: t.social || "सोशल", href: "/social" },
+    { label: t.nav?.store || "स्टोर", href: "/store" },
+    { label: t.nav?.about || "हमारे बारे में", href: "/about" },
+    { label: t.nav?.contact || "संपर्क करें", href: "/contact" },
+    { label: t.nav?.social || "सोशल", href: "/social" },
   ];
 
   const legal = [
-    { label: t.privacyPolicy || "गोपनीयता नीति", href: "/privacy" },
-    { label: t.termsOfService || "सेवा की शर्तें", href: "/terms" },
-    { label: t.disclaimer || "अस्वीकरण", href: "/disclaimer" },
+    { label: t.footer?.privacy || "गोपनीयता नीति", href: "/privacy" },
+    { label: t.footer?.terms || "सेवा की शर्तें", href: "/terms" },
+    { label: t.footer?.disclaimer || "अस्वीकरण", href: "/disclaimer" },
   ];
 
   const linkClasses = `
@@ -54,14 +54,14 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm text-amber-800/70 dark:text-amber-200/60 leading-relaxed">
-              {t.footerTagline || "प्राचीन ज्ञान और आधुनिक AI के साथ आपकी ब्रह्मांडीय यात्रा का मार्गदर्शन।"}
+              {t.footer?.tagline || "प्राचीन ज्ञान और आधुनिक AI के साथ आपकी ब्रह्मांडीय यात्रा का मार्गदर्शन।"}
             </p>
           </div>
 
           {/* Quick Links */}
           <div className="space-y-4">
             <h3 className={headingClasses}>
-              {t.quickLinks || "त्वरित लिंक"}
+              {t.footer?.quickLinks || "त्वरित लिंक"}
             </h3>
             <ul className="space-y-2.5">
               {quickLinks.map((link) => (
@@ -77,7 +77,7 @@ export default function Footer() {
           {/* Services */}
           <div className="space-y-4">
             <h3 className={headingClasses}>
-              {t.services || "सेवाएं"}
+              {t.footer?.services || "सेवाएं"}
             </h3>
             <ul className="space-y-2.5">
               {services.map((link) => (
@@ -93,7 +93,7 @@ export default function Footer() {
           {/* Legal */}
           <div className="space-y-4">
             <h3 className={headingClasses}>
-              {t.legal || "कानूनी"}
+              {t.footer?.legal || "कानूनी"}
             </h3>
             <ul className="space-y-2.5">
               {legal.map((link) => (
@@ -110,10 +110,10 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-amber-900/10 dark:border-amber-100/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-amber-800/60 dark:text-amber-200/50">
-            © 2025 AstroVeda. {t.allRightsReserved || "सर्वाधिकार सुरक्षित।"}
+            © 2025 AstroVeda. {t.footer?.copyright || "सर्वाधिकार सुरक्षित।"}
           </p>
           <p className="text-xs text-amber-800/60 dark:text-amber-200/50 flex items-center gap-1">
-            {t.madeWith || "के साथ बनाया गया"}{" "}
+            {t.footer?.madeWith || "के साथ बनाया गया"}{" "}
             <Heart className="w-3 h-3 text-red-500 fill-red-500" /> AstroVeda
           </p>
         </div>
