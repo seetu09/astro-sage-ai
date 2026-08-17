@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useLanguage } from "./context/LanguageContext";
 import { motion } from "framer-motion";
-import { Sparkles, MessageCircle, Scroll, Star, Heart, Calendar, Users } from "lucide-react";
+import { MessageCircle, Scroll, Star, Heart, Calendar, Users } from "lucide-react";
 import LiveDemo from './components/LiveDemo';
 import HowItWorks from './components/HowItWorks';
 import StatsSection from './components/StatsSection';
@@ -78,9 +78,8 @@ export default function HomePage() {
       <section className="relative pt-32 pb-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium mb-8">
-              <Sparkles className="w-4 h-4" />
-              {language === "en" ? "AI-Powered Vedic Astrology" : "AI-संचालित वैदिक ज्योतिष"}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium mb-8 animate-glow">
+              {language === "en" ? "✨ 2026 Cosmic Predictions Live" : "✨ 2026 कॉस्मिक भविष्यवाणियाँ लाइव"}
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-[var(--text-primary)] mb-6 leading-tight">{t.hero.title}</h1>
             <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10">{t.hero.subtitle}</p>
