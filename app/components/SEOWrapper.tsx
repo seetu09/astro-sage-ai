@@ -1,14 +1,14 @@
 "use client";
 import React from 'react';
 
-// 1. The Helper Function (Needed by your layouts)
+// 1. The Helper Function (Fixed with optional parameters)
 export function generatePageMetadata({ 
-  title, 
-  description, 
+  title = "AstroVeda", 
+  description = "AI-powered Vedic Astrology", 
   path 
 }: { 
-  title: string; 
-  description: string; 
+  title?: string; 
+  description?: string; 
   path: string; 
 }) {
   return {
@@ -28,7 +28,7 @@ export function generatePageMetadata({
   };
 }
 
-// 2. The Component (Needed by your pages)
+// 2. The Component
 interface SEOWrapperProps {
   children: React.ReactNode;
   title?: string;
