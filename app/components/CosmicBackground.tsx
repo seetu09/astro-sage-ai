@@ -139,7 +139,7 @@ export default function CosmicBackground() {
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.0015,
           // FIX: day opacity raised from 0.03–0.08 to 0.12–0.22
-          opacity: Math.random() * (isDark ? 0.08 : 0.10) + (isDark ? 0.05 : 0.12),
+          opacity: Math.random() * (isDark ? 0.08 : 0.10) + (isDark ? 0.05 : 0.10),
           type: types[i % types.length],
         });
       }
