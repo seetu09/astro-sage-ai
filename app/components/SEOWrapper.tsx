@@ -1,7 +1,18 @@
-"use client";
 import React from 'react';
 
-// 1. The Helper Function (Fixed with optional parameters)
+interface SEOWrapperProps {
+  children: React.ReactNode;
+  title?: string;
+  description?: string;
+  canonical?: string;
+}
+
+export default function SEOWrapper({ children }: SEOWrapperProps) {
+  return <>{children}</>;
+}
+
+// Keep the export for the function here but remove "use client" 
+// so layouts can use it during build time.
 export function generatePageMetadata({ 
   title = "AstroVeda", 
   description = "AI-powered Vedic Astrology", 
@@ -26,22 +37,4 @@ export function generatePageMetadata({
       type: 'website',
     },
   };
-}
-
-// 2. The Component
-interface SEOWrapperProps {
-  children: React.ReactNode;
-  title?: string;
-  description?: string;
-  canonical?: string;
-}
-
-export default function SEOWrapper({ 
-  children 
-}: SEOWrapperProps) {
-  return (
-    <>
-      {children}
-    </>
-  );
 }
