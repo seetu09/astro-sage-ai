@@ -48,14 +48,14 @@ export default function ZodiacSelector() {
           key={sign.slug} 
           href={`/horoscope/${sign.slug}`}
           className={`flex flex-col items-center p-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border ${
-            theme === 'dark'
+            String(theme) === 'dark' // Fixed the type comparison here
               ? 'bg-slate-800/40 border-slate-700 hover:border-purple-500 text-white'
               : 'bg-white border-orange-100 hover:border-orange-400 text-slate-800 shadow-sm'
           }`}
         >
           <span className="text-4xl mb-2">{sign.icon}</span>
           <span className="font-bold text-sm">{sign.name}</span>
-          <span className={`text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[10px] ${String(theme) === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
             {sign.date}
           </span>
         </Link>
