@@ -27,6 +27,9 @@ export default function Navbar() {
   ];
 
   const moreLinks = [
+    { href: "/horoscope", label: "Horoscope" },
+    { href: "/tarot", label: "Tarot" },
+    { href: "/dosha-checker", label: "Dosha Checker" },
     { href: "/blog", label: t.nav.blog },
     { href: "/store", label: t.nav.store },
     { href: "/social", label: t.nav.social },
