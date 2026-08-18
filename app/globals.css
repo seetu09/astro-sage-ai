@@ -136,6 +136,10 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .animate-glow {
+    animation: glow 3.2s ease-in-out infinite alternate;
+  }
+
+  .dark .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
   }
 }
@@ -158,6 +162,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes twinkle-dark {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
 }
@@ -166,7 +175,11 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   background: var(--accent-light);
   border-radius: 50%;
-  animation: twinkle 3s ease-in-out infinite;
+  animation: twinkle 4.5s ease-in-out infinite;
+}
+
+.dark .star {
+  animation: twinkle-dark 3s ease-in-out infinite;
 }
 
 .hindi-text {
@@ -208,7 +221,12 @@ h1, h2, h3, h4, h5, h6 {
     radial-gradient(1px 1px at 350px 70px, var(--accent-light), transparent);
   background-repeat: repeat;
   background-size: 400px 120px;
-  opacity: 0.4;
+  opacity: 0.25;
   pointer-events: none;
-  animation: twinkle 4s ease-in-out infinite;
+  animation: twinkle 8s ease-in-out infinite;
+}
+
+.dark .cosmic-bg::before {
+  opacity: 0.4;
+  animation: twinkle-dark 4s ease-in-out infinite;
 }

@@ -77,19 +77,17 @@ export default function CosmicBackground() {
 
     const createParticles = () => {
       particles = [];
-      // FIX: more particles in day mode
-      const count = Math.min(isDark ? 80 : 90, Math.floor((canvas.width * canvas.height) / 25000));
+      const count = Math.min(isDark ? 80 : 70, Math.floor((canvas.width * canvas.height) / 25000));
 
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * (isDark ? 2.5 : 2.5) + 0.5,
+          size: Math.random() * (isDark ? 2.5 : 2.2) + 0.5,
           speedX: (Math.random() - 0.5) * 0.15,
           speedY: (Math.random() - 0.5) * 0.15,
-          // FIX: day opacity raised from 0.1–0.5 to 0.35–0.85
-          opacity: Math.random() * (isDark ? 0.6 : 0.5) + (isDark ? 0.2 : 0.35),
-          twinkleSpeed: Math.random() * 0.02 + 0.005,
+          opacity: Math.random() * (isDark ? 0.6 : 0.4) + (isDark ? 0.2 : 0.25),
+          twinkleSpeed: Math.random() * (isDark ? 0.02 : 0.012) + (isDark ? 0.005 : 0.003),
           twinklePhase: Math.random() * Math.PI * 2,
           type: Math.random() > 0.7 ? 'star' : 'dot',
         });
@@ -116,9 +114,8 @@ export default function CosmicBackground() {
           size: Math.random() * 50 + 40,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.002,
-          // FIX: day opacity raised from 0.04–0.10 to 0.18–0.32
-          opacity: Math.random() * (isDark ? 0.1 : 0.14) + (isDark ? 0.06 : 0.18),
-          pulseSpeed: Math.random() * 0.008 + 0.003,
+          opacity: Math.random() * (isDark ? 0.1 : 0.10) + (isDark ? 0.06 : 0.12),
+          pulseSpeed: Math.random() * (isDark ? 0.008 : 0.005) + (isDark ? 0.003 : 0.002),
           pulsePhase: Math.random() * Math.PI * 2,
           color: data.color,
           petals: data.petals,
@@ -138,8 +135,7 @@ export default function CosmicBackground() {
           size: Math.random() * 100 + 70,
           rotation: Math.random() * Math.PI * 2,
           rotationSpeed: (Math.random() - 0.5) * 0.0015,
-          // FIX: day opacity raised from 0.03–0.08 to 0.12–0.22
-          opacity: Math.random() * (isDark ? 0.08 : 0.10) + (isDark ? 0.05 : 0.10),
+          opacity: Math.random() * (isDark ? 0.08 : 0.08) + (isDark ? 0.05 : 0.07),
           type: types[i % types.length],
         });
       }
@@ -406,10 +402,9 @@ export default function CosmicBackground() {
         if (p.y > canvas.height) p.y = 0;
 
         const twinkle = Math.sin(time * p.twinkleSpeed + p.twinklePhase);
-        // FIX: gentler twinkle floor in day mode so particles never vanish
         const currentOpacity = isDark
           ? p.opacity * (0.5 + 0.5 * twinkle)
-          : p.opacity * (0.7 + 0.3 * twinkle);
+          : p.opacity * (0.8 + 0.2 * twinkle);
 
         if (p.type === 'star') {
           drawStar(p.x, p.y, p.size * 1.5, currentOpacity);
@@ -424,7 +419,7 @@ export default function CosmicBackground() {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
           const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
-          gradient.addColorStop(0, `rgba(${colors.star}, ${currentOpacity * (isDark ? 0.4 : 0.25)})`);
+          gradient.addColorStop(0, `rgba(${colors.star}, ${currentOpacity * (isDark ? 0.4 : 0.18)})`);
           gradient.addColorStop(1, `rgba(${colors.star}, 0)`);
           ctx.fillStyle = gradient;
           ctx.fill();

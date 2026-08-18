@@ -1,64 +1,79 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useTheme } from '../context/ThemeContext';
 
 export default function WarmGlow() {
+  const { resolvedTheme, mounted } = useTheme();
+  const isDark = mounted ? resolvedTheme === 'night' : false;
+
+  const topOrbOpacity = isDark ? [0.15, 0.25, 0.15] : [0.10, 0.18, 0.10];
+  const topOrbDuration = isDark ? 8 : 12;
+  const topOrbBg = isDark
+    ? 'radial-gradient(circle, rgba(201, 120, 42, 0.4) 0%, rgba(232, 168, 92, 0.2) 40%, transparent 70%)'
+    : 'radial-gradient(circle, rgba(201, 120, 42, 0.28) 0%, rgba(232, 168, 92, 0.14) 40%, transparent 70%)';
+
+  const bottomOrbOpacity = isDark ? [0.10, 0.20, 0.10] : [0.07, 0.14, 0.07];
+  const bottomOrbDuration = isDark ? 10 : 15;
+  const bottomOrbBg = isDark
+    ? 'radial-gradient(circle, rgba(201, 120, 42, 0.3) 0%, rgba(232, 168, 92, 0.15) 40%, transparent 70%)'
+    : 'radial-gradient(circle, rgba(201, 120, 42, 0.22) 0%, rgba(232, 168, 92, 0.10) 40%, transparent 70%)';
+
+  const centerGlowOpacity = isDark ? [0.05, 0.10, 0.05] : [0.03, 0.06, 0.03];
+  const centerGlowDuration = isDark ? 6 : 9;
+  const centerGlowBg = isDark
+    ? 'radial-gradient(circle, rgba(201, 120, 42, 0.2) 0%, transparent 60%)'
+    : 'radial-gradient(circle, rgba(201, 120, 42, 0.14) 0%, transparent 60%)';
+
+  const gridOpacity = isDark ? 0.02 : 0.012;
+
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* Top-right warm orb */}
       <motion.div
         animate={{
           scale: [1, 1.2, 1],
-          opacity: [0.15, 0.25, 0.15],
+          opacity: topOrbOpacity,
         }}
         transition={{
-          duration: 8,
+          duration: topOrbDuration,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
         className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(201, 120, 42, 0.4) 0%, rgba(232, 168, 92, 0.2) 40%, transparent 70%)',
-        }}
+        style={{ background: topOrbBg }}
       />
 
-      {/* Bottom-left warm orb */}
       <motion.div
         animate={{
           scale: [1.2, 1, 1.2],
-          opacity: [0.1, 0.2, 0.1],
+          opacity: bottomOrbOpacity,
         }}
         transition={{
-          duration: 10,
+          duration: bottomOrbDuration,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
         className="absolute -bottom-60 -left-60 w-[600px] h-[600px] rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(201, 120, 42, 0.3) 0%, rgba(232, 168, 92, 0.15) 40%, transparent 70%)',
-        }}
+        style={{ background: bottomOrbBg }}
       />
 
-      {/* Center subtle glow */}
       <motion.div
         animate={{
-          opacity: [0.05, 0.1, 0.05],
+          opacity: centerGlowOpacity,
         }}
         transition={{
-          duration: 6,
+          duration: centerGlowDuration,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(201, 120, 42, 0.2) 0%, transparent 60%)',
-        }}
+        style={{ background: centerGlowBg }}
       />
 
-      {/* Subtle grid pattern overlay */}
       <div
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0"
         style={{
+          opacity: gridOpacity,
           backgroundImage: `
             linear-gradient(rgba(201, 120, 42, 0.3) 1px, transparent 1px),
             linear-gradient(90deg, rgba(201, 120, 42, 0.3) 1px, transparent 1px)
