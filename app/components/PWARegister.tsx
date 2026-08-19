@@ -59,14 +59,14 @@ export default function PWARegister() {
   if (!showInstall || isInstalled) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 bg-white rounded-xl shadow-2xl border border-amber-200 p-4 animate-slide-up">
+    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 bg-white dark:bg-[#121026] rounded-xl shadow-2xl border border-amber-200 dark:border-white/10 p-4 animate-slide-up">
       <div className="flex items-start gap-3">
-        <div className="bg-amber-100 p-2 rounded-lg shrink-0">
-          <Smartphone className="w-5 h-5 text-amber-700" />
+        <div className="bg-amber-100 dark:bg-[#FFD166]/20 p-2 rounded-lg shrink-0">
+          <Smartphone className="w-5 h-5 text-amber-700 dark:text-[#FFD166]" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-amber-900 text-sm">Add AstroVeda to Home Screen</h3>
-          <p className="text-xs text-amber-700 mt-1">Get instant access to your cosmic guidance</p>
+          <h3 className="font-semibold text-amber-900 dark:text-[#F3F4F6] text-sm">Add AstroVeda to Home Screen</h3>
+          <p className="text-xs text-amber-700 dark:text-[#9CA3AF] mt-1">Get instant access to your cosmic guidance</p>
           <button
             onClick={handleInstall}
             className="mt-2 flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
@@ -77,7 +77,7 @@ export default function PWARegister() {
         </div>
         <button
           onClick={() => setShowInstall(false)}
-          className="text-amber-400 hover:text-amber-600 transition-colors"
+          className="text-amber-400 dark:text-[#6B7280] hover:text-amber-600 dark:hover:text-[#F3F4F6] transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

@@ -199,7 +199,7 @@ export default function PaymentButton({
         </button>
         
         {!scriptLoaded && !error && (
-          <p className="mt-2 text-center text-xs text-slate-400">
+          <p className="mt-2 text-center text-xs text-slate-400 dark:text-[#6B7280]">
             Loading payment system...
           </p>
         )}

@@ -213,19 +213,19 @@ export default function KundliPDF({
 
   if (!isPaid) {
     return (
-      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-8 text-center mt-8">
-        <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <FileText className="w-8 h-8 text-amber-600" />
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-[#FFD166]/10 dark:to-[#7B2CBF]/10 border border-amber-200 dark:border-[#FFD166]/20 rounded-2xl p-8 text-center mt-8">
+        <div className="w-16 h-16 bg-amber-100 dark:bg-[#FFD166]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <FileText className="w-8 h-8 text-amber-600 dark:text-[#FFD166]" />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-[#F3F4F6] mb-2">
           Get Your Detailed Kundli Report
         </h3>
-        <p className="text-gray-600 mb-4 max-w-md mx-auto text-sm">
+        <p className="text-gray-600 dark:text-[#9CA3AF] mb-4 max-w-md mx-auto text-sm">
           Unlock your complete Vedic birth chart analysis with planetary positions, 
           dasha periods, yogas, doshas, gemstones, and personalized predictions.
         </p>
 
-        <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 mb-6 max-w-sm mx-auto">
+        <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 dark:text-[#9CA3AF] mb-6 max-w-sm mx-auto">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4 text-green-500" />
             <span>15+ Pages</span>
@@ -246,9 +246,9 @@ export default function KundliPDF({
 
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-3">
-            <span className="text-3xl font-bold text-amber-600">Rs. 49</span>
-            <span className="text-sm text-gray-400 line-through">Rs. 199</span>
-            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">75% OFF</span>
+            <span className="text-3xl font-bold text-amber-600 dark:text-[#FFD166]">Rs. 49</span>
+            <span className="text-sm text-gray-400 dark:text-[#6B7280] line-through">Rs. 199</span>
+            <span className="bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 text-xs font-bold px-2 py-1 rounded-full">75% OFF</span>
           </div>
 
           {/* ✅ FIXED: amount changed from 4900 to 49, added userName */}
@@ -262,7 +262,7 @@ export default function KundliPDF({
             onFailure={() => alert("Payment failed. Please try again.")}
           />
 
-          <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+          <p className="text-xs text-gray-400 dark:text-[#6B7280] mt-2 flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
             Secure payment via Razorpay | UPI, Cards, Net Banking
           </p>
@@ -273,10 +273,10 @@ export default function KundliPDF({
 
   return (
     <div className="mt-8 space-y-6">
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-        <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-        <p className="text-green-700 font-semibold">Payment Successful!</p>
-        <p className="text-green-600 text-sm">Your detailed Kundli report is ready</p>
+      <div className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-xl p-4 text-center">
+        <CheckCircle className="w-8 h-8 text-green-500 dark:text-green-400 mx-auto mb-2" />
+        <p className="text-green-700 dark:text-green-400 font-semibold">Payment Successful!</p>
+        <p className="text-green-600 dark:text-green-500 text-sm">Your detailed Kundli report is ready</p>
       </div>
 
       <div className="text-center">

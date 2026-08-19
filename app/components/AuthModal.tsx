@@ -160,7 +160,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <>
               <button
                 onClick={handleGoogle}
-                className="w-full py-3 mb-4 bg-white/5 border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] font-medium hover:bg-white/10 transition-all flex items-center justify-center gap-3"
+                className="w-full py-3 mb-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] font-medium hover:bg-[var(--hover-bg)] transition-all flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

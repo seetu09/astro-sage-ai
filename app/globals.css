@@ -4,6 +4,14 @@
 
 :root {
   /* Golden Vedic Theme (Light) */
+  /* Semantic tokens (shadcn-style aliases) */
+  --background: #FBF6E9;
+  --foreground: #5C3A21;
+  --muted: rgba(255, 250, 235, 0.65);
+  --muted-foreground: #8B6F47;
+  --card: #FFFDF6;
+  --card-foreground: #5C3A21;
+
   --bg-primary: #FBF6E9;
   --bg-secondary: rgba(255, 250, 235, 0.65);
   --bg-card: #FFFDF6;
@@ -27,6 +35,14 @@
 
 .dark {
   /* Deep Space Dark (Night Celestial Theme) */
+  /* Semantic tokens (shadcn-style aliases) */
+  --background: #080811;
+  --foreground: #f3f4f6;
+  --muted: rgba(18, 16, 38, 0.7);
+  --muted-foreground: #9ca3af;
+  --card: rgba(18, 16, 38, 0.7);
+  --card-foreground: #f3f4f6;
+
   --bg-primary: #080811;
   --bg-secondary: rgba(18, 16, 38, 0.7);
   --bg-card: rgba(18, 16, 38, 0.7);

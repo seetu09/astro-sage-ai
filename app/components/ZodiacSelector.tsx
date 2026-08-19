@@ -48,15 +48,11 @@ export default function ZodiacSelector() {
         <Link 
           key={sign.slug} 
           href={`/horoscope/${sign.slug}`}
-          className={`flex flex-col items-center p-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border ${
-            isDark
-              ? 'bg-slate-800/40 border-slate-700 hover:border-purple-500 text-white'
-              : 'bg-[#FFFDF6] border-amber-200/60 hover:border-amber-400 text-amber-900 shadow-sunlit-soft hover:shadow-md'
-          }`}
+          className="flex flex-col items-center p-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border bg-[var(--bg-card)] border-[var(--border-color)] hover:border-amber-400 dark:hover:border-[#FFD166] text-[var(--text-primary)] shadow-sunlit-soft dark:shadow-none hover:shadow-md"
         >
           <span className="text-4xl mb-2">{sign.icon}</span>
           <span className="font-bold text-sm">{sign.name}</span>
-          <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-amber-800/60'}`}>
+          <span className="text-[10px] text-[var(--text-secondary)]">
             {sign.date}
           </span>
         </Link>

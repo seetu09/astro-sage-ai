@@ -269,8 +269,8 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={<div className="fixed inset-x-0 bottom-0 top-14 sm:top-16 flex items-center justify-center bg-[#080811]">
-      <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+    <Suspense fallback={<div className="fixed inset-x-0 bottom-0 top-14 sm:top-16 flex items-center justify-center bg-[var(--bg-primary)]">
+      <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
         <Loader2 className="w-4 h-4 animate-spin" />
         Loading...
       </div>
