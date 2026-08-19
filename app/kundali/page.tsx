@@ -94,7 +94,7 @@ export default function KundaliPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-[#080811]">
+    <div className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-[#F8F7FC] dark:bg-[#080811]">
       <div className="max-w-4xl mx-auto px-4 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
         {!showResult ? (
           <motion.div
@@ -103,20 +103,20 @@ export default function KundaliPage() {
             className="max-w-lg mx-auto"
           >
             <div className="text-center mb-6 sm:mb-8">
-              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#FFD166]/20 to-[#E0A96D]/20 mb-3 sm:mb-4">
-                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-[#FFD166]" />
+              <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/20 dark:to-[#E0A96D]/20 mb-3 sm:mb-4">
+                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-violet-700 dark:text-[#FFD166]" />
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#F3F4F6] mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
                 Generate Your Kundli
               </h1>
-              <p className="text-sm sm:text-base text-[#9CA3AF] px-2">
+              <p className="text-sm sm:text-base text-slate-500 dark:text-[#9CA3AF] px-2">
                 Enter your birth details to generate a personalized Vedic birth chart with planetary positions and insights.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 glass-card p-4 sm:p-6 lg:p-8">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-[#9CA3AF] mb-1">Full Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Full Name</label>
                 <input
                   type="text"
                   value={name}
@@ -128,7 +128,7 @@ export default function KundaliPage() {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-[#9CA3AF] mb-1">Email Address</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Email Address</label>
                 <input
                   type="email"
                   value={email}
@@ -141,29 +141,29 @@ export default function KundaliPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#9CA3AF] mb-1">Date of Birth</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Date of Birth</label>
                   <input
                     type="date"
                     value={dateOfBirth}
                     onChange={(e) => setDateOfBirth(e.target.value)}
-                    className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm [color-scheme:dark]"
+                    className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm [color-scheme:light] dark:[color-scheme:dark]"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#9CA3AF] mb-1">Time of Birth</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Time of Birth</label>
                   <input
                     type="time"
                     value={timeOfBirth}
                     onChange={(e) => setTimeOfBirth(e.target.value)}
-                    className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm [color-scheme:dark]"
+                    className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm [color-scheme:light] dark:[color-scheme:dark]"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-[#9CA3AF] mb-1">Place of Birth</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Place of Birth</label>
                 <input
                   type="text"
                   value={placeOfBirth}
@@ -176,7 +176,7 @@ export default function KundaliPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-[#FFD166] to-[#E0A96D] text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-glow-gold transition-all mt-2"
+                className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all mt-2"
               >
                 Generate Kundli
               </button>
@@ -191,7 +191,7 @@ export default function KundaliPage() {
             {/* Back Button */}
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-sm text-[#9CA3AF] hover:text-[#F3F4F6] transition-colors"
+              className="flex items-center gap-2 text-sm text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-700 dark:hover:text-[#F3F4F6] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Form
@@ -199,10 +199,10 @@ export default function KundaliPage() {
 
             {/* Header */}
             <div className="text-center">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-[#F3F4F6] mb-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
                 Your Birth Chart
               </h1>
-              <p className="text-xs sm:text-sm text-[#9CA3AF]">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
                 Generated for {kundliData?.name}
               </p>
             </div>
@@ -219,8 +219,8 @@ export default function KundaliPage() {
                 { label: 'Nakshatra', value: kundliData?.nakshatra },
               ].map((item) => (
                 <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
-                  <p className="text-[10px] sm:text-xs text-[#6B7280] uppercase tracking-wide">{item.label}</p>
-                  <p className="text-sm sm:text-base font-semibold text-[#F3F4F6] mt-0.5 truncate">{item.value}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>
+                  <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">{item.value}</p>
                 </div>
               ))}
             </div>
@@ -243,27 +243,27 @@ export default function KundaliPage() {
 
             {/* Planetary Table */}
             <div className="glass-card rounded-xl overflow-hidden">
-              <div className="px-3 sm:px-4 py-3 border-b border-white/10">
-                <h3 className="text-sm sm:text-base font-semibold text-[#F3F4F6]">Planetary Positions</h3>
+              <div className="px-3 sm:px-4 py-3 border-b border-slate-200/60 dark:border-white/10">
+                <h3 className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6]">Planetary Positions</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[500px]">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.03]">
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-[#6B7280]">Planet</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-[#6B7280]">Sign</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-[#6B7280]">House</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-[#6B7280]">Degree</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-[#6B7280]">Status</th>
+                    <tr className="border-b border-slate-200/60 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.03]">
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Planet</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Sign</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">House</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Degree</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {kundliData?.planets.map((planet, i) => (
-                      <tr key={i} className="border-b border-white/10 last:border-0 hover:bg-white/[0.03] transition-colors">
-                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-[#F3F4F6]">{planet.name}</td>
-                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-[#9CA3AF]">{planet.sign}</td>
-                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-[#9CA3AF]">{planet.house}</td>
-                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-[#9CA3AF]">{planet.degree.toFixed(1)}°</td>
+                      <tr key={i} className="border-b border-slate-200/60 dark:border-white/10 last:border-0 hover:bg-slate-50/50 dark:hover:bg-white/[0.03] transition-colors">
+                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-indigo-950 dark:text-[#F3F4F6]">{planet.name}</td>
+                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{planet.sign}</td>
+                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{planet.house}</td>
+                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{planet.degree.toFixed(1)}°</td>
                         <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
                             planet.status === 'Retrograde'
@@ -284,7 +284,7 @@ export default function KundaliPage() {
             <div className="flex justify-center pt-2">
               <button
                 onClick={() => setShowPDF(true)}
-                className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#FFD166] to-[#E0A96D] text-[#080811] text-sm sm:text-base font-medium rounded-xl hover:shadow-glow-gold transition-all"
+                className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-medium rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
               >
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                 Download PDF Report

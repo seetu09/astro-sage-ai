@@ -40,6 +40,7 @@ export default function ZodiacSelector() {
   const { language } = useLanguage();
   
   const signs = language === 'hi' ? zodiacData.hi : zodiacData.en;
+  const isDark = theme === 'night';
 
   return (
     <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
@@ -48,14 +49,14 @@ export default function ZodiacSelector() {
           key={sign.slug} 
           href={`/horoscope/${sign.slug}`}
           className={`flex flex-col items-center p-4 rounded-2xl transition-all hover:scale-105 active:scale-95 border ${
-            String(theme) === 'dark' // Fixed the type comparison here
+            isDark
               ? 'bg-slate-800/40 border-slate-700 hover:border-purple-500 text-white'
-              : 'bg-white border-orange-100 hover:border-orange-400 text-slate-800 shadow-sm'
+              : 'bg-white border-slate-200/60 hover:border-violet-400 text-slate-800 shadow-sunlit-soft hover:shadow-md'
           }`}
         >
           <span className="text-4xl mb-2">{sign.icon}</span>
           <span className="font-bold text-sm">{sign.name}</span>
-          <span className={`text-[10px] ${String(theme) === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             {sign.date}
           </span>
         </Link>

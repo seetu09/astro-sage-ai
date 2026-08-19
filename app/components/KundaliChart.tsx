@@ -84,13 +84,13 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="relative bg-[#0D0C1D] border border-white/10 rounded-2xl p-4 sm:p-6 shadow-glow-violet">
+      <div className="relative bg-white dark:bg-[#0D0C1D] border border-slate-200/60 dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-sunlit-soft dark:shadow-glow-violet">
         {/* Chart Title */}
         <div className="text-center mb-4">
-          <h3 className="text-sm font-serif font-semibold text-[#FFD166] tracking-wide">
+          <h3 className="text-sm font-serif font-semibold text-indigo-900 dark:text-[#FFD166] tracking-wide">
             Vedic Birth Chart
           </h3>
-          <p className="text-xs text-[#6B7280] mt-0.5">
+          <p className="text-xs text-slate-400 dark:text-[#6B7280] mt-0.5">
             North Indian Style • Lagna: {ascendant}
           </p>
         </div>
@@ -99,10 +99,10 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
         <div className="relative">
           {/* Diamond center */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rotate-45 border-2 border-[#FFD166]/40 bg-[#121026]/50 backdrop-blur-sm flex items-center justify-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rotate-45 border-2 border-indigo-300/60 dark:border-[#FFD166]/40 bg-white/90 dark:bg-[#121026]/50 backdrop-blur-sm flex items-center justify-center">
               <div className="-rotate-45 text-center">
-                <p className="text-[10px] text-[#6B7280]">Lagna</p>
-                <p className="text-lg text-[#FFD166]">{RASHI_SYMBOLS[ascIndex]}</p>
+                <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Lagna</p>
+                <p className="text-lg text-indigo-700 dark:text-[#FFD166]">{RASHI_SYMBOLS[ascIndex]}</p>
               </div>
             </div>
           </div>
@@ -112,17 +112,17 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
             {houses.map((house) => (
               <div
                 key={house.houseNumber}
-                className={`${getHousePosition(house.houseNumber)} relative border border-[#FFD166]/20 bg-[#121026]/40 hover:bg-[#7B2CBF]/20 transition-colors cursor-pointer min-h-[80px] sm:min-h-[100px] p-1.5 sm:p-2`}
+                className={`${getHousePosition(house.houseNumber)} relative border border-slate-200 dark:border-[#FFD166]/20 bg-slate-50/80 dark:bg-[#121026]/40 hover:bg-indigo-50 dark:hover:bg-[#7B2CBF]/20 transition-colors cursor-pointer min-h-[80px] sm:min-h-[100px] p-1.5 sm:p-2 rounded-lg`}
                 onMouseEnter={() => setHoveredHouse(house)}
                 onMouseLeave={() => setHoveredHouse(null)}
               >
                 {/* House number */}
-                <span className="absolute top-1 left-1 text-[9px] sm:text-[10px] text-[#6B7280] font-medium">
+                <span className="absolute top-1 left-1 text-[9px] sm:text-[10px] text-slate-400 dark:text-[#6B7280] font-normal">
                   {house.houseNumber}
                 </span>
 
                 {/* Rashi symbol */}
-                <span className="absolute top-1 right-1 text-[10px] sm:text-xs text-[#4CC9F0]/70">
+                <span className="absolute top-1 right-1 text-[10px] sm:text-xs text-indigo-400 dark:text-[#4CC9F0]/70">
                   {house.rashiSymbol}
                 </span>
 
@@ -131,7 +131,7 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
                   {house.planets.map((planet) => (
                     <span
                       key={planet.symbol}
-                      className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-[#FFD166]/20 to-[#E0A96D]/10 border border-[#FFD166]/30 text-[9px] sm:text-[10px] font-semibold text-[#FFD166] shadow-glow-gold"
+                      className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-100 dark:bg-gradient-to-br dark:from-[#FFD166]/20 dark:to-[#E0A96D]/10 dark:border-[#FFD166]/30 dark:text-[#FFD166] dark:shadow-glow-gold text-[9px] sm:text-[10px] font-semibold"
                       title={`${planet.name} • ${planet.rashi} • ${planet.degree.toFixed(1)}°`}
                     >
                       {planet.symbol}
@@ -145,12 +145,12 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
 
         {/* Hover Info Panel */}
         {hoveredHouse && (
-          <div className="mt-4 p-3 bg-[#121026]/90 backdrop-blur-xl border border-[#FFD166]/20 rounded-xl animate-fade-in">
+          <div className="mt-4 p-3 bg-white/90 dark:bg-[#121026]/90 backdrop-blur-xl border border-slate-200/60 dark:border-[#FFD166]/20 rounded-xl animate-fade-in shadow-sunlit-soft dark:shadow-none">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-[#FFD166]">
+              <p className="text-xs font-semibold text-indigo-900 dark:text-[#FFD166]">
                 House {hoveredHouse.houseNumber}
               </p>
-              <p className="text-xs text-[#4CC9F0]">
+              <p className="text-xs text-indigo-500 dark:text-[#4CC9F0]">
                 {hoveredHouse.rashiSymbol} {hoveredHouse.rashi}
               </p>
             </div>
@@ -158,17 +158,17 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
               <div className="space-y-1">
                 {hoveredHouse.planets.map((planet) => (
                   <div key={planet.symbol} className="flex items-center justify-between text-xs">
-                    <span className="text-[#F3F4F6] font-medium">
+                    <span className="text-slate-800 dark:text-[#F3F4F6] font-medium">
                       {planet.symbol} {planet.name}
                     </span>
-                    <span className="text-[#9CA3AF]">
+                    <span className="text-slate-500 dark:text-[#9CA3AF]">
                       {planet.rashi} • {planet.degree.toFixed(1)}°
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-[#6B7280]">No planets in this house</p>
+              <p className="text-xs text-slate-400 dark:text-[#6B7280]">No planets in this house</p>
             )}
           </div>
         )}
@@ -178,9 +178,9 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
           {planets.map((planet) => (
             <span
               key={planet.symbol}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/[0.03] border border-white/10 text-[10px] text-[#9CA3AF]"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/10 text-[10px] text-slate-500 dark:text-[#9CA3AF]"
             >
-              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-[#FFD166] to-[#E0A96D]" />
+              <span className="w-3 h-3 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-[#FFD166] dark:to-[#E0A96D]" />
               {planet.symbol}
             </span>
           ))}
