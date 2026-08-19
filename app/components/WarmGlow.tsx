@@ -10,19 +10,19 @@ export default function WarmGlow() {
   const topOrbOpacity = isDark ? [0.15, 0.25, 0.15] : [0.10, 0.18, 0.10];
   const topOrbDuration = isDark ? 8 : 12;
   const topOrbBg = isDark
-    ? 'radial-gradient(circle, rgba(201, 120, 42, 0.4) 0%, rgba(232, 168, 92, 0.2) 40%, transparent 70%)'
+    ? 'radial-gradient(circle, rgba(123, 44, 191, 0.4) 0%, rgba(76, 201, 240, 0.2) 40%, transparent 70%)'
     : 'radial-gradient(circle, rgba(201, 120, 42, 0.28) 0%, rgba(232, 168, 92, 0.14) 40%, transparent 70%)';
 
   const bottomOrbOpacity = isDark ? [0.10, 0.20, 0.10] : [0.07, 0.14, 0.07];
   const bottomOrbDuration = isDark ? 10 : 15;
   const bottomOrbBg = isDark
-    ? 'radial-gradient(circle, rgba(201, 120, 42, 0.3) 0%, rgba(232, 168, 92, 0.15) 40%, transparent 70%)'
+    ? 'radial-gradient(circle, rgba(255, 209, 102, 0.3) 0%, rgba(224, 169, 109, 0.15) 40%, transparent 70%)'
     : 'radial-gradient(circle, rgba(201, 120, 42, 0.22) 0%, rgba(232, 168, 92, 0.10) 40%, transparent 70%)';
 
   const centerGlowOpacity = isDark ? [0.05, 0.10, 0.05] : [0.03, 0.06, 0.03];
   const centerGlowDuration = isDark ? 6 : 9;
   const centerGlowBg = isDark
-    ? 'radial-gradient(circle, rgba(201, 120, 42, 0.2) 0%, transparent 60%)'
+    ? 'radial-gradient(circle, rgba(123, 44, 191, 0.2) 0%, transparent 60%)'
     : 'radial-gradient(circle, rgba(201, 120, 42, 0.14) 0%, transparent 60%)';
 
   const gridOpacity = isDark ? 0.02 : 0.012;
@@ -75,8 +75,8 @@ export default function WarmGlow() {
         style={{
           opacity: gridOpacity,
           backgroundImage: `
-            linear-gradient(rgba(201, 120, 42, 0.3) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(201, 120, 42, 0.3) 1px, transparent 1px)
+            linear-gradient(rgba(255, 209, 102, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 209, 102, 0.3) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
         }}

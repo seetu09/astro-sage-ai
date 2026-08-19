@@ -63,11 +63,11 @@ export default function CosmicBackground() {
     // background — the old values (201,150,80 / 180,130,70) were nearly
     // invisible on cream.
     const colors = {
-      star: isDark ? '251, 191, 36' : '146, 64, 14',
-      glow: isDark ? '245, 158, 11' : '180, 83, 9',
-      line: isDark ? '180, 130, 70' : '120, 53, 15',
-      bgStart: isDark ? '#1a1209' : '#faf6f0',
-      bgEnd: isDark ? '#0f0a05' : '#faf6f0',
+      star: isDark ? '255, 209, 102' : '146, 64, 14',
+      glow: isDark ? '255, 209, 102' : '180, 83, 9',
+      line: isDark ? '224, 169, 109' : '120, 53, 15',
+      bgStart: isDark ? '#080811' : '#faf6f0',
+      bgEnd: isDark ? '#121026' : '#faf6f0',
     };
 
     const resize = () => {

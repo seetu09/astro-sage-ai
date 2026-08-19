@@ -3,45 +3,62 @@
 @tailwind utilities;
 
 :root {
-  /* Day mode (warm Vedic) */
-  --bg-primary: #faf6f0;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --text-primary: #451a03;
-  --text-secondary: #78350f;
-  --text-muted: #a16207;
-  --accent: #d97706;
-  --accent-light: #fbbf24;
+  /* Dark Celestial Theme (Deep Space Dark) */
+  --bg-primary: #080811;
+  --bg-secondary: rgba(18, 16, 38, 0.7);
+  --bg-card: rgba(18, 16, 38, 0.7);
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent: #ffd166;
+  --accent-light: #e0a96d;
   --accent-dark: #b45309;
-  --border: #fde68a;
-  --shadow: rgba(217, 119, 6, 0.1);
+  --accent-violet: #7b2cbf;
+  --accent-cyan: #4cc9f0;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --card-bg: rgba(18, 16, 38, 0.7);
+  --shadow: rgba(255, 209, 102, 0.15);
+  --glow: rgba(255, 209, 102, 0.25);
+  --bg-warm: #121026;
 }
 
 .dark {
-  /* Night mode (cosmic dark) */
-  --bg-primary: #0f0a05;
-  --bg-secondary: #1a1209;
-  --bg-card: #1e160d;
-  --text-primary: #fef3c7;
-  --text-secondary: #fde68a;
-  --text-muted: #d97706;
-  --accent: #f59e0b;
-  --accent-light: #fbbf24;
-  --accent-dark: #d97706;
-  --border: #3d2808;
-  --shadow: rgba(245, 158, 11, 0.15);
+  /* Same dark celestial theme (always dark) */
+  --bg-primary: #080811;
+  --bg-secondary: rgba(18, 16, 38, 0.7);
+  --bg-card: rgba(18, 16, 38, 0.7);
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent: #ffd166;
+  --accent-light: #e0a96d;
+  --accent-dark: #b45309;
+  --accent-violet: #7b2cbf;
+  --accent-cyan: #4cc9f0;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --card-bg: rgba(18, 16, 38, 0.7);
+  --shadow: rgba(255, 209, 102, 0.15);
+  --glow: rgba(255, 209, 102, 0.25);
+  --bg-warm: #121026;
 }
 
 /* Apply variables */
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+  background-image: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(120, 40, 200, 0.18), rgba(255, 255, 255, 0));
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cinzel', 'Cormorant Garamond', 'Playfair Display', serif;
 }
 
 @layer components {
@@ -50,6 +67,8 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid var(--border);
     border-radius: 16px;
     padding: 1.5rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     transition: all 0.3s ease;
   }
 
@@ -60,7 +79,7 @@ h1, h2, h3, h4, h5, h6 {
 
   .astro-button {
     background-color: var(--accent);
-    color: #ffffff;
+    color: #080811;
     padding: 0.75rem 1.5rem;
     border-radius: 12px;
     font-weight: 600;
@@ -68,17 +87,19 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .astro-button:hover {
-    background-color: var(--accent-hover);
-    box-shadow: 0 4px 16px var(--glow);
+    background-color: var(--accent-light);
+    box-shadow: 0 0 20px var(--glow);
   }
 
   .astro-input {
-    background-color: var(--bg-secondary);
+    background-color: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border);
     color: var(--text-primary);
     padding: 0.75rem 1rem;
     border-radius: 12px;
     outline: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     transition: all 0.3s ease;
   }
 
@@ -105,6 +126,43 @@ h1, h2, h3, h4, h5, h6 {
 
   .astro-bg-card {
     background-color: var(--bg-card);
+  }
+
+  /* Glassmorphism utility classes */
+  .glass {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .glass-card {
+    background: rgba(18, 16, 38, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 16px;
+  }
+
+  .glass-strong {
+    background: rgba(18, 16, 38, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border-radius: 16px;
+  }
+
+  /* Celestial glow helpers */
+  .text-glow-gold {
+    text-shadow: 0 0 20px rgba(255, 209, 102, 0.4);
+  }
+
+  .text-glow-violet {
+    text-shadow: 0 0 20px rgba(123, 44, 191, 0.5);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 20px rgba(76, 201, 240, 0.5);
   }
 
   .scrollbar-thin {
@@ -141,6 +199,10 @@ h1, h2, h3, h4, h5, h6 {
 
   .dark .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .bg-cosmic-radial {
+    background-image: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(120, 40, 200, 0.18), rgba(255, 255, 255, 0));
   }
 }
 

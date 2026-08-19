@@ -12,22 +12,26 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'auto',
+  theme: 'night',
   setTheme: () => {},
-  resolvedTheme: 'day',
+  resolvedTheme: 'night',
   mounted: false,
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('auto');
-  const [resolvedTheme, setResolvedTheme] = useState<'day' | 'night'>('day');
+  const [theme, setThemeState] = useState<Theme>('night');
+  const [resolvedTheme, setResolvedTheme] = useState<'day' | 'night'>('night');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Always default to night (dark celestial) theme
     const saved = localStorage.getItem('astroveda-theme') as Theme;
     if (saved && ['day', 'night', 'auto'].includes(saved)) {
       setThemeState(saved);
+    } else {
+      setThemeState('night');
+      localStorage.setItem('astroveda-theme', 'night');
     }
   }, []);
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'next/navigation';
 import { Send, User, Bot, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import EmptyState from '@/app/components/EmptyState';
@@ -39,8 +40,9 @@ function getMockResponse(lang: string): string {
   return responses[Math.floor(Math.random() * responses.length)];
 }
 
-export default function ChatPage() {
+function ChatContent() {
   const { language, t } = useLanguage();
+  const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +60,27 @@ export default function ChatPage() {
     }, 800);
     return () => clearTimeout(timer);
   }, [t.chat.welcome]);
+
+  // Handle pre-filled question from HeroSection omni-search
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setInput(q);
+      // Auto-send the question after welcome message loads
+      const timer = setTimeout(() => {
+        setInput(q);
+        const userMessage: Message = { id: Date.now().toString(), role: 'user', content: q, timestamp: new Date() };
+        setMessages((prev) => [...prev, userMessage]);
+        setIsLoading(true);
+        setTimeout(() => {
+          const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
+          setMessages((prev) => [...prev, assistantMessage]);
+          setIsLoading(false);
+        }, 1500);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, language]);
 
   // Scroll within the messages container only — never scroll the page
   useEffect(() => {
@@ -241,5 +264,18 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="fixed inset-x-0 bottom-0 top-14 sm:top-16 flex items-center justify-center bg-[#080811]">
+      <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        Loading...
+      </div>
+    </div>}>
+      <ChatContent />
+    </Suspense>
   );
 }

@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useLanguage } from "./context/LanguageContext";
 import { motion } from "framer-motion";
 import { MessageCircle, Scroll, Star, Heart, Calendar, Users } from "lucide-react";
+import HeroSection from './components/HeroSection';
 import LiveDemo from './components/LiveDemo';
 import HowItWorks from './components/HowItWorks';
 import StatsSection from './components/StatsSection';
 import KundaliPreview from './components/KundaliPreview';
 import Testimonials from './components/Testimonials';
-import { Metadata } from "next";
 
 export default function HomePage() {
   const { t, language } = useLanguage();
@@ -74,26 +74,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative pt-32 pb-20 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm font-medium mb-8 animate-glow">
-              {language === "en" ? "✨ 2026 Cosmic Predictions Live" : "✨ 2026 कॉस्मिक भविष्यवाणियाँ लाइव"}
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-[var(--text-primary)] mb-6 leading-tight">{t.hero.title}</h1>
-            <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10">{t.hero.subtitle}</p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/kundali" className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/25">
-                {t.hero.ctaPrimary}
-              </Link>
-              <Link href="/chat" className="px-8 py-4 border border-[var(--border-color)] text-[var(--text-primary)] font-semibold rounded-xl hover:bg-[var(--hover-bg)] transition-all">
-                {t.hero.ctaSecondary}
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* ===== HERO SECTION WITH OMNI-SEARCH ===== */}
+      <HeroSection />
 
       {/* ===== LIVE DEMO ===== */}
       <LiveDemo />
@@ -114,10 +96,10 @@ export default function HomePage() {
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#F3F4F6] mb-4">
               {language === "en" ? "Explore the Cosmos" : "ब्रह्मांड का अन्वेषण करें"}
             </h2>
-            <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
+            <p className="text-lg text-[#9CA3AF] max-w-2xl mx-auto">
               {language === "en" ? "Discover tools and insights to navigate your spiritual journey." : "अपनी आध्यात्मिक यात्रा को नेविगेट करने के लिए उपकरण और अंतर्दृष्टि की खोज करें।"}
             </p>
           </motion.div>
@@ -125,12 +107,12 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <motion.div key={index} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-                <Link href={feature.href} className="block p-6 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl hover:border-amber-500/50 hover:bg-[var(--hover-bg)] transition-all group">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4 group-hover:bg-amber-500/20 transition-colors">
-                    <feature.icon className="w-6 h-6 text-amber-500" />
+                <Link href={feature.href} className="block p-6 bg-[#121026]/70 border border-white/10 rounded-2xl backdrop-blur-xl hover:border-[#FFD166]/50 hover:bg-[#121026]/90 transition-all group">
+                  <div className="w-12 h-12 rounded-xl bg-[#FFD166]/10 flex items-center justify-center mb-4 group-hover:bg-[#FFD166]/20 transition-colors">
+                    <feature.icon className="w-6 h-6 text-[#FFD166]" />
                   </div>
-                  <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{feature.title[language]}</h3>
-                  <p className="text-[var(--text-secondary)]">{feature.description[language]}</p>
+                  <h3 className="text-xl font-semibold text-[#F3F4F6] mb-2">{feature.title[language]}</h3>
+                  <p className="text-[#9CA3AF]">{feature.description[language]}</p>
                 </Link>
               </motion.div>
             ))}
@@ -141,18 +123,18 @@ export default function HomePage() {
       {/* ===== FINAL CTA ===== */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="p-12 bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 rounded-3xl">
-            <h2 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="p-12 bg-gradient-to-br from-[#FFD166]/10 to-[#7B2CBF]/10 border border-[#FFD166]/20 rounded-3xl backdrop-blur-xl">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#F3F4F6] mb-4">
               {language === "en" ? "Ready to Unlock Your Destiny?" : "अपनी नियति को अनलॉक करने के लिए तैयार हैं?"}
             </h2>
-            <p className="text-lg text-[var(--text-secondary)] mb-8">
+            <p className="text-lg text-[#9CA3AF] mb-8">
               {language === "en" ? "Start your journey today with a personalized horoscope reading or chat with our AI Guru." : "आज ही एक व्यक्तिगत राशिफल रीडिंग के साथ अपनी यात्रा शुरू करें या हमारे AI गुरु से चैट करें।"}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/chat" className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all">
+              <Link href="/chat" className="px-8 py-4 bg-gradient-to-r from-[#FFD166] to-[#E0A96D] text-[#080811] font-semibold rounded-xl hover:shadow-glow-gold transition-all">
                 {language === "en" ? "Chat with AI Guru" : "AI गुरु से चैट करें"}
               </Link>
-              <Link href="/daily-horoscope" className="px-8 py-4 border border-[var(--border-color)] text-[var(--text-primary)] font-semibold rounded-xl hover:bg-[var(--hover-bg)] transition-all">
+              <Link href="/daily-horoscope" className="px-8 py-4 border border-white/10 text-[#F3F4F6] font-semibold rounded-xl hover:bg-white/5 transition-all">
                 {language === "en" ? "View Daily Horoscope" : "दैनिक राशिफल देखें"}
               </Link>
             </div>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Cinzel, Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -12,12 +12,15 @@ import WarmGlow from "./components/WarmGlow";
 import InstallBanner from "./components/InstallBanner";
 
 const inter = Inter({ subsets: ["latin"] });
+const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"] });
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
+const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800"] });
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#d97706",
+  themeColor: "#080811",
 };
 
 export const metadata: Metadata = {
@@ -93,7 +96,7 @@ export const metadata: Metadata = {
     "apple-mobile-web-app-capable": "yes",
     "application-name": "AstroVeda",
     "apple-mobile-web-app-title": "AstroVeda",
-    "msapplication-TileColor": "#d97706",
+    "msapplication-TileColor": "#080811",
     "msapplication-TileImage": "/icons/icon-192x192.png",
   },
 };
@@ -124,7 +127,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className}`}>
         <ThemeProvider>
           <ErrorBoundary>
             <LanguageProvider>
