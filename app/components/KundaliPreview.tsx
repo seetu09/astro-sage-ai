@@ -30,17 +30,17 @@ export default function KundaliPreview() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             {/* Left: Text */}
             <div className="p-4 md:p-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 dark:bg-[#FFD166]/10 border border-violet-200/60 dark:border-[#FFD166]/20 mb-4">
-                <Star className="w-3 h-3 text-violet-700 dark:text-[#FFD166]" />
-                <span className="text-xs font-medium text-violet-700 dark:text-[#FFD166]">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-[#FFD166]/10 border border-amber-200/60 dark:border-[#FFD166]/20 mb-4">
+                <Star className="w-3 h-3 text-amber-700 dark:text-[#FFD166]" />
+                <span className="text-xs font-medium text-amber-700 dark:text-[#FFD166]">
                   {language === 'en' ? 'Kundali Generator' : 'कुंडली जनरेटर'}
                 </span>
               </div>
 
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-4">
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-4">
                 {title}
               </h2>
-              <p className="text-slate-500 dark:text-[#9CA3AF] mb-6 leading-relaxed">
+              <p className="text-amber-800/70 dark:text-[#9CA3AF] mb-6 leading-relaxed">
                 {subtitle}
               </p>
 
@@ -51,9 +51,9 @@ export default function KundaliPreview() {
                   language === 'en' ? 'Auspicious yogas & doshas' : 'शुभ योग और दोष',
                   language === 'en' ? 'PDF download & share' : 'PDF डाउनलोड और साझा करें',
                 ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm text-slate-500 dark:text-[#9CA3AF]">
-                    <div className="w-5 h-5 rounded-full bg-violet-50 dark:bg-[#FFD166]/20 flex items-center justify-center flex-shrink-0">
-                      <Sparkles className="w-3 h-3 text-violet-700 dark:text-[#FFD166]" />
+                  <li key={i} className="flex items-center gap-3 text-sm text-amber-800/70 dark:text-[#9CA3AF]">
+                    <div className="w-5 h-5 rounded-full bg-amber-50 dark:bg-[#FFD166]/20 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-3 h-3 text-amber-700 dark:text-[#FFD166]" />
                     </div>
                     {item}
                   </li>
@@ -62,12 +62,12 @@ export default function KundaliPreview() {
 
               <Link
                 href="/kundali"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
               >
                 <Sparkles className="w-4 h-4" />
                 {cta}
               </Link>
-              <p className="text-xs text-slate-400 dark:text-[#6B7280] mt-3">{hint}</p>
+              <p className="text-xs text-amber-700/60 dark:text-[#6B7280] mt-3">{hint}</p>
             </div>
 
             {/* Right: Interactive Kundali Chart */}

@@ -146,7 +146,7 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
       <div className="relative w-full max-w-lg glass-strong p-6 sm:p-8 animate-slide-up max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 dark:text-[#9CA3AF] hover:text-indigo-700 dark:hover:text-[#F3F4F6] hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-lg text-amber-700/60 dark:text-[#9CA3AF] hover:text-amber-700 dark:hover:text-[#F3F4F6] hover:bg-amber-100/70 dark:hover:bg-white/5 transition-colors"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -162,32 +162,32 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
                 <Sparkles className="w-8 h-8 text-amber-600 dark:text-[#FFD166] animate-glow" />
               </div>
             </div>
-            <h3 className="text-xl font-serif font-semibold text-indigo-950 dark:text-[#F3F4F6] mb-2">
+            <h3 className="text-xl font-serif font-semibold text-amber-900 dark:text-[#F3F4F6] mb-2">
               Calibrating your exact Nakshatra alignment...
             </h3>
-            <p className="text-sm text-slate-500 dark:text-[#9CA3AF]">
+            <p className="text-sm text-amber-800/70 dark:text-[#9CA3AF]">
               Syncing with the cosmic grid to personalize your reading
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 dark:bg-[#FFD166]/10 border border-violet-200/60 dark:border-[#FFD166]/20 mb-3">
-                <Sparkles className="w-3 h-3 text-violet-700 dark:text-[#FFD166]" />
-                <span className="text-xs font-medium text-violet-700 dark:text-[#FFD166]">Personalize Your Reading</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-[#FFD166]/10 border border-amber-200/60 dark:border-[#FFD166]/20 mb-3">
+                <Sparkles className="w-3 h-3 text-amber-700 dark:text-[#FFD166]" />
+                <span className="text-xs font-medium text-amber-700 dark:text-[#FFD166]">Personalize Your Reading</span>
               </div>
-              <h3 className="text-2xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
+              <h3 className="text-2xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-1">
                 Reveal My Reading
               </h3>
-              <p className="text-sm text-slate-500 dark:text-[#9CA3AF]">
+              <p className="text-sm text-amber-800/70 dark:text-[#9CA3AF]">
                 We need your birth details to align the stars
               </p>
             </div>
 
             {/* Name */}
             <div>
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1.5">
-                <User className="w-3.5 h-3.5 text-violet-700 dark:text-[#FFD166]" />
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
+                <User className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
                 Name
               </label>
               <input
@@ -202,8 +202,8 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
 
             {/* Date of Birth */}
             <div>
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1.5">
-                <Calendar className="w-3.5 h-3.5 text-violet-700 dark:text-[#FFD166]" />
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
+                <Calendar className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
                 Date of Birth
               </label>
               <input
@@ -217,8 +217,8 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
 
             {/* Time of Birth */}
             <div>
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1.5">
-                <Clock className="w-3.5 h-3.5 text-violet-700 dark:text-[#FFD166]" />
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
                 Exact Time of Birth
               </label>
               <input
@@ -228,12 +228,12 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
                 className={`${inputClass} [color-scheme:light] dark:[color-scheme:dark] ${formData.timeUnknown ? "opacity-40 pointer-events-none" : ""}`}
                 disabled={formData.timeUnknown}
               />
-              <label className="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-[#9CA3AF] cursor-pointer">
+              <label className="flex items-center gap-2 mt-2 text-xs text-amber-800/70 dark:text-[#9CA3AF] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.timeUnknown}
                   onChange={(e) => setFormData({ ...formData, timeUnknown: e.target.checked, timeOfBirth: "12:00" })}
-                  className="w-4 h-4 rounded border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 accent-violet-600 dark:accent-[#FFD166]"
+                  className="w-4 h-4 rounded border-amber-300 dark:border-white/20 bg-white dark:bg-white/5 accent-amber-600 dark:accent-[#FFD166]"
                 />
                 Time Unknown (defaults to 12:00 PM / Moon Chart)
               </label>
@@ -241,8 +241,8 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
 
             {/* Place of Birth */}
             <div className="relative">
-              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1.5">
-                <MapPin className="w-3.5 h-3.5 text-violet-700 dark:text-[#FFD166]" />
+              <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
+                <MapPin className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
                 Place of Birth
               </label>
               <input
@@ -260,7 +260,7 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
                 required
               />
               {showCitySuggestions && filteredCities.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-slate-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-xl overflow-hidden">
+                <div className="absolute z-10 w-full mt-1 bg-[#FFFDF6]/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-amber-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-xl overflow-hidden">
                   {filteredCities.map((city) => (
                     <button
                       key={city}
@@ -270,7 +270,7 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
                         setCityFilter(city);
                         setShowCitySuggestions(false);
                       }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-700 dark:hover:text-[#F3F4F6] hover:bg-slate-50 dark:hover:bg-white/5 transition-colors min-h-[44px]"
+                      className="w-full text-left px-4 py-2.5 text-sm text-amber-800/70 dark:text-[#9CA3AF] hover:text-amber-700 dark:hover:text-[#F3F4F6] hover:bg-amber-50 dark:hover:bg-white/5 transition-colors min-h-[44px]"
                     >
                       {city}
                     </button>
@@ -282,7 +282,7 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full py-3.5 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -297,7 +297,7 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
               )}
             </button>
 
-            <p className="text-center text-[10px] text-slate-400 dark:text-[#6B7280]">
+            <p className="text-center text-[10px] text-amber-700/60 dark:text-[#6B7280]">
               🔒 Your birth details are encrypted & never shared
             </p>
           </form>

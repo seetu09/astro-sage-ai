@@ -9,17 +9,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Sunlit Celestial (Light) base
+        // Golden Vedic (Light) base
         sunlit: {
-          bg: '#F8F7FC',
-          surface: '#FFFFFF',
-          card: '#FFFFFF',
-          border: 'rgba(30, 27, 75, 0.08)',
-          primary: '#1E1B4B',
-          secondary: '#475569',
-          muted: '#94A3B8',
-          violet: '#6D28D9',
-          amber: '#B45309',
+          bg: '#FBF6E9',
+          surface: '#FFFDF6',
+          card: '#FFFDF6',
+          border: 'rgba(180, 83, 9, 0.12)',
+          primary: '#5C3A21',
+          secondary: '#8B6F47',
+          muted: '#B89B72',
+          violet: '#7B2CBF',
+          amber: '#D97706',
         },
         // Deep Space Dark base
         space: {
@@ -70,13 +70,13 @@ const config: Config = {
       },
       backgroundImage: {
         'cosmic-radial': 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(120, 40, 200, 0.18), rgba(255, 255, 255, 0))',
-        'sunlit-radial': 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(109, 40, 217, 0.06), rgba(255, 255, 255, 0))',
+        'sunlit-radial': 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(217, 119, 6, 0.08), rgba(255, 255, 255, 0))',
       },
       boxShadow: {
         'glow-gold': '0 0 20px rgba(255, 209, 102, 0.3), 0 0 40px rgba(255, 209, 102, 0.1)',
         'glow-violet': '0 0 20px rgba(123, 44, 191, 0.3), 0 0 40px rgba(123, 44, 191, 0.1)',
         'glow-cyan': '0 0 20px rgba(76, 201, 240, 0.3), 0 0 40px rgba(76, 201, 240, 0.1)',
-        'sunlit-soft': '0 10px 30px -10px rgba(109, 40, 217, 0.05), 0 2px 8px -2px rgba(0, 0, 0, 0.02)',
+        'sunlit-soft': '0 10px 30px -10px rgba(217, 119, 6, 0.05), 0 2px 8px -2px rgba(0, 0, 0, 0.02)',
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
