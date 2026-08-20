@@ -44,7 +44,7 @@ function getMockResponse(lang: string): string {
 
 function ChatContent() {
   const { language, t } = useLanguage();
-  const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp } = useWallet();
+  const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp, pendingPrompt, setPendingPrompt, clearPendingPrompt } = useWallet();
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -52,6 +52,8 @@ function ChatContent() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [hasError, setHasError] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const hasPendingPromptRef = useRef(false);
+  const prevBalanceRef = useRef(walletBalance);
 
   // Simulate initial load
   useEffect(() => {
@@ -103,6 +105,8 @@ function ChatContent() {
     // Paywall: consume a free question or wallet credit; block if insufficient funds
     const result = consumeMessage();
     if (result === 'blocked') {
+      // Store the pending prompt so it can be auto-sent after a successful wallet top-up
+      setPendingPrompt(input.trim());
       openTopUp();
       return; // Preserve the typed prompt — do not clear input or send
     }
@@ -135,6 +139,48 @@ function ChatContent() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
+
+  // Auto-send the pending prompt after a successful wallet top-up (balance credited)
+  useEffect(() => {
+    const prevBalance = prevBalanceRef.current;
+    prevBalanceRef.current = walletBalance;
+
+    if (!pendingPrompt || hasPendingPromptRef.current) return;
+    // Only resume when the wallet balance has actually increased (i.e. after payment)
+    if (walletBalance <= prevBalance) return;
+
+    const prompt = pendingPrompt;
+    hasPendingPromptRef.current = true;
+    clearPendingPrompt();
+    setInput(prompt);
+    setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', content: prompt, timestamp: new Date() }]);
+    setIsLoading(true);
+    setHasError(false);
+
+    const runAssistant = async () => {
+      try {
+        const DEV_MODE = true;
+        if (DEV_MODE) {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+          const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
+          setMessages((prev) => [...prev, assistantMessage]);
+        } else {
+          const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: prompt, language }) });
+          if (!response.ok) throw new Error('API Error');
+          const data = await response.json();
+          const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response || t.chat.error, timestamp: new Date() };
+          setMessages((prev) => [...prev, assistantMessage]);
+        }
+      } catch {
+        setHasError(true);
+        setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: t.chat.error, timestamp: new Date() }]);
+      } finally {
+        setIsLoading(false);
+        hasPendingPromptRef.current = false;
+      }
+    };
+    runAssistant();
+  }, [pendingPrompt, walletBalance, clearPendingPrompt, language, t.chat.error]);
 
   const handleRetry = () => {
     setHasError(false);

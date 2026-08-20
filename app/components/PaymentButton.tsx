@@ -13,6 +13,9 @@ interface PaymentButtonProps {
   onSuccess?: () => void;
   onFailure?: () => void;
   className?: string;
+  createOrderEndpoint?: string;
+  verifyEndpoint?: string;
+  disabled?: boolean;
 }
 
 export default function PaymentButton({
@@ -24,6 +27,9 @@ export default function PaymentButton({
   onSuccess,
   onFailure,
   className = "",
+  createOrderEndpoint = "/api/payment/create-order",
+  verifyEndpoint = "/api/payment/verify",
+  disabled = false,
 }: PaymentButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
@@ -60,7 +66,7 @@ export default function PaymentButton({
     try {
       // 1. Create order
       console.log('Creating order...');
-      const orderResponse = await fetch("/api/create-order", {
+      const orderResponse = await fetch(createOrderEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,7 +100,7 @@ export default function PaymentButton({
         handler: async function (response: any) {
           console.log('Payment handler response:', response);
           try {
-            const verifyResponse = await fetch("/api/verify-payment", {
+            const verifyResponse = await fetch(verifyEndpoint, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -182,7 +188,7 @@ export default function PaymentButton({
         
         <button
           onClick={handlePayment}
-          disabled={isLoading}
+          disabled={isLoading || disabled}
           className={`w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:shadow-amber-500/40 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
         >
           {isLoading ? (

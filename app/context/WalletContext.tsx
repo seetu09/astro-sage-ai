@@ -9,8 +9,11 @@ interface WalletContextType {
   freeMessagesLeft: number;
   walletBalance: number;
   isTopUpOpen: boolean;
+  pendingPrompt: string | null;
   consumeMessage: () => "free" | "wallet" | "blocked";
   addFunds: (amount: number) => void;
+  setPendingPrompt: (prompt: string) => void;
+  clearPendingPrompt: () => void;
   openTopUp: () => void;
   closeTopUp: () => void;
 }
@@ -19,8 +22,11 @@ const WalletContext = createContext<WalletContextType>({
   freeMessagesLeft: FREE_MESSAGES_LIMIT,
   walletBalance: 0,
   isTopUpOpen: false,
+  pendingPrompt: null,
   consumeMessage: () => "free",
   addFunds: () => {},
+  setPendingPrompt: () => {},
+  clearPendingPrompt: () => {},
   openTopUp: () => {},
   closeTopUp: () => {},
 });
@@ -31,6 +37,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [freeMessagesLeft, setFreeMessagesLeft] = useState(FREE_MESSAGES_LIMIT);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [pendingPrompt, setPendingPromptState] = useState<string | null>(null);
 
   // Hydrate state from localStorage on mount
   useEffect(() => {
@@ -74,6 +81,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setWalletBalance((prev) => Math.round((prev + amount) * 100) / 100);
   }, []);
 
+  const setPendingPrompt = useCallback((prompt: string) => {
+    setPendingPromptState(prompt);
+  }, []);
+
+  const clearPendingPrompt = useCallback(() => {
+    setPendingPromptState(null);
+  }, []);
+
   const openTopUp = useCallback(() => setIsTopUpOpen(true), []);
   const closeTopUp = useCallback(() => setIsTopUpOpen(false), []);
 
@@ -83,8 +98,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         freeMessagesLeft,
         walletBalance,
         isTopUpOpen,
+        pendingPrompt,
         consumeMessage,
         addFunds,
+        setPendingPrompt,
+        clearPendingPrompt,
         openTopUp,
         closeTopUp,
       }}

@@ -1,24 +1,66 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Wallet } from "lucide-react";
+import { X, Wallet, AlertCircle } from "lucide-react";
 import { useWallet } from "../context/WalletContext";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import PaymentButton from "./PaymentButton";
 
-const TOP_UP_AMOUNTS = [50, 100, 200];
+const MIN_CUSTOM_AMOUNT = 20;
+
+const PACKS = [
+  { amount: 50, questions: 10 },
+  { amount: 100, questions: 20, popular: true },
+  { amount: 200, questions: 40 },
+];
 
 export default function TopUpModal() {
   const { t } = useLanguage();
   const { user, isAuthenticated } = useAuth();
   const { walletBalance, isTopUpOpen, closeTopUp, addFunds } = useWallet();
-  const [selectedAmount, setSelectedAmount] = useState(TOP_UP_AMOUNTS[0]);
+
+  const [selectedAmount, setSelectedAmount] = useState(100);
+  const [useCustom, setUseCustom] = useState(false);
+  const [customAmount, setCustomAmount] = useState("");
+  const [customError, setCustomError] = useState("");
 
   if (!isTopUpOpen) return null;
 
+  const displayAmount = useCustom
+    ? Number(customAmount) || 0
+    : selectedAmount;
+
+  const canProceed = useCustom
+    ? Number(customAmount) >= MIN_CUSTOM_AMOUNT && !Number.isNaN(Number(customAmount))
+    : true;
+
+  const handleSelectPack = (amount: number) => {
+    setSelectedAmount(amount);
+    setUseCustom(false);
+    setCustomAmount("");
+    setCustomError("");
+  };
+
+  const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setCustomAmount(val);
+    setUseCustom(true);
+
+    if (val === "") {
+      setCustomError("");
+    } else {
+      const num = Number(val);
+      if (!Number.isFinite(num) || num < MIN_CUSTOM_AMOUNT) {
+        setCustomError(t.chat.topUpMinAmount);
+      } else {
+        setCustomError("");
+      }
+    }
+  };
+
   const handleSuccess = () => {
-    addFunds(selectedAmount);
+    addFunds(displayAmount);
     closeTopUp();
   };
 
@@ -34,14 +76,20 @@ export default function TopUpModal() {
         </div>
 
         <div className="p-6">
+          {/* Wallet balance */}
           <div className="mb-5 flex items-center gap-3 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] p-4">
             <div className="p-2 rounded-full bg-amber-500/10">
               <Wallet className="w-5 h-5 text-amber-500" />
             </div>
             <div>
-              <p className="text-xs text-[var(--text-muted)]">{t.chat.walletBalance.replace("{amount}", walletBalance.toFixed(2))}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{t.chat.topUpSubtitle}</p>
+              <p className="text-xs text-[var(--text-muted)]">{t.chat.walletBalanceLabel}</p>
+              <p className="text-lg font-semibold text-[var(--text-primary)]">₹{walletBalance.toFixed(2)}</p>
             </div>
+          </div>
+
+          {/* Pricing note */}
+          <div className="mb-5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+            <p>{t.chat.topUpNote}</p>
           </div>
 
           {!isAuthenticated ? (
@@ -51,30 +99,63 @@ export default function TopUpModal() {
           ) : (
             <>
               <p className="text-sm font-medium text-[var(--text-secondary)] mb-3">{t.chat.topUpQuickText}</p>
+
+              {/* Quick-select packs */}
               <div className="grid grid-cols-3 gap-3 mb-5">
-                {TOP_UP_AMOUNTS.map((amount) => (
+                {PACKS.map((pack) => (
                   <button
-                    key={amount}
-                    onClick={() => setSelectedAmount(amount)}
-                    className={`py-3 rounded-xl border text-sm font-semibold transition-all ${
-                      selectedAmount === amount
+                    key={pack.amount}
+                    onClick={() => handleSelectPack(pack.amount)}
+                    className={`relative py-3 rounded-xl border text-sm font-semibold transition-all ${
+                      !useCustom && selectedAmount === pack.amount
                         ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white border-transparent shadow-lg shadow-amber-500/25"
                         : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--hover-bg)]"
                     }`}
                   >
-                    ₹{amount}
+                    {pack.popular && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-600 text-[9px] font-bold text-white px-2 py-0.5 rounded-full">
+                        {t.chat.topUpPopular}
+                      </span>
+                    )}
+                    <div>₹{pack.amount}</div>
+                    <div className="text-xs font-normal opacity-90 mt-0.5">
+                      {t.chat.topUpQuestions.replace("{count}", pack.questions.toString())}
+                    </div>
                   </button>
                 ))}
               </div>
 
+              {/* Custom amount */}
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                  {t.chat.topUpCustomLabel}
+                </label>
+                <input
+                  type="number"
+                  min={MIN_CUSTOM_AMOUNT}
+                  value={customAmount}
+                  onChange={handleCustomChange}
+                  placeholder={t.chat.topUpCustomPlaceholder}
+                  className="w-full astro-input py-2.5 px-3 text-sm"
+                />
+                {customError && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-400">
+                    <AlertCircle className="h-3 w-3" />
+                    {customError}
+                  </p>
+                )}
+              </div>
+
+              {/* Proceed to Pay */}
               <PaymentButton
-                amount={selectedAmount}
+                amount={displayAmount}
                 userEmail={user?.email || ""}
                 userName={user?.name || "User"}
                 paymentType="wallet_topup"
-                buttonText={`${t.chat.addMoney} · ₹${selectedAmount}`}
+                buttonText={`${t.chat.topUpProceed} · ₹${displayAmount}`}
                 onSuccess={handleSuccess}
                 className="!bg-gradient-to-r from-amber-500 to-orange-600"
+                disabled={!canProceed}
               />
             </>
           )}

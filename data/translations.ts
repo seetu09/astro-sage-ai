@@ -42,6 +42,15 @@ interface TranslationShape {
     topUpSubtitle: string;
     topUpQuickText: string;
     signInRequired: string;
+    walletBalanceLabel: string;
+    topUpNote: string;
+    topUpMinAmount: string;
+    topUpCustomLabel: string;
+    topUpCustomPlaceholder: string;
+    topUpPopular: string;
+    topUpProceed: string;
+    topUpQuestions: string;
+    topUpInvalidAmount: string;
   };
   horoscope: {
     title: string;
@@ -365,6 +374,15 @@ export const translations: Record<Language, TranslationShape> = {
       topUpSubtitle: 'Each question costs ₹5. Choose an amount to top up your wallet.',
       topUpQuickText: 'Quick top-up amounts:',
       signInRequired: 'Please sign in to add money to your wallet.',
+      walletBalanceLabel: 'Wallet Balance',
+      topUpNote: '₹5 per question. Balance never expires.',
+      topUpMinAmount: 'Minimum top-up is ₹20.',
+      topUpCustomLabel: 'Custom Amount',
+      topUpCustomPlaceholder: 'Enter amount (min ₹20)',
+      topUpPopular: 'Most Popular',
+      topUpProceed: 'Proceed to Pay',
+      topUpQuestions: '{count} Questions',
+      topUpInvalidAmount: 'Please enter a valid amount.',
     },
     horoscope: {
       title: 'Daily Horoscope',
@@ -686,6 +704,15 @@ export const translations: Record<Language, TranslationShape> = {
       topUpSubtitle: 'प्रत्येक प्रश्न की कीमत ₹5 है। अपना वॉलेट टॉप-अप करने के लिए राशि चुनें।',
       topUpQuickText: 'त्वरित टॉप-अप राशियाँ:',
       signInRequired: 'वॉलेट में पैसे जोड़ने के लिए कृपया साइन इन करें।',
+      walletBalanceLabel: 'वॉलेट बैलेंस',
+      topUpNote: '₹5 प्रति प्रश्न। बैलेंस कभी समाप्त नहीं होता।',
+      topUpMinAmount: 'न्यूनतम टॉप-अप ₹20 है।',
+      topUpCustomLabel: 'अपनी राशि दर्ज करें',
+      topUpCustomPlaceholder: 'राशि दर्ज करें (न्यूनतम ₹20)',
+      topUpPopular: 'सबसे लोकप्रिय',
+      topUpProceed: 'भुगतान के लिए आगे बढ़ें',
+      topUpQuestions: '{count} प्रश्न',
+      topUpInvalidAmount: 'कृपया मान्य राशि दर्ज करें।',
     },
     horoscope: {
       title: 'दैनिक राशिफल',
