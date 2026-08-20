@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+build/
+.git/
+package-lock.json
+*.min.js
+*.csv
+*.log
+.env
+.env.local
+tsconfig.tsbuildinfo
