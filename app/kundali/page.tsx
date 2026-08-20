@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import KundliPDF from '@/app/components/KundliPDF';
 import KundaliChart from '@/app/components/KundaliChart';
+import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 
 interface Planet {
   name: string;
@@ -20,6 +21,9 @@ interface KundliData {
   dateOfBirth: string;
   timeOfBirth: string;
   placeOfBirth: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string;
   ascendant: string;
   moonSign: string;
   sunSign: string;
@@ -43,7 +47,16 @@ const PLANET_SYMBOLS: Record<string, string> = {
   Ketu: 'Ke',
 };
 
-function generateMockKundli(formData: { name: string; email: string; dateOfBirth: string; timeOfBirth: string; placeOfBirth: string }): KundliData {
+function generateMockKundli(formData: {
+  name: string;
+  email: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  placeOfBirth: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string;
+}): KundliData {
   const ascendant = signs[Math.floor(Math.random() * signs.length)];
   const moonSign = signs[Math.floor(Math.random() * signs.length)];
   const sunSign = signs[Math.floor(Math.random() * signs.length)];
@@ -63,6 +76,9 @@ function generateMockKundli(formData: { name: string; email: string; dateOfBirth
     dateOfBirth: formData.dateOfBirth,
     timeOfBirth: formData.timeOfBirth,
     placeOfBirth: formData.placeOfBirth,
+    latitude: formData.latitude,
+    longitude: formData.longitude,
+    timezone: formData.timezone,
     ascendant,
     moonSign,
     sunSign,
@@ -77,13 +93,16 @@ export default function KundaliPage() {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [timeOfBirth, setTimeOfBirth] = useState('');
   const [placeOfBirth, setPlaceOfBirth] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [timezone, setTimezone] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [kundliData, setKundliData] = useState<KundliData | null>(null);
   const [showPDF, setShowPDF] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth, placeOfBirth });
+    const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth, placeOfBirth, latitude, longitude, timezone });
     setKundliData(data);
     setShowResult(true);
   };
@@ -164,14 +183,20 @@ export default function KundaliPage() {
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Place of Birth</label>
-                <input
-                  type="text"
-                  value={placeOfBirth}
-                  onChange={(e) => setPlaceOfBirth(e.target.value)}
-                  placeholder="City, State, Country"
-                  className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
-                  required
-                />
+                <div className="relative">
+                  <PlaceAutocomplete
+                    value={placeOfBirth}
+                    onChange={setPlaceOfBirth}
+                    onSelect={(place) => {
+                      setLatitude(place.latitude);
+                      setLongitude(place.longitude);
+                      setTimezone(place.timezone);
+                    }}
+                    placeholder="City, State, Country"
+                    inputClassName="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
+                    required
+                  />
+                </div>
               </div>
 
               <button
@@ -213,6 +238,8 @@ export default function KundaliPage() {
                 { label: 'Date of Birth', value: kundliData?.dateOfBirth },
                 { label: 'Time of Birth', value: kundliData?.timeOfBirth },
                 { label: 'Place of Birth', value: kundliData?.placeOfBirth },
+                { label: 'Coordinates', value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : undefined },
+                { label: 'Time Zone', value: kundliData?.timezone },
                 { label: 'Ascendant', value: kundliData?.ascendant },
                 { label: 'Moon Sign', value: kundliData?.moonSign },
                 { label: 'Sun Sign', value: kundliData?.sunSign },
@@ -220,7 +247,7 @@ export default function KundaliPage() {
               ].map((item) => (
                 <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
                   <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>
-                  <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">{item.value}</p>
+                  <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">{item.value ?? '—'}</p>
                 </div>
               ))}
             </div>
