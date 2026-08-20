@@ -192,7 +192,16 @@ export default function KundaliPage() {
                       setLongitude(place.longitude);
                       setTimezone(place.timezone);
                     }}
-                    placeholder="City, State, Country"
+                    onClear={() => {
+                      setLatitude(null);
+                      setLongitude(null);
+                      setTimezone("");
+                    }}
+                    latitude={latitude}
+                    longitude={longitude}
+                    onLatitudeChange={setLatitude}
+                    onLongitudeChange={setLongitude}
+                    placeholder="Enter city, town, or PIN code..."
                     inputClassName="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                     required
                   />
