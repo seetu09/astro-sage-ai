@@ -19,18 +19,18 @@ export default function Navbar() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const mainLinks = [
-    { href: "/daily-horoscope", label: "Daily Horoscope" },
-    { href: "/kundali", label: "Kundali" },
-    { href: "/matchmaking", label: "Matchmaking" },
-    { href: "/chat", label: "AI Guru Chat" },
-    { href: "/store", label: "Store" },
+    { href: "/daily-horoscope", label: t.nav.dailyHoroscope },
+    { href: "/kundali", label: t.nav.kundali },
+    { href: "/matchmaking", label: t.nav.matchmaking },
+    { href: "/chat", label: t.nav.chat },
+    { href: "/store", label: t.nav.store },
   ];
 
   const moreLinks = [
-    { href: "/horoscope", label: "Horoscope" },
-    { href: "/numerology", label: "Numerology" },
-    { href: "/tarot", label: "Tarot" },
-    { href: "/dosha-checker", label: "Dosha Checker" },
+    { href: "/horoscope", label: t.nav.horoscope },
+    { href: "/numerology", label: t.nav.numerology },
+    { href: "/tarot", label: t.nav.tarot },
+    { href: "/dosha-checker", label: t.nav.doshaChecker },
     { href: "/blog", label: t.nav.blog },
     { href: "/social", label: t.nav.social },
     { href: "/about", label: t.nav.about },
@@ -82,7 +82,7 @@ export default function Navbar() {
                     moreLinks.some(l => pathname === l.href) ? activeLinkClass : inactiveLinkClass
                   }`}
                 >
-                  More
+                  {t.nav.more}
                   <ChevronDown className={`w-4 h-4 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {moreDropdownOpen && (
@@ -127,7 +127,7 @@ export default function Navbar() {
                   onClick={() => setAuthModalOpen(true)}
                   className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-xs sm:text-sm font-semibold rounded-lg hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
                 >
-                  Sign In
+                  {t.nav.signIn}
                 </button>
               )}
 
@@ -137,7 +137,7 @@ export default function Navbar() {
                 className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm font-semibold rounded-lg hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
               >
                 <Sparkles className="w-4 h-4" />
-                Ask Guru
+                {t.nav.askGuru}
               </Link>
 
               <button
@@ -183,7 +183,7 @@ export default function Navbar() {
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm font-semibold rounded-lg"
                 >
                   <Sparkles className="w-4 h-4" />
-                  Ask Guru
+                  {t.nav.askGuru}
                 </Link>
                 {isAuthenticated ? (
                   <button
@@ -200,7 +200,7 @@ export default function Navbar() {
                     onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
                     className="w-full px-4 py-2 bg-amber-50 dark:bg-white/5 border border-amber-200/60 dark:border-white/10 text-amber-900 dark:text-[#F3F4F6] text-sm font-medium rounded-lg"
                   >
-                    Sign In
+                    {t.nav.signIn}
                   </button>
                 )}
               </div>

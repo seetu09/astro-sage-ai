@@ -12,6 +12,13 @@ interface TranslationShape {
     social: string;
     kundali: string;
     matchmaking: string;
+    horoscope: string;
+    numerology: string;
+    tarot: string;
+    doshaChecker: string;
+    more: string;
+    signIn: string;
+    askGuru: string;
   };
   hero: {
     title: string;
@@ -320,6 +327,13 @@ export const translations: Record<Language, TranslationShape> = {
       social: 'Social',
       kundali: 'Kundali',
       matchmaking: 'Matchmaking',
+      horoscope: 'Horoscope',
+      numerology: 'Numerology',
+      tarot: 'Tarot',
+      doshaChecker: 'Dosha Checker',
+      more: 'More',
+      signIn: 'Sign In',
+      askGuru: 'Ask Guru',
     },
     hero: {
       title: 'Discover Your Cosmic Path',
@@ -626,6 +640,13 @@ export const translations: Record<Language, TranslationShape> = {
       social: 'सोशल',
       kundali: 'कुंडली',
       matchmaking: 'कुंडली मिलान',
+      horoscope: 'राशिफल',
+      numerology: 'अंक ज्योतिष',
+      tarot: 'टैरो',
+      doshaChecker: 'दोष जांच',
+      more: 'और',
+      signIn: 'साइन इन',
+      askGuru: 'गुरु से पूछें',
     },
     hero: {
       title: 'अपने ब्रह्मांडीय पथ की खोज करें',
