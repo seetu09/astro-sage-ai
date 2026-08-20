@@ -29,6 +29,40 @@ interface ReverseGeocodeResponse {
   };
 }
 
+interface NominatimAddress {
+  suburb?: string;
+  town?: string;
+  city?: string;
+  state?: string;
+}
+
+interface NominatimResult {
+  lat: string;
+  lon: string;
+  display_name?: string;
+  address?: NominatimAddress;
+}
+
+const PIN_CODE_REGEX = /^\d{6}$/;
+
+const formatNominatimPlace = (item: NominatimResult): string => {
+  const city =
+    item.address?.suburb ||
+    item.address?.town ||
+    item.address?.city ||
+    (item.display_name ? item.display_name.split(",")[0] : "") ||
+    "";
+  const state = item.address?.state || "";
+  return [city.trim(), state.trim(), "India"].filter(Boolean).join(", ");
+};
+
+const mapNominatimResult = (item: NominatimResult): GeocodingResult => ({
+  name: formatNominatimPlace(item),
+  latitude: parseFloat(item.lat),
+  longitude: parseFloat(item.lon),
+  timezone: "Asia/Kolkata",
+});
+
 interface PlaceAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
@@ -157,16 +191,36 @@ export default function PlaceAutocomplete({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`,
-        { signal: controller.signal }
-      )
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to fetch places");
-          return res.json();
-        })
-        .then((data) => {
-          const list: GeocodingResult[] = data?.results ?? [];
+      const isPinCode = PIN_CODE_REGEX.test(query);
+
+      // 6-digit PIN code → OpenStreetMap Nominatim (India only)
+      const request = isPinCode
+        ? fetch(
+            `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(query)}&countrycodes=in&format=json&addressdetails=1`,
+            { signal: controller.signal }
+          )
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to fetch places");
+              return res.json();
+            })
+            .then((data: NominatimResult[]) => {
+              return Array.isArray(data) ? data.map(mapNominatimResult) : [];
+            })
+        // Text/City search → Open-Meteo Geocoding API
+        : fetch(
+            `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`,
+            { signal: controller.signal }
+          )
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to fetch places");
+              return res.json();
+            })
+            .then((data) => {
+              return (data?.results ?? []) as GeocodingResult[];
+            });
+
+      request
+        .then((list) => {
           setResults(list);
           setIsOpen(list.length > 0);
           setActiveIndex(-1);
