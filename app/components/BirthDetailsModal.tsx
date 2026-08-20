@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Sparkles, Loader2, MapPin, Calendar, Clock, User } from "lucide-react";
+import { loadGoogleMapsScript, initPlaceAutocomplete } from "@/lib/google-maps";
 
 interface BirthDetailsModalProps {
   isOpen: boolean;
@@ -18,58 +19,7 @@ interface BirthDetails {
   placeOfBirth: string;
 }
 
-const INDIAN_CITIES = [
-  "Mumbai, Maharashtra",
-  "Delhi, Delhi",
-  "Bengaluru, Karnataka",
-  "Hyderabad, Telangana",
-  "Ahmedabad, Gujarat",
-  "Chennai, Tamil Nadu",
-  "Kolkata, West Bengal",
-  "Pune, Maharashtra",
-  "Jaipur, Rajasthan",
-  "Surat, Gujarat",
-  "Lucknow, Uttar Pradesh",
-  "Kanpur, Uttar Pradesh",
-  "Nagpur, Maharashtra",
-  "Indore, Madhya Pradesh",
-  "Thane, Maharashtra",
-  "Bhopal, Madhya Pradesh",
-  "Visakhapatnam, Andhra Pradesh",
-  "Patna, Bihar",
-  "Vadodara, Gujarat",
-  "Ghaziabad, Uttar Pradesh",
-  "Ludhiana, Punjab",
-  "Agra, Uttar Pradesh",
-  "Nashik, Maharashtra",
-  "Faridabad, Haryana",
-  "Meerut, Uttar Pradesh",
-  "Rajkot, Gujarat",
-  "Varanasi, Uttar Pradesh",
-  "Srinagar, Jammu & Kashmir",
-  "Aurangabad, Maharashtra",
-  "Dhanbad, Jharkhand",
-  "Amritsar, Punjab",
-  "Navi Mumbai, Maharashtra",
-  "Allahabad, Uttar Pradesh",
-  "Ranchi, Jharkhand",
-  "Howrah, West Bengal",
-  "Coimbatore, Tamil Nadu",
-  "Jabalpur, Madhya Pradesh",
-  "Gwalior, Madhya Pradesh",
-  "Vijayawada, Andhra Pradesh",
-  "Jodhpur, Rajasthan",
-  "Madurai, Tamil Nadu",
-  "Raipur, Chhattisgarh",
-  "Kota, Rajasthan",
-  "Chandigarh, Chandigarh",
-  "Guwahati, Assam",
-  "Solapur, Maharashtra",
-  "Hubli, Karnataka",
-  "Mysore, Karnataka",
-  "Tiruchirappalli, Tamil Nadu",
-  "Bareilly, Uttar Pradesh",
-];
+// Google Places Autocomplete is used for place selection instead of a static city list
 
 export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDetailsModalProps) {
   const router = useRouter();
@@ -81,9 +31,8 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
     timeUnknown: false,
     placeOfBirth: "",
   });
-  const [cityFilter, setCityFilter] = useState("");
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const placeInputRef = useRef<HTMLInputElement>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -107,11 +56,29 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Initialize Google Places Autocomplete on the Place of Birth input
+  useEffect(() => {
+    if (!isOpen || step !== "form" || !placeInputRef.current) return;
 
-  const filteredCities = INDIAN_CITIES.filter((city) =>
-    city.toLowerCase().includes(cityFilter.toLowerCase())
-  ).slice(0, 6);
+    let cancelled = false;
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (cancelled || !placeInputRef.current) return;
+        initPlaceAutocomplete(placeInputRef.current, (place) => {
+          setFormData((prev) => ({ ...prev, placeOfBirth: place.address }));
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to load Google Maps:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, step]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,36 +214,13 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
               </label>
               <input
                 type="text"
+                ref={placeInputRef}
                 value={formData.placeOfBirth}
-                onChange={(e) => {
-                  setFormData({ ...formData, placeOfBirth: e.target.value });
-                  setCityFilter(e.target.value);
-                  setShowCitySuggestions(true);
-                }}
-                onFocus={() => setShowCitySuggestions(true)}
-                onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
+                onChange={(e) => setFormData({ ...formData, placeOfBirth: e.target.value })}
                 placeholder="City, State, Country"
                 className={inputClass}
                 required
               />
-              {showCitySuggestions && filteredCities.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-[#FFFDF6]/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-amber-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-xl overflow-hidden">
-                  {filteredCities.map((city) => (
-                    <button
-                      key={city}
-                      type="button"
-                      onMouseDown={() => {
-                        setFormData({ ...formData, placeOfBirth: city });
-                        setCityFilter(city);
-                        setShowCitySuggestions(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-amber-800/70 dark:text-[#9CA3AF] hover:text-amber-700 dark:hover:text-[#F3F4F6] hover:bg-amber-50 dark:hover:bg-white/5 transition-colors min-h-[44px]"
-                    >
-                      {city}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             <button

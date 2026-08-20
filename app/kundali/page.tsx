@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import KundliPDF from '@/app/components/KundliPDF';
 import KundaliChart from '@/app/components/KundaliChart';
+import { loadGoogleMapsScript, initPlaceAutocomplete } from '@/lib/google-maps';
 
 interface Planet {
   name: string;
@@ -80,6 +81,29 @@ export default function KundaliPage() {
   const [showResult, setShowResult] = useState(false);
   const [kundliData, setKundliData] = useState<KundliData | null>(null);
   const [showPDF, setShowPDF] = useState(false);
+  const placeInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize Google Places Autocomplete on the Place of Birth input
+  useEffect(() => {
+    if (!placeInputRef.current) return;
+
+    let cancelled = false;
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (cancelled || !placeInputRef.current) return;
+        initPlaceAutocomplete(placeInputRef.current, (place) => {
+          setPlaceOfBirth(place.address);
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to load Google Maps:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +190,7 @@ export default function KundaliPage() {
                 <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Place of Birth</label>
                 <input
                   type="text"
+                  ref={placeInputRef}
                   value={placeOfBirth}
                   onChange={(e) => setPlaceOfBirth(e.target.value)}
                   placeholder="City, State, Country"

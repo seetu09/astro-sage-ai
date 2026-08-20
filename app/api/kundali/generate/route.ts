@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { geocodePlace } from "@/lib/google-maps";
 
 function calculateJulianDay(year: number, month: number, day: number, hour: number, minute: number): number {
   const a = Math.floor((14 - month) / 12);
@@ -135,6 +136,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Birth date and time are required" }, { status: 400 });
     }
 
+    // Geocode the birth place to get coordinates for precise chart calculations
+    const coordinates = birthPlace ? await geocodePlace(birthPlace) : null;
+
     const [year, month, day] = birthDate.split("-").map(Number);
     const [hour, minute] = birthTime.split(":").map(Number);
 
@@ -176,7 +180,7 @@ export async function POST(req: NextRequest) {
     const dasha = calculateDasha(moonLong);
     const yogas = detectYogas(planets, ascendant);
 
-    return NextResponse.json({ ascendant, moonSign, sunSign, planets, dasha, yogas });
+    return NextResponse.json({ ascendant, moonSign, sunSign, planets, dasha, yogas, coordinates });
   } catch (error) {
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });
   }
