@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Sparkles, Loader2, MapPin, Calendar, Clock, User } from "lucide-react";
-import { loadGoogleMapsScript, initPlaceAutocomplete } from "@/lib/google-maps";
 
 interface BirthDetailsModalProps {
   isOpen: boolean;
@@ -32,7 +31,6 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
     placeOfBirth: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const placeInputRef = useRef<HTMLInputElement>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -55,28 +53,6 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
       document.body.style.overflow = "";
     };
   }, [isOpen]);
-
-  // Initialize Google Places Autocomplete on the Place of Birth input
-  useEffect(() => {
-    if (!isOpen || step !== "form" || !placeInputRef.current) return;
-
-    let cancelled = false;
-
-    loadGoogleMapsScript()
-      .then(() => {
-        if (cancelled || !placeInputRef.current) return;
-        initPlaceAutocomplete(placeInputRef.current, (place) => {
-          setFormData((prev) => ({ ...prev, placeOfBirth: place.address }));
-        });
-      })
-      .catch((error) => {
-        console.error("Failed to load Google Maps:", error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, step]);
 
   if (!isOpen) return null;
 
@@ -214,7 +190,6 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
               </label>
               <input
                 type="text"
-                ref={placeInputRef}
                 value={formData.placeOfBirth}
                 onChange={(e) => setFormData({ ...formData, placeOfBirth: e.target.value })}
                 placeholder="City, State, Country"

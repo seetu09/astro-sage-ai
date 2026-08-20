@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { geocodePlace } from "@/lib/google-maps";
 
 function calculateJulianDay(year: number, month: number, day: number, hour: number, minute: number): number {
   const a = Math.floor((14 - month) / 12);
@@ -136,8 +135,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Birth date and time are required" }, { status: 400 });
     }
 
-    // Geocode the birth place to get coordinates for precise chart calculations
-    const coordinates = birthPlace ? await geocodePlace(birthPlace) : null;
+    // Coordinates are no longer geocoded via Google Maps; set to null for response consistency
+    const coordinates = null;
 
     const [year, month, day] = birthDate.split("-").map(Number);
     const [hour, minute] = birthTime.split(":").map(Number);
