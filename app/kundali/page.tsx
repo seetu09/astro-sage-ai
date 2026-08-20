@@ -6,6 +6,7 @@ import { ArrowLeft, Download, Sparkles } from 'lucide-react';
 import KundliPDF from '@/app/components/KundliPDF';
 import KundaliChart from '@/app/components/KundaliChart';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 interface Planet {
   name: string;
@@ -88,6 +89,7 @@ function generateMockKundli(formData: {
 }
 
 export default function KundaliPage() {
+  const { language, t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -126,33 +128,33 @@ export default function KundaliPage() {
                 <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-violet-700 dark:text-[#FFD166]" />
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
-                Generate Your Kundli
+                {t.kundali.generateTitle}
               </h1>
               <p className="text-sm sm:text-base text-slate-500 dark:text-[#9CA3AF] px-2">
-                Enter your birth details to generate a personalized Vedic birth chart with planetary positions and insights.
+                {t.kundali.subtitle}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 glass-card p-4 sm:p-6 lg:p-8">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Full Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.fullName}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your full name"
+                  placeholder={t.kundali.namePlaceholder}
                   className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Email Address</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.email}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  placeholder={t.kundali.emailPlaceholder}
                   className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                   required
                 />
@@ -160,7 +162,7 @@ export default function KundaliPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Date of Birth</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.dateOfBirth}</label>
                   <input
                     type="date"
                     value={dateOfBirth}
@@ -170,7 +172,7 @@ export default function KundaliPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Time of Birth</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.timeOfBirth}</label>
                   <input
                     type="time"
                     value={timeOfBirth}
@@ -182,7 +184,7 @@ export default function KundaliPage() {
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">Place of Birth</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.placeOfBirth}</label>
                 <div className="relative">
                   <PlaceAutocomplete
                     value={placeOfBirth}
@@ -201,7 +203,7 @@ export default function KundaliPage() {
                     longitude={longitude}
                     onLatitudeChange={setLatitude}
                     onLongitudeChange={setLongitude}
-                    placeholder="Enter city, town, or PIN code..."
+                    placeholder={language === 'hi' ? 'शहर, कस्बा या पिन कोड दर्ज करें...' : 'Enter city, town, or PIN code...'}
                     inputClassName="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                     required
                   />
@@ -212,7 +214,7 @@ export default function KundaliPage() {
                 type="submit"
                 className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all mt-2"
               >
-                Generate Kundli
+                {t.kundali.generateButton}
               </button>
             </form>
           </motion.div>
@@ -228,31 +230,31 @@ export default function KundaliPage() {
               className="flex items-center gap-2 text-sm text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-700 dark:hover:text-[#F3F4F6] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Form
+              {t.kundali.backToForm}
             </button>
 
             {/* Header */}
             <div className="text-center">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
-                Your Birth Chart
+                {t.kundali.birthChart}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-                Generated for {kundliData?.name}
+                {t.kundali.generatedFor.replace('{name}', kundliData?.name || '')}
               </p>
             </div>
 
             {/* Info Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
               {[
-                { label: 'Date of Birth', value: kundliData?.dateOfBirth },
-                { label: 'Time of Birth', value: kundliData?.timeOfBirth },
-                { label: 'Place of Birth', value: kundliData?.placeOfBirth },
-                { label: 'Coordinates', value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : undefined },
-                { label: 'Time Zone', value: kundliData?.timezone },
-                { label: 'Ascendant', value: kundliData?.ascendant },
-                { label: 'Moon Sign', value: kundliData?.moonSign },
-                { label: 'Sun Sign', value: kundliData?.sunSign },
-                { label: 'Nakshatra', value: kundliData?.nakshatra },
+                { label: t.kundali.dateOfBirth, value: kundliData?.dateOfBirth },
+                { label: t.kundali.timeOfBirth, value: kundliData?.timeOfBirth },
+                { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth },
+                { label: t.kundali.coordinates, value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : undefined },
+                { label: t.kundali.timeZone, value: kundliData?.timezone },
+                { label: t.kundali.ascendant, value: kundliData?.ascendant },
+                { label: t.kundali.moonSign, value: kundliData?.moonSign },
+                { label: t.kundali.sunSign, value: kundliData?.sunSign },
+                { label: t.kundali.nakshatra, value: kundliData?.nakshatra },
               ].map((item) => (
                 <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
                   <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>
@@ -280,17 +282,17 @@ export default function KundaliPage() {
             {/* Planetary Table */}
             <div className="glass-card rounded-xl overflow-hidden">
               <div className="px-3 sm:px-4 py-3 border-b border-slate-200/60 dark:border-white/10">
-                <h3 className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6]">Planetary Positions</h3>
+                <h3 className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6]">{t.kundali.planetaryPositions}</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[500px]">
                   <thead>
                     <tr className="border-b border-slate-200/60 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.03]">
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Planet</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Sign</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">House</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Degree</th>
-                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">Status</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">{t.kundali.planet}</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">{t.kundali.sign}</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">{t.kundali.house}</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">{t.kundali.degree}</th>
+                      <th className="text-left px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-400 dark:text-[#6B7280]">{t.kundali.status}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -306,7 +308,7 @@ export default function KundaliPage() {
                               ? 'bg-red-500/10 text-red-500'
                               : 'bg-emerald-500/10 text-emerald-500'
                           }`}>
-                            {planet.status}
+                            {planet.status === 'Retrograde' ? t.kundali.retrograde : t.kundali.direct}
                           </span>
                         </td>
                       </tr>
@@ -323,7 +325,7 @@ export default function KundaliPage() {
                 className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-medium rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
               >
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                Download PDF Report
+                {t.kundali.downloadPDF}
               </button>
             </div>
 

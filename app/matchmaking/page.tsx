@@ -10,6 +10,7 @@ import {
   type PersonDetails,
   type MatchResult,
 } from "@/lib/ashtakoot";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 const STATUS_COLORS: Record<string, string> = {
   excellent: "bg-green-500/10 text-green-500 border-green-500/20",
@@ -35,6 +36,7 @@ interface PersonForm {
 const emptyPerson: PersonForm = { name: "", rashi: 1, nakshatra: 1, pada: 1 };
 
 export default function MatchmakingPage() {
+  const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"form" | "results">("form");
   const [male, setMale] = useState<PersonForm>(emptyPerson);
   const [female, setFemale] = useState<PersonForm>(emptyPerson);
@@ -47,8 +49,8 @@ export default function MatchmakingPage() {
 
     // Simulate calculation delay for UX
     setTimeout(() => {
-      const maleDetails: PersonDetails = { ...male, name: male.name || "Boy" };
-      const femaleDetails: PersonDetails = { ...female, name: female.name || "Girl" };
+      const maleDetails: PersonDetails = { ...male, name: male.name || (language === 'hi' ? "लड़का" : "Boy") };
+      const femaleDetails: PersonDetails = { ...female, name: female.name || (language === 'hi' ? "लड़की" : "Girl") };
       const matchResult = calculateAshtakoot(maleDetails, femaleDetails);
       setResult(matchResult);
       setLoading(false);
@@ -73,14 +75,14 @@ export default function MatchmakingPage() {
 
       <input
         type="text"
-        placeholder="Name (optional)"
+        placeholder={t.matchmaking.namePlaceholder}
         value={data.name}
         onChange={(e) => setData({ ...data, name: e.target.value })}
         className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
       />
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-1">Moon Sign (Rashi)</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.moonSign}</label>
         <select
           value={data.rashi}
           onChange={(e) => setData({ ...data, rashi: parseInt(e.target.value) })}
@@ -93,7 +95,7 @@ export default function MatchmakingPage() {
       </div>
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-1">Nakshatra</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.nakshatra}</label>
         <select
           value={data.nakshatra}
           onChange={(e) => setData({ ...data, nakshatra: parseInt(e.target.value) })}
@@ -106,7 +108,7 @@ export default function MatchmakingPage() {
       </div>
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-1">Pada (Quarter)</label>
+        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.pada}</label>
         <div className="grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map((p) => (
             <button
@@ -127,19 +129,26 @@ export default function MatchmakingPage() {
     </div>
   );
 
+  const getVerdict = (points: number): string => {
+    if (points >= 28) return t.matchmaking.excellent;
+    if (points >= 22) return t.matchmaking.good;
+    if (points >= 16) return t.matchmaking.average;
+    return t.matchmaking.challenging;
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-12 px-4">
       <div className="max-w-6xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-sm font-medium mb-6">
             <Heart className="w-4 h-4" />
-            <span>Kundali Milan · Ashtakoot Guna Milan</span>
+            <span>{t.matchmaking.badge}</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold font-serif text-[var(--text-primary)] mb-4">
-            Kundali Matchmaking
+            {t.matchmaking.title}
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
-            Compare two birth charts for marriage compatibility using the traditional Ashtakoot Guna Milan system (36 points).
+            {t.matchmaking.subtitle}
           </p>
         </motion.div>
 
@@ -155,14 +164,14 @@ export default function MatchmakingPage() {
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {renderPersonForm(
-                    "Boy's Details",
+                    t.matchmaking.boyDetails,
                     <User className="w-5 h-5 text-blue-400" />,
                     "bg-blue-500/20",
                     male,
                     setMale
                   )}
                   {renderPersonForm(
-                    "Girl's Details",
+                    t.matchmaking.girlDetails,
                     <User className="w-5 h-5 text-pink-400" />,
                     "bg-pink-500/20",
                     female,
@@ -177,7 +186,7 @@ export default function MatchmakingPage() {
                     className="px-12 py-4 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all disabled:opacity-50 flex items-center gap-3 text-lg"
                   >
                     <Heart className="w-6 h-6" />
-                    {loading ? "Calculating..." : "Check Compatibility"}
+                    {loading ? t.matchmaking.calculating : t.matchmaking.checkCompatibility}
                   </button>
                 </div>
               </form>
@@ -200,17 +209,17 @@ export default function MatchmakingPage() {
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-5xl font-bold text-[var(--text-primary)]">{result.totalPoints}</span>
-                      <span className="text-sm text-[var(--text-muted)]">/ 36 Gunas</span>
+                      <span className="text-sm text-[var(--text-muted)]">{t.matchmaking.gunas}</span>
                       <span className="text-xs text-[var(--accent)] mt-1">{result.percentage}%</span>
                     </div>
                   </div>
-                  <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{result.verdict}</h2>
+                  <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{getVerdict(result.totalPoints)}</h2>
                   <p className="text-[var(--text-secondary)] max-w-xl mx-auto">{result.compatibilitySummary}</p>
                   <button
                     onClick={() => setActiveTab("form")}
                     className="mt-6 px-6 py-2 border border-[var(--border-color)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-colors"
                   >
-                    Check Another Match
+                    {t.matchmaking.checkAnother}
                   </button>
                 </div>
 
@@ -218,7 +227,7 @@ export default function MatchmakingPage() {
                 <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6">
                   <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-amber-500" />
-                    Ashtakoot Guna Milan Breakdown
+                    {t.matchmaking.breakdown}
                   </h3>
                   <div className="space-y-3">
                     {result.kootas.map((koota) => (
@@ -253,7 +262,7 @@ export default function MatchmakingPage() {
                 <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6">
                   <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
                     <Shield className="w-5 h-5 text-red-500" />
-                    Dosha Analysis
+                    {t.matchmaking.doshaAnalysis}
                   </h3>
                   <div className="space-y-4">
                     {result.doshas.map((dosha, idx) => (
@@ -273,7 +282,7 @@ export default function MatchmakingPage() {
                         </div>
                         <p className="text-sm text-[var(--text-secondary)] mb-2">{dosha.description}</p>
                         <p className="text-sm text-[var(--accent)]">
-                          <span className="font-semibold">Remedy: </span>{dosha.remedy}
+                          <span className="font-semibold">{t.matchmaking.remedy}</span>{dosha.remedy}
                         </p>
                       </div>
                     ))}

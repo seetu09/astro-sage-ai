@@ -32,10 +32,22 @@ const SIGN_NAMES: Record<string, string> = {
   sagittarius: "Sagittarius", capricorn: "Capricorn", aquarius: "Aquarius", pisces: "Pisces",
 };
 
+const SIGN_NAMES_HI: Record<string, string> = {
+  aries: "मेष", taurus: "वृषभ", gemini: "मिथुन", cancer: "कर्क",
+  leo: "सिंह", virgo: "कन्या", libra: "तुला", scorpio: "वृश्चिक",
+  sagittarius: "धनु", capricorn: "मकर", aquarius: "कुंभ", pisces: "मीन",
+};
+
 const PERIOD_LABELS: Record<string, string> = {
   yesterday: "Yesterday",
   today: "Today",
   tomorrow: "Tomorrow",
+};
+
+const PERIOD_LABELS_HI: Record<string, string> = {
+  yesterday: "कल",
+  today: "आज",
+  tomorrow: "कल",
 };
 
 function getDateForPeriod(period: string): string {
@@ -45,17 +57,41 @@ function getDateForPeriod(period: string): string {
   return date.toISOString().split("T")[0];
 }
 
-function buildMockHoroscope(sign: string, period: string): HoroscopeResponse {
-  const signName = SIGN_NAMES[sign] || "Aries";
-  const periodLabel = PERIOD_LABELS[period] || "Today";
+function buildMockHoroscope(sign: string, period: string, lang: string = "en"): HoroscopeResponse {
+  const isHi = lang === "hi";
+  const signName = isHi ? (SIGN_NAMES_HI[sign] || "मेष") : (SIGN_NAMES[sign] || "Aries");
+  const periodLabel = isHi ? (PERIOD_LABELS_HI[period] || "आज") : (PERIOD_LABELS[period] || "Today");
 
-  const predictions: Record<string, string> = {
+  const predictions: Record<string, string> = isHi ? {
+    yesterday: `${signName} ने चिंतन और पुनर्संतुलन का दिन अनुभव किया। पिछले निर्णय स्पष्टता प्रदान कर रहे हैं। अपनी अंतर्ज्ञान पर भरोसा करें।`,
+    today: `${signName}, आज सकारात्मक ऊर्जा और अवसरों का संचार है। करियर उन्नति और सार्थक संबंधों के लिए सितारे आपके अनुकूल हैं। अप्रत्याशित आशीर्वाद के लिए खुले रहें।`,
+    tomorrow: `${signName}, कल विकास और नई शुरुआत के लिए आशाजनक है। अनुकूल ग्रह संरेखण आपके पेशेवर जीवन में साहसिक कदमों का समर्थन करता है। अपने रिश्तों का ध्यान रखें।`,
+  } : {
     yesterday: `${signName} experienced a day of reflection and recalibration. Past decisions came into focus, offering clarity on what needs adjustment. Trust your instincts as you move forward.`,
     today: `${signName}, today brings a surge of positive energy and opportunity. The stars align in your favor for career advancement and meaningful connections. Stay open to unexpected blessings.`,
     tomorrow: `${signName}, tomorrow holds promise for growth and new beginnings. A favorable planetary alignment supports bold moves in your professional life. Nurture your relationships with care.`,
   };
 
-  const insights: Record<string, { career: string; love: string; money: string; health: string }> = {
+  const insights: Record<string, { career: string; love: string; money: string; health: string }> = isHi ? {
+    yesterday: {
+      career: "अपनी हालिया उपलब्धियों की समीक्षा करें और सुधार के क्षेत्रों की पहचान करें।",
+      love: "पिछली बातचीत पर विचार करें और भावनात्मक समझ को गहरा करें।",
+      money: "अपने बजट का पुनर्मूल्यांकन करें और आगामी खर्चों की योजना बनाएं।",
+      health: "अपनी ऊर्जा बहाल करने के लिए आराम को प्राथमिकता दें।",
+    },
+    today: {
+      career: "एक महत्वपूर्ण अवसर प्रस्तुत हो सकता है - इसे पकड़ने के लिए तैयार रहें।",
+      love: "खुला संचार आज आपके बंधनों को मजबूत करेगा।",
+      money: "वित्तीय योजना और स्मार्ट निवेश के लिए अनुकूल समय।",
+      health: "अपनी जीवन शक्ति बढ़ाने के लिए हल्का व्यायाम करें।",
+    },
+    tomorrow: {
+      career: "नई परियोजनाएं या सहयोग महत्वपूर्ण लाभ ला सकते हैं।",
+      love: "कल अपने प्रियजनों के लिए कुछ विशेष योजना बनाएं।",
+      money: "भविष्य की सुरक्षा के लिए दीर्घकालिक बचत रणनीतियों पर विचार करें।",
+      health: "मानसिक स्पष्टता के लिए अपने दिन की शुरुआत ध्यान से करें।",
+    },
+  } : {
     yesterday: {
       career: "Review your recent achievements and identify areas for improvement.",
       love: "Reflect on past conversations and deepen emotional understanding.",
@@ -82,7 +118,11 @@ function buildMockHoroscope(sign: string, period: string): HoroscopeResponse {
     tomorrow: { career: 4, love: 5, money: 4, health: 3 },
   };
 
-  const luckyColors: Record<string, string> = {
+  const luckyColors: Record<string, string> = isHi ? {
+    aries: "लाल", taurus: "हरा", gemini: "पीला", cancer: "चांदी",
+    leo: "सुनहरा", virgo: "गहरा नीला", libra: "गुलाबी", scorpio: "मैरून",
+    sagittarius: "बैंगनी", capricorn: "काला", aquarius: "इलेक्ट्रिक नीला", pisces: "समुद्री हरा",
+  } : {
     aries: "Red", taurus: "Green", gemini: "Yellow", cancer: "Silver",
     leo: "Gold", virgo: "Navy Blue", libra: "Pink", scorpio: "Maroon",
     sagittarius: "Purple", capricorn: "Black", aquarius: "Electric Blue", pisces: "Sea Green",
@@ -106,7 +146,7 @@ function buildMockHoroscope(sign: string, period: string): HoroscopeResponse {
     date: getDateForPeriod(period),
     prediction: predictions[period],
     lucky: {
-      color: luckyColors[sign] || "Gold",
+      color: luckyColors[sign] || (isHi ? "सुनहरा" : "Gold"),
       number: luckyNumbers[sign] || 7,
       time: luckyTimes[sign] || "12:00 PM - 2:00 PM",
     },
@@ -120,6 +160,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const sign = searchParams.get("sign")?.toLowerCase() || "aries";
     const period = searchParams.get("period")?.toLowerCase() || "today";
+    const lang = searchParams.get("lang")?.toLowerCase() || "en";
 
     if (!SIGN_NAMES[sign]) {
       return NextResponse.json({ error: "Invalid zodiac sign" }, { status: 400 });
@@ -131,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     if (DEV_MODE) {
       await new Promise((resolve) => setTimeout(resolve, 600));
-      return NextResponse.json(buildMockHoroscope(sign, period));
+      return NextResponse.json(buildMockHoroscope(sign, period, lang));
     }
 
     // Production: call LLM API for structured JSON
@@ -175,7 +216,7 @@ export async function GET(request: NextRequest) {
     if (jsonMatch) {
       return NextResponse.json(JSON.parse(jsonMatch[0]));
     }
-    return NextResponse.json(buildMockHoroscope(sign, period));
+    return NextResponse.json(buildMockHoroscope(sign, period, lang));
   } catch {
     return NextResponse.json({ error: "Failed to generate horoscope" }, { status: 500 });
   }

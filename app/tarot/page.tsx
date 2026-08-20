@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, RefreshCw, Star } from "lucide-react";
 import { TAROT_CARDS, TAROT_TOPICS, drawThreeCards, getCardById, getCardMeaning, type DrawnCard, type TarotTopic } from "@/lib/tarot-data";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 interface RevealedCard extends DrawnCard {
   name: string;
@@ -12,19 +13,20 @@ interface RevealedCard extends DrawnCard {
   arcana: string;
 }
 
-const POSITION_LABELS: Record<DrawnCard["position"], string> = {
-  past: "Past",
-  present: "Present",
-  future: "Future / Outcome",
-};
-
 export default function TarotReadingPage() {
+  const { language, t } = useLanguage();
   const [topic, setTopic] = useState<TarotTopic>("general");
   const [cards, setCards] = useState<RevealedCard[]>([]);
   const [flipped, setFlipped] = useState<boolean[]>([false, false, false]);
   const [isShuffling, setIsShuffling] = useState(false);
   const [interpretation, setInterpretation] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const POSITION_LABELS: Record<DrawnCard["position"], string> = {
+    past: t.tarot.past,
+    present: t.tarot.present,
+    future: t.tarot.future,
+  };
 
   const shuffleDeck = () => {
     setIsShuffling(true);
@@ -67,6 +69,7 @@ export default function TarotReadingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           topic,
+          language,
           cards: cards.map(({ cardId, position, reversed }) => ({ cardId, position, reversed })),
         }),
       });
@@ -74,10 +77,10 @@ export default function TarotReadingPage() {
         const data = await res.json();
         setInterpretation(data.interpretation);
       } else {
-        setInterpretation("The cards are ready, but the cosmic connection is busy. Please try again.");
+        setInterpretation(language === 'hi' ? "कार्ड तैयार हैं, लेकिन ब्रह्मांडीय संबंध व्यस्त है। कृपया पुनः प्रयास करें।" : "The cards are ready, but the cosmic connection is busy. Please try again.");
       }
     } catch {
-      setInterpretation("The cards are ready, but the cosmic connection is busy. Please try again.");
+      setInterpretation(language === 'hi' ? "कार्ड तैयार हैं, लेकिन ब्रह्मांडीय संबंध व्यस्त है। कृपया पुनः प्रयास करें।" : "The cards are ready, but the cosmic connection is busy. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -91,31 +94,39 @@ export default function TarotReadingPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-sm font-medium mb-6">
             <Sparkles className="w-4 h-4" />
-            <span>Free 3-Card Tarot Reading</span>
+            <span>{t.tarot.badge}</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold font-serif text-[var(--text-primary)] mb-4">
-            🔮 Tarot Card Reading
+            🔮 {t.tarot.title}
           </h1>
           <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
-            Draw three cards to reveal insights about your past, present, and future. Choose a topic to focus your reading.
+            {t.tarot.subtitle}
           </p>
         </motion.div>
 
         {/* Topic Selector */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-10">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 text-center">Choose Your Topic</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 text-center">{t.tarot.chooseTopic}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
-            {TAROT_TOPICS.map((t) => (
+            {TAROT_TOPICS.map((topicItem) => (
               <motion.button
-                key={t.id}
+                key={topicItem.id}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setTopic(t.id)}
-                className={`astro-card p-4 text-center cursor-pointer transition-all ${topic === t.id ? "ring-2 ring-[var(--accent)] bg-[var(--accent)]/5" : ""}`}
+                onClick={() => setTopic(topicItem.id)}
+                className={`astro-card p-4 text-center cursor-pointer transition-all ${topic === topicItem.id ? "ring-2 ring-[var(--accent)] bg-[var(--accent)]/5" : ""}`}
               >
-                <div className="text-3xl mb-2">{t.icon}</div>
-                <div className="font-semibold text-[var(--text-primary)]">{t.label}</div>
-                <div className="text-xs text-[var(--text-muted)] mt-1">{t.description}</div>
+                <div className="text-3xl mb-2">{topicItem.icon}</div>
+                <div className="font-semibold text-[var(--text-primary)]">
+                  {language === 'hi'
+                    ? topicItem.id === 'love' ? 'प्रेम' : topicItem.id === 'career' ? 'करियर' : 'सामान्य'
+                    : topicItem.label}
+                </div>
+                <div className="text-xs text-[var(--text-muted)] mt-1">
+                  {language === 'hi'
+                    ? topicItem.id === 'love' ? 'रोमांस, रिश्ते और भावनात्मक संबंध' : topicItem.id === 'career' ? 'काम, महत्वाकांक्षा और पेशेवर विकास' : 'समग्र जीवन मार्गदर्शन और आध्यात्मिक अंतर्दृष्टि'
+                    : topicItem.description}
+                </div>
               </motion.button>
             ))}
           </div>
@@ -131,7 +142,7 @@ export default function TarotReadingPage() {
             className="px-8 py-3 bg-gradient-to-r from-[var(--accent)] to-[var(--accent-dark)] text-white font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 inline-flex items-center gap-2"
           >
             <RefreshCw className={`w-5 h-5 ${isShuffling ? "animate-spin" : ""}`} />
-            {isShuffling ? "Shuffling..." : cards.length > 0 ? "Shuffle Again" : "Shuffle & Draw Cards"}
+            {isShuffling ? t.tarot.shuffling : cards.length > 0 ? t.tarot.shuffleAgain : t.tarot.shuffle}
           </motion.button>
         </div>
 
@@ -160,7 +171,7 @@ export default function TarotReadingPage() {
                       <div className="text-center">
                         <div className="text-5xl mb-3">🔮</div>
                         <div className="text-purple-300 font-semibold tracking-widest text-sm">ASTROVEDA</div>
-                        <div className="text-purple-500 text-xs mt-2">Tap to reveal</div>
+                        <div className="text-purple-500 text-xs mt-2">{t.tarot.tapToReveal}</div>
                       </div>
                     </div>
                     {/* Card Front */}
@@ -168,7 +179,7 @@ export default function TarotReadingPage() {
                       <div className="text-5xl mb-3">{card.symbol}</div>
                       <div className="text-lg font-bold text-amber-900 mb-1">{card.name}</div>
                       <div className={`text-xs font-semibold px-2 py-0.5 rounded-full mb-3 ${card.reversed ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                        {card.reversed ? "Reversed" : "Upright"}
+                        {card.reversed ? t.tarot.reversed : t.tarot.upright}
                       </div>
                       <div className="text-xs text-amber-800 leading-relaxed">{card.meaning}</div>
                       <div className="text-[10px] text-amber-600 mt-3 uppercase tracking-wider">{card.arcana}</div>
@@ -191,7 +202,7 @@ export default function TarotReadingPage() {
               className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 inline-flex items-center gap-2"
             >
               <Star className="w-5 h-5" />
-              {isLoading ? "Consulting the Stars..." : "Get AI Interpretation"}
+              {isLoading ? t.tarot.consulting : t.tarot.getInterpretation}
             </motion.button>
           </motion.div>
         )}
@@ -200,7 +211,7 @@ export default function TarotReadingPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="astro-card max-w-3xl mx-auto">
             <div className="flex items-center gap-3 mb-4">
               <Sparkles className="w-6 h-6 text-[var(--accent)]" />
-              <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Your Reading</h2>
+              <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">{t.tarot.yourReading}</h2>
             </div>
             <div className="prose prose-amber max-w-none text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
               {interpretation}
@@ -212,7 +223,7 @@ export default function TarotReadingPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
             <div className="text-6xl mb-4">🃏</div>
             <p className="text-[var(--text-muted)] text-lg">
-              Click "Shuffle & Draw Cards" to begin your reading
+              {t.tarot.start}
             </p>
           </motion.div>
         )}

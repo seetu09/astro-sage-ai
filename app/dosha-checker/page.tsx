@@ -11,6 +11,7 @@ import {
   type ManglikSeverity,
   type SadeSatiPhase,
 } from "@/lib/dosha-checker";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 const SEVERITY_STYLES: Record<ManglikSeverity, { badge: string; label: string }> = {
   none: { badge: "bg-green-500/10 text-green-500 border-green-500/20", label: "None" },
@@ -36,6 +37,7 @@ interface FormState {
 const emptyForm: FormState = { name: "", moonSign: 1, marsSign: 1, ascendantSign: 1 };
 
 export default function DoshaCheckerPage() {
+  const { language, t } = useLanguage();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [result, setResult] = useState<DoshaCheckResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export default function DoshaCheckerPage() {
     setTimeout(() => {
       const details: BirthDetails = {
         ...form,
-        name: form.name || "Your",
+        name: form.name || (language === 'hi' ? "आपका" : "Your"),
       };
       setResult(checkDoshas(details));
       setLoading(false);
@@ -83,13 +85,13 @@ export default function DoshaCheckerPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-[var(--accent)] text-sm font-medium mb-6">
             <Shield className="w-4 h-4" />
-            <span>Manglik & Shani Sade Sati Checker</span>
+            <span>{t.dosha.badge}</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold font-serif text-[var(--text-primary)] mb-4">
-            Dosha Checker
+            {t.dosha.title}
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
-            Check for Mangal Dosha and Shani Sade Sati in your birth chart with detailed remedies.
+            {t.dosha.subtitle}
           </p>
         </motion.div>
 
@@ -104,10 +106,10 @@ export default function DoshaCheckerPage() {
             >
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm text-[var(--text-muted)] mb-1">Your Name (optional)</label>
+                  <label className="block text-sm text-[var(--text-muted)] mb-1">{t.dosha.yourName}</label>
                   <input
                     type="text"
-                    placeholder="Enter your name"
+                    placeholder={t.dosha.namePlaceholder}
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -116,19 +118,19 @@ export default function DoshaCheckerPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {renderSelect(
-                    "Moon Sign (Rashi)",
+                    t.dosha.moonSign,
                     <Moon className="w-4 h-4 text-[var(--accent)]" />,
                     form.moonSign,
                     (v) => setForm({ ...form, moonSign: v })
                   )}
                   {renderSelect(
-                    "Mars Sign (Placement)",
+                    t.dosha.marsSign,
                     <Flame className="w-4 h-4 text-red-500" />,
                     form.marsSign,
                     (v) => setForm({ ...form, marsSign: v })
                   )}
                   {renderSelect(
-                    "Ascendant (Lagna)",
+                    t.dosha.ascendant,
                     <Activity className="w-4 h-4 text-blue-500" />,
                     form.ascendantSign,
                     (v) => setForm({ ...form, ascendantSign: v })
@@ -142,7 +144,7 @@ export default function DoshaCheckerPage() {
                     className="px-12 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 flex items-center gap-3 text-lg"
                   >
                     <Shield className="w-6 h-6" />
-                    {loading ? "Analyzing Chart..." : "Check My Doshas"}
+                    {loading ? t.dosha.analyzing : t.dosha.checkButton}
                   </button>
                 </div>
               </form>
@@ -162,18 +164,18 @@ export default function DoshaCheckerPage() {
                     <CheckCircle2 className="w-5 h-5" />
                   )}
                   <span className="font-semibold">
-                    {result.overall.hasDosha ? "Doshas Detected" : "No Major Doshas"}
+                    {result.overall.hasDosha ? t.dosha.doshasDetected : t.dosha.noMajorDoshas}
                   </span>
                 </div>
                 <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
-                  {result.overall.hasDosha ? "Remedies Available" : "Your Chart is Clear"}
+                  {result.overall.hasDosha ? t.dosha.remediesAvailable : t.dosha.chartClear}
                 </h2>
                 <p className="text-[var(--text-secondary)] max-w-xl mx-auto">{result.overall.summary}</p>
                 <button
                   onClick={() => setResult(null)}
                   className="mt-6 px-6 py-2 border border-[var(--border-color)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-colors"
                 >
-                  Check Another Chart
+                  {t.dosha.checkAnother}
                 </button>
               </div>
 
@@ -182,7 +184,7 @@ export default function DoshaCheckerPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
                     <Flame className="w-5 h-5 text-red-500" />
-                    Mangal Dosha (Manglik)
+                    {t.dosha.manglikTitle}
                   </h3>
                   <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${SEVERITY_STYLES[result.manglik.severity].badge}`}>
                     {SEVERITY_STYLES[result.manglik.severity].label.toUpperCase()}
@@ -193,10 +195,10 @@ export default function DoshaCheckerPage() {
 
                 {result.manglik.affectedHouses.length > 0 && (
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-sm text-[var(--text-muted)]">Affected Houses:</span>
+                    <span className="text-sm text-[var(--text-muted)]">{t.dosha.affectedHouses}</span>
                     {result.manglik.affectedHouses.map((house) => (
                       <span key={house} className="px-2 py-1 text-xs font-bold bg-red-500/10 text-red-500 rounded-full">
-                        House {house}
+                        {language === 'hi' ? `भाव ${house}` : `House ${house}`}
                       </span>
                     ))}
                   </div>
@@ -204,7 +206,7 @@ export default function DoshaCheckerPage() {
 
                 {result.manglik.cancellations.length > 0 && (
                   <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 mb-4">
-                    <p className="text-sm text-green-600 dark:text-green-400 font-medium mb-1">Cancellations Applied:</p>
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium mb-1">{t.dosha.cancellationsApplied}</p>
                     {result.manglik.cancellations.map((c, i) => (
                       <p key={i} className="text-sm text-[var(--text-secondary)]">• {c}</p>
                     ))}
@@ -214,7 +216,7 @@ export default function DoshaCheckerPage() {
                 <div className="p-4 rounded-xl bg-[var(--accent)]/5 border border-[var(--accent)]/20">
                   <p className="text-sm font-semibold text-[var(--accent)] mb-2 flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Remedies
+                    {t.dosha.remedies}
                   </p>
                   <ul className="space-y-1.5">
                     {result.manglik.remedies.map((remedy, i) => (
@@ -232,7 +234,7 @@ export default function DoshaCheckerPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
                     <Moon className="w-5 h-5 text-indigo-500" />
-                    Shani Sade Sati
+                    {t.dosha.sadeSatiTitle}
                   </h3>
                   <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${PHASE_STYLES[result.sadeSati.phase].badge}`}>
                     {PHASE_STYLES[result.sadeSati.phase].label.toUpperCase()}
@@ -244,13 +246,13 @@ export default function DoshaCheckerPage() {
                 {/* Phase Timeline */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-2">
-                    {result.sadeSati.timeline.map((t, i) => (
-                      <div key={t.phase} className="flex-1 text-center">
-                        <div className={`text-xs font-semibold mb-1 ${t.active ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`}>
-                          {t.label}
+                    {result.sadeSati.timeline.map((tItem, i) => (
+                      <div key={tItem.phase} className="flex-1 text-center">
+                        <div className={`text-xs font-semibold mb-1 ${tItem.active ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}`}>
+                          {tItem.label}
                         </div>
-                        <div className={`h-2 rounded-full mx-1 ${t.active ? "bg-[var(--accent)]" : "bg-[var(--border-color)]"}`} />
-                        <div className="text-[10px] text-[var(--text-muted)] mt-1 hidden sm:block">{t.description}</div>
+                        <div className={`h-2 rounded-full mx-1 ${tItem.active ? "bg-[var(--accent)]" : "bg-[var(--border-color)]"}`} />
+                        <div className="text-[10px] text-[var(--text-muted)] mt-1 hidden sm:block">{tItem.description}</div>
                       </div>
                     ))}
                   </div>
@@ -259,7 +261,7 @@ export default function DoshaCheckerPage() {
                 <div className="p-4 rounded-xl bg-[var(--accent)]/5 border border-[var(--accent)]/20">
                   <p className="text-sm font-semibold text-[var(--accent)] mb-2 flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Remedies
+                    {t.dosha.remedies}
                   </p>
                   <ul className="space-y-1.5">
                     {result.sadeSati.remedies.map((remedy, i) => (

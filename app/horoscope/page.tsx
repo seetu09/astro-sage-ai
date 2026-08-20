@@ -4,21 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Calendar, Sparkles } from "lucide-react";
-
-const SIGNS = [
-  { id: "aries", name: "Aries", symbol: "♈", element: "Fire", dates: "Mar 21 - Apr 19" },
-  { id: "taurus", name: "Taurus", symbol: "♉", element: "Earth", dates: "Apr 20 - May 20" },
-  { id: "gemini", name: "Gemini", symbol: "♊", element: "Air", dates: "May 21 - Jun 20" },
-  { id: "cancer", name: "Cancer", symbol: "♋", element: "Water", dates: "Jun 21 - Jul 22" },
-  { id: "leo", name: "Leo", symbol: "♌", element: "Fire", dates: "Jul 23 - Aug 22" },
-  { id: "virgo", name: "Virgo", symbol: "♍", element: "Earth", dates: "Aug 23 - Sep 22" },
-  { id: "libra", name: "Libra", symbol: "♎", element: "Air", dates: "Sep 23 - Oct 22" },
-  { id: "scorpio", name: "Scorpio", symbol: "♏", element: "Water", dates: "Oct 23 - Nov 21" },
-  { id: "sagittarius", name: "Sagittarius", symbol: "♐", element: "Fire", dates: "Nov 22 - Dec 21" },
-  { id: "capricorn", name: "Capricorn", symbol: "♑", element: "Earth", dates: "Dec 22 - Jan 19" },
-  { id: "aquarius", name: "Aquarius", symbol: "♒", element: "Air", dates: "Jan 20 - Feb 18" },
-  { id: "pisces", name: "Pisces", symbol: "♓", element: "Water", dates: "Feb 19 - Mar 20" },
-];
+import { useLanguage } from "@/app/context/LanguageContext";
+import { zodiacSigns } from "@/data/horoscope-data";
 
 const ELEMENT_COLORS: Record<string, string> = {
   Fire: "text-orange-500",
@@ -28,7 +15,8 @@ const ELEMENT_COLORS: Record<string, string> = {
 };
 
 export default function HoroscopePage() {
-  const today = new Date().toLocaleDateString("en-US", {
+  const { language, t } = useLanguage();
+  const today = new Date().toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -44,10 +32,10 @@ export default function HoroscopePage() {
             <span>{today}</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold font-serif text-[var(--text-primary)] mb-4">
-            Daily Horoscope
+            {t.horoscopePage.title}
           </h1>
           <p className="text-lg text-[var(--text-secondary)] max-w-2xl mx-auto">
-            Select your zodiac sign to read today's Vedic astrology prediction with lucky attributes and category scores.
+            {t.horoscopePage.subtitle}
           </p>
         </motion.div>
 
@@ -57,7 +45,7 @@ export default function HoroscopePage() {
           transition={{ delay: 0.2 }}
           className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
         >
-          {SIGNS.map((sign, index) => (
+          {zodiacSigns.map((sign, index) => (
             <motion.div
               key={sign.id}
               initial={{ opacity: 0, y: 20 }}
@@ -69,12 +57,12 @@ export default function HoroscopePage() {
                 className="astro-card p-4 text-center cursor-pointer block transition-all hover:scale-105"
               >
                 <div className="text-4xl mb-2">{sign.symbol}</div>
-                <div className="font-semibold text-[var(--text-primary)]">{sign.name}</div>
-                <div className={`text-xs mt-1 ${ELEMENT_COLORS[sign.element]}`}>{sign.element}</div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-1">{sign.dates}</div>
+                <div className="font-semibold text-[var(--text-primary)]">{sign.name[language]}</div>
+                <div className={`text-xs mt-1 ${ELEMENT_COLORS[sign.element.en] || ""}`}>{sign.element[language]}</div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-1">{sign.dates[language]}</div>
                 <div className="mt-3 inline-flex items-center gap-1 text-xs text-[var(--accent)]">
                   <Sparkles className="w-3 h-3" />
-                  Read Today
+                  {t.horoscopePage.readToday}
                 </div>
               </Link>
             </motion.div>
@@ -89,21 +77,21 @@ export default function HoroscopePage() {
           className="mt-16 grid md:grid-cols-3 gap-6"
         >
           <div className="astro-card">
-            <h3 className="font-bold text-[var(--text-primary)] mb-2">✨ Personalized Guidance</h3>
+            <h3 className="font-bold text-[var(--text-primary)] mb-2">{t.horoscopePage.personalizedTitle}</h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              Our AI Guru analyzes planetary positions to give you specific daily advice for career, love, money, and health.
+              {t.horoscopePage.personalizedText}
             </p>
           </div>
           <div className="astro-card">
-            <h3 className="font-bold text-[var(--text-primary)] mb-2">🆓 100% Free</h3>
+            <h3 className="font-bold text-[var(--text-primary)] mb-2">{t.horoscopePage.freeTitle}</h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              Check your lucky color, number, and time every day without any subscription.
+              {t.horoscopePage.freeText}
             </p>
           </div>
           <div className="astro-card">
-            <h3 className="font-bold text-[var(--text-primary)] mb-2">🕉️ Vedic Wisdom</h3>
+            <h3 className="font-bold text-[var(--text-primary)] mb-2">{t.horoscopePage.vedicTitle}</h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              Traditional Indian astrology principles meet modern AI technology for accurate guidance.
+              {t.horoscopePage.vedicText}
             </p>
           </div>
         </motion.div>

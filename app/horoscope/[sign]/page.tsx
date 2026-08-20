@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Palette, Hash, Clock, Briefcase, Heart, Wallet, Activity, Sparkles, ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/app/context/LanguageContext";
+import { zodiacSigns } from "@/data/horoscope-data";
 
 type Period = "yesterday" | "today" | "tomorrow";
 
@@ -32,48 +34,36 @@ interface HoroscopeData {
   };
 }
 
-const SIGN_META: Record<string, { name: string; symbol: string }> = {
-  aries: { name: "Aries", symbol: "♈" },
-  taurus: { name: "Taurus", symbol: "♉" },
-  gemini: { name: "Gemini", symbol: "♊" },
-  cancer: { name: "Cancer", symbol: "♋" },
-  leo: { name: "Leo", symbol: "♌" },
-  virgo: { name: "Virgo", symbol: "♍" },
-  libra: { name: "Libra", symbol: "♎" },
-  scorpio: { name: "Scorpio", symbol: "♏" },
-  sagittarius: { name: "Sagittarius", symbol: "♐" },
-  capricorn: { name: "Capricorn", symbol: "♑" },
-  aquarius: { name: "Aquarius", symbol: "♒" },
-  pisces: { name: "Pisces", symbol: "♓" },
-};
-
-const PERIODS: { id: Period; label: string }[] = [
-  { id: "yesterday", label: "Yesterday" },
-  { id: "today", label: "Today" },
-  { id: "tomorrow", label: "Tomorrow" },
-];
-
-const SCORE_CATEGORIES = [
-  { key: "career", label: "Career", icon: Briefcase, color: "text-blue-500", bar: "bg-blue-500" },
-  { key: "love", label: "Love", icon: Heart, color: "text-pink-500", bar: "bg-pink-500" },
-  { key: "money", label: "Money", icon: Wallet, color: "text-green-500", bar: "bg-green-500" },
-  { key: "health", label: "Health", icon: Activity, color: "text-orange-500", bar: "bg-orange-500" },
-] as const;
-
 export default function HoroscopeSignPage() {
   const params = useParams();
+  const { language, t } = useLanguage();
   const sign = (params.sign as string)?.toLowerCase() || "aries";
   const [period, setPeriod] = useState<Period>("today");
   const [data, setData] = useState<HoroscopeData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const meta = SIGN_META[sign] || { name: "Aries", symbol: "♈" };
+  const signData = zodiacSigns.find((s) => s.id === sign);
+  const signName = signData ? signData.name[language] : (language === 'hi' ? 'मेष' : "Aries");
+  const signSymbol = signData ? signData.symbol : "♈";
+
+  const PERIODS: { id: Period; label: string }[] = [
+    { id: "yesterday", label: language === 'hi' ? "कल" : "Yesterday" },
+    { id: "today", label: language === 'hi' ? "आज" : "Today" },
+    { id: "tomorrow", label: language === 'hi' ? "कल" : "Tomorrow" },
+  ];
+
+  const SCORE_CATEGORIES = [
+    { key: "career", label: t.horoscopeSign.career, icon: Briefcase, color: "text-blue-500", bar: "bg-blue-500" },
+    { key: "love", label: t.horoscopeSign.love, icon: Heart, color: "text-pink-500", bar: "bg-pink-500" },
+    { key: "money", label: t.horoscopeSign.money, icon: Wallet, color: "text-green-500", bar: "bg-green-500" },
+    { key: "health", label: t.horoscopeSign.health, icon: Activity, color: "text-orange-500", bar: "bg-orange-500" },
+  ] as const;
 
   useEffect(() => {
     setLoading(true);
     const fetchHoroscope = async () => {
       try {
-        const res = await fetch(`/api/horoscope?sign=${sign}&period=${period}`);
+        const res = await fetch(`/api/horoscope?sign=${sign}&period=${period}&lang=${language}`);
         if (res.ok) {
           const json = await res.json();
           setData(json);
@@ -85,7 +75,7 @@ export default function HoroscopeSignPage() {
       }
     };
     fetchHoroscope();
-  }, [sign, period]);
+  }, [sign, period, language]);
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-4">
@@ -96,16 +86,16 @@ export default function HoroscopeSignPage() {
             className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mb-6"
           >
             <ArrowLeft className="w-4 h-4" />
-            All Signs
+            {t.horoscopeSign.allSigns}
           </Link>
 
           <div className="text-center mb-8">
-            <div className="text-6xl mb-3">{meta.symbol}</div>
+            <div className="text-6xl mb-3">{signSymbol}</div>
             <h1 className="text-4xl md:text-5xl font-bold font-serif text-[var(--text-primary)] mb-2">
-              {meta.name} Horoscope
+              {t.horoscopeSign.title.replace('{sign}', signName)}
             </h1>
             <p className="text-[var(--text-secondary)]">
-              Daily Vedic astrology guidance for {meta.name}
+              {t.horoscopeSign.subtitle.replace('{sign}', signName)}
             </p>
           </div>
 
@@ -155,7 +145,7 @@ export default function HoroscopeSignPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <Sparkles className="w-6 h-6 text-[var(--accent)]" />
                   <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">
-                    {PERIODS.find((p) => p.id === data.period)?.label} Prediction
+                    {t.horoscopeSign.prediction.replace('{period}', PERIODS.find((p) => p.id === data.period)?.label || '')}
                   </h2>
                 </div>
                 <p className="text-[var(--text-secondary)] leading-relaxed text-lg">
@@ -170,7 +160,7 @@ export default function HoroscopeSignPage() {
                     <Palette className="w-6 h-6 text-[var(--accent)]" />
                   </div>
                   <div>
-                    <div className="text-xs text-[var(--text-muted)]">Lucky Color</div>
+                    <div className="text-xs text-[var(--text-muted)]">{t.horoscopeSign.luckyColor}</div>
                     <div className="text-lg font-bold text-[var(--text-primary)]">{data.lucky.color}</div>
                   </div>
                 </div>
@@ -179,7 +169,7 @@ export default function HoroscopeSignPage() {
                     <Hash className="w-6 h-6 text-[var(--accent)]" />
                   </div>
                   <div>
-                    <div className="text-xs text-[var(--text-muted)]">Lucky Number</div>
+                    <div className="text-xs text-[var(--text-muted)]">{t.horoscopeSign.luckyNumber}</div>
                     <div className="text-lg font-bold text-[var(--text-primary)]">{data.lucky.number}</div>
                   </div>
                 </div>
@@ -188,7 +178,7 @@ export default function HoroscopeSignPage() {
                     <Clock className="w-6 h-6 text-[var(--accent)]" />
                   </div>
                   <div>
-                    <div className="text-xs text-[var(--text-muted)]">Lucky Time</div>
+                    <div className="text-xs text-[var(--text-muted)]">{t.horoscopeSign.luckyTime}</div>
                     <div className="text-sm font-bold text-[var(--text-primary)]">{data.lucky.time}</div>
                   </div>
                 </div>
@@ -197,7 +187,7 @@ export default function HoroscopeSignPage() {
               {/* Category Scores */}
               <div className="astro-card">
                 <h3 className="text-lg font-bold text-[var(--text-primary)] mb-6">
-                  Category Scores
+                  {t.horoscopeSign.categoryScores}
                 </h3>
                 <div className="space-y-5">
                   {SCORE_CATEGORIES.map((cat) => {
@@ -229,7 +219,7 @@ export default function HoroscopeSignPage() {
             </motion.div>
           ) : (
             <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
-              <p className="text-[var(--text-muted)] text-lg">Unable to load horoscope. Please try again.</p>
+              <p className="text-[var(--text-muted)] text-lg">{t.horoscopeSign.error}</p>
             </motion.div>
           )}
         </AnimatePresence>
