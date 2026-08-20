@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { AuthProvider } from "./context/AuthContext";
+import { WalletProvider } from "./context/WalletContext";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -132,11 +133,13 @@ export default function RootLayout({
           <ErrorBoundary>
             <LanguageProvider>
               <AuthProvider>
-                <CosmicBackground />
-                <WarmGlow />
-                <Navbar />
-                <main className="min-h-screen relative z-10">{children}</main>
-                <Footer />
+                <WalletProvider>
+                  <CosmicBackground />
+                  <WarmGlow />
+                  <Navbar />
+                  <main className="min-h-screen relative z-10">{children}</main>
+                  <Footer />
+                </WalletProvider>
               </AuthProvider>
             </LanguageProvider>
           </ErrorBoundary>

@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 import { Send, User, Bot, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
+import { useWallet } from '@/app/context/WalletContext';
 import EmptyState from '@/app/components/EmptyState';
+import TopUpModal from '@/app/components/TopUpModal';
 import { SkeletonChat } from '@/app/components/SkeletonLoader';
 
 interface Message {
@@ -42,6 +44,7 @@ function getMockResponse(lang: string): string {
 
 function ChatContent() {
   const { language, t } = useLanguage();
+  const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp } = useWallet();
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -96,6 +99,14 @@ function ChatContent() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+
+    // Paywall: consume a free question or wallet credit; block if insufficient funds
+    const result = consumeMessage();
+    if (result === 'blocked') {
+      openTopUp();
+      return; // Preserve the typed prompt — do not clear input or send
+    }
+
     const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input.trim(), timestamp: new Date() };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -144,25 +155,51 @@ function ChatContent() {
     <div className="fixed inset-x-0 bottom-0 top-14 sm:top-16 flex flex-col overflow-hidden z-10">
       {/* Header */}
       <div className="border-b border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="p-1.5 sm:p-2 rounded-full bg-[var(--accent)]/10">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--accent)]" />
             </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-semibold text-[var(--text-primary)]">{t.chat.title}</h1>
-              <p className="text-xs sm:text-sm text-[var(--text-muted)]">{t.chat.subtitle}</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-semibold text-[var(--text-primary)] truncate">{t.chat.title}</h1>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] truncate">{t.chat.subtitle}</p>
             </div>
           </div>
-          {messages.length > 1 && (
-            <button
-              onClick={clearChat}
-              className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              title="Clear chat"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {freeMessagesLeft > 0 ? (
+              <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full bg-green-500/15 border border-green-500/30 text-green-600 dark:text-green-400 text-xs sm:text-sm font-semibold whitespace-nowrap">
+                {t.chat.freeQuestionsLeft.replace('{count}', freeMessagesLeft.toString())}
+              </span>
+            ) : (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)]/30 text-[var(--accent)] text-xs sm:text-sm font-semibold whitespace-nowrap">
+                  {t.chat.walletBalance.replace('{amount}', walletBalance.toFixed(2))}
+                </span>
+                <button
+                  onClick={openTopUp}
+                  className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs sm:text-sm font-semibold hover:shadow-glow-gold transition-all whitespace-nowrap"
+                >
+                  {t.chat.addMoney}
+                </button>
+              </div>
+            )}
+            {messages.length > 1 && (
+              <button
+                onClick={clearChat}
+                className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                title="Clear chat"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Free-tier banner */}
+      <div className="px-3 sm:px-4 py-2 bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-amber-500/15 border-b border-amber-500/20">
+        <div className="max-w-4xl mx-auto flex items-center justify-center gap-2 text-center">
+          <span className="text-xs sm:text-sm font-semibold text-amber-700 dark:text-amber-300">{t.chat.freeBanner}</span>
         </div>
       </div>
 
@@ -242,6 +279,7 @@ function ChatContent() {
 
       {/* Input */}
       <div className="border-t border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
+        <TopUpModal />
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
           <input
             type="text"

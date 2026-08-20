@@ -34,6 +34,14 @@ interface TranslationShape {
     loading: string;
     welcome: string;
     error: string;
+    freeBanner: string;
+    freeQuestionsLeft: string;
+    walletBalance: string;
+    addMoney: string;
+    topUpTitle: string;
+    topUpSubtitle: string;
+    topUpQuickText: string;
+    signInRequired: string;
   };
   horoscope: {
     title: string;
@@ -349,6 +357,14 @@ export const translations: Record<Language, TranslationShape> = {
       loading: 'Consulting the stars...',
       welcome: 'Welcome! I am your AI Astrology Guru. Ask me about your horoscope, career, relationships, or any spiritual guidance you seek.',
       error: 'The cosmic connection is weak. Please try again.',
+      freeBanner: '🎉 First 3 Kundali Questions Are 100% Free!',
+      freeQuestionsLeft: 'Free Questions: {count}/3 Left',
+      walletBalance: 'Wallet: ₹{amount}',
+      addMoney: '+ Add Money',
+      topUpTitle: 'Add Money to Wallet',
+      topUpSubtitle: 'Each question costs ₹5. Choose an amount to top up your wallet.',
+      topUpQuickText: 'Quick top-up amounts:',
+      signInRequired: 'Please sign in to add money to your wallet.',
     },
     horoscope: {
       title: 'Daily Horoscope',
@@ -662,6 +678,14 @@ export const translations: Record<Language, TranslationShape> = {
       loading: 'सितारों से परामर्श कर रहा है...',
       welcome: 'स्वागत है! मैं आपका AI ज्योतिष गुरु हूँ। मुझसे अपने राशिफल, करियर, रिश्तों या किसी भी आध्यात्मिक मार्गदर्शन के बारे में पूछें।',
       error: 'ब्रह्मांडीय संबंध कमजोर है। कृपया पुनः प्रयास करें।',
+      freeBanner: '🎉 पहले 3 कुंडली प्रश्न 100% मुफ्त हैं!',
+      freeQuestionsLeft: 'मुफ्त प्रश्न: {count}/3 बाकी',
+      walletBalance: 'वॉलेट: ₹{amount}',
+      addMoney: '+ पैसे जोड़ें',
+      topUpTitle: 'वॉलेट में पैसे जोड़ें',
+      topUpSubtitle: 'प्रत्येक प्रश्न की कीमत ₹5 है। अपना वॉलेट टॉप-अप करने के लिए राशि चुनें।',
+      topUpQuickText: 'त्वरित टॉप-अप राशियाँ:',
+      signInRequired: 'वॉलेट में पैसे जोड़ने के लिए कृपया साइन इन करें।',
     },
     horoscope: {
       title: 'दैनिक राशिफल',
