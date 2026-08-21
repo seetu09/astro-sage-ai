@@ -17,6 +17,8 @@ interface AuthContextType {
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
   googleLogin: () => Promise<void>;
+  sendPhoneOtp: (phoneNumber: string) => Promise<void>;
+  verifyPhoneOtp: (phoneNumber: string, otp: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +31,8 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
   updateProfile: async () => {},
   googleLogin: async () => {},
+  sendPhoneOtp: async () => {},
+  verifyPhoneOtp: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -40,6 +44,7 @@ function mapSupabaseUser(user: SupabaseUser): User {
     id: user.id,
     name: metadata.name || metadata.full_name || user.email?.split("@")[0] || "User",
     email: user.email || "",
+    phone: user.phone || undefined,
     avatar: metadata.avatar_url || metadata.picture,
     birthDate: metadata.birthDate,
     birthTime: metadata.birthTime,
@@ -140,6 +145,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const sendPhoneOtp = useCallback(async (phoneNumber: string) => {
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.signInWithOtp({ phone: phoneNumber });
+      if (error) throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const verifyPhoneOtp = useCallback(async (phoneNumber: string, otp: string) => {
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: phoneNumber,
+        token: otp,
+        type: "sms",
+      });
+      if (error) throw error;
+      if (data.user) setUser(mapSupabaseUser(data.user));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     setUser(null);
     void getSupabaseClient().auth.signOut();
@@ -174,6 +206,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         updateProfile,
         googleLogin,
+        sendPhoneOtp,
+        verifyPhoneOtp,
       }}
     >
       {children}

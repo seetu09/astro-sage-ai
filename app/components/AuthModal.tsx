@@ -1,28 +1,32 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { X, Mail, Lock, User, Eye, EyeOff, LogOut } from "lucide-react";
+import { X, Mail, Lock, User, Eye, EyeOff, LogOut, Phone } from "lucide-react";
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type AuthView = "login" | "register" | "profile" | "forgot";
+type AuthView = "login" | "register" | "profile" | "forgot" | "phone" | "phone-verify";
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { t } = useLanguage();
-  const { user, isAuthenticated, login, register, resetPassword, logout, googleLogin, updateProfile, isLoading } = useAuth();
+  const { user, isAuthenticated, login, register, resetPassword, logout, googleLogin, updateProfile, sendPhoneOtp, verifyPhoneOtp, isLoading } = useAuth();
   const [view, setView] = useState<AuthView>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [otpResendCountdown, setOtpResendCountdown] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
+    phone: "",
+    otp: "",
+    countryCode: "+91",
     birthDate: "",
     birthTime: "",
     birthPlace: "",
@@ -52,7 +56,30 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       } else if (view === "forgot") {
         await resetPassword(formData.email);
         setSuccess("Password reset link sent to your email");
+      } else if (view === "phone") {
+        const fullPhone = formData.countryCode + formData.phone;
+        await sendPhoneOtp(fullPhone);
+        setSuccess("OTP sent to your phone");
+        setOtpResendCountdown(30);
+        setView("phone-verify");
+      } else if (view === "phone-verify") {
+        const fullPhone = formData.countryCode + formData.phone;
+        await verifyPhoneOtp(fullPhone, formData.otp);
+        onClose();
       }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError("");
+    setSuccess("");
+    try {
+      const fullPhone = formData.countryCode + formData.phone;
+      await sendPhoneOtp(fullPhone);
+      setSuccess("OTP resent to your phone");
+      setOtpResendCountdown(30);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     }
@@ -83,6 +110,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
   };
 
+  useEffect(() => {
+    if (otpResendCountdown > 0) {
+      const timer = setTimeout(() => setOtpResendCountdown(otpResendCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpResendCountdown]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -93,6 +127,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             {view === "register" && "Create Account"}
             {view === "profile" && "Your Profile"}
             {view === "forgot" && "Reset Password"}
+            {view === "phone" && "Enter Phone Number"}
+            {view === "phone-verify" && "Verify OTP"}
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-[var(--hover-bg)] rounded-full transition-colors">
             <X className="w-5 h-5 text-[var(--text-secondary)]" />
@@ -172,7 +208,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
           ) : (
             <>
-              {view !== "forgot" && (
+              {view !== "forgot" && view !== "phone" && view !== "phone-verify" && (
                 <>
                   <button
                     onClick={handleGoogle}
@@ -196,11 +232,107 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       <span className="px-2 bg-[var(--card-bg)] text-[var(--text-muted)]">or</span>
                     </div>
                   </div>
+
+                  <button
+                    onClick={() => switchView("phone")}
+                    disabled={isLoading}
+                    className="w-full py-3 mb-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] font-medium hover:bg-[var(--hover-bg)] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    <Phone className="w-5 h-5" />
+                    Continue with phone
+                  </button>
                 </>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {view === "register" && (
+              {view === "phone" && (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Phone Number</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.countryCode}
+                        onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
+                        className="w-1/3 px-3 py-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                      >
+                        <option value="+91">India (+91)</option>
+                        <option value="+1">US/Canada (+1)</option>
+                        <option value="+44">UK (+44)</option>
+                        <option value="+61">Australia (+61)</option>
+                        <option value="+86">China (+86)</option>
+                        <option value="+81">Japan (+81)</option>
+                        <option value="+49">Germany (+49)</option>
+                        <option value="+33">France (+33)</option>
+                        <option value="+52">Mexico (+52)</option>
+                        <option value="+55">Brazil (+55)</option>
+                      </select>
+                      <input
+                        type="tel"
+                        placeholder="98765 43210"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        autoComplete="tel"
+                        required
+                        className="w-2/3 px-4 py-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading || !formData.phone}
+                    className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
+                  >
+                    {isLoading ? "Sending..." : "Send OTP"}
+                  </button>
+                </form>
+              )}
+
+              {view === "phone-verify" && (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                      Enter the 6-digit code sent to {formData.countryCode + formData.phone}
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{6}"
+                      placeholder="000000"
+                      value={formData.otp}
+                      onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+                      autoComplete="one-time-code"
+                      required
+                      className="w-full px-4 py-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-center text-2xl tracking-widest"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading || formData.otp.length < 6}
+                    className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
+                  >
+                    {isLoading ? "Verifying..." : "Verify & Sign In"}
+                  </button>
+                  <div className="text-center">
+                    {otpResendCountdown > 0 ? (
+                      <span className="text-sm text-[var(--text-secondary)]">
+                        Resend in {otpResendCountdown}s
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={isLoading}
+                        className="text-sm text-amber-500 hover:text-amber-400 font-medium"
+                      >
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </form>
+              )}
+
+              {view !== "phone" && view !== "phone-verify" && (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {view === "register" && (
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                     <input
@@ -275,6 +407,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     : "Send Reset Link"}
                 </button>
               </form>
+              )}
 
               <div className="mt-6 text-center text-sm text-[var(--text-secondary)]">
                 {view === "forgot" ? (
@@ -283,19 +416,23 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </button>
                 ) : view === "login" ? (
                   <>
-                    Don&apos;t have an account?{" "}
+                    Don't have an account?{" "}
                     <button onClick={() => switchView("register")} className="text-amber-500 hover:text-amber-400 font-medium">
                       Sign up
                     </button>
                   </>
-                ) : (
+                ) : view === "register" ? (
                   <>
                     Already have an account?{" "}
                     <button onClick={() => switchView("login")} className="text-amber-500 hover:text-amber-400 font-medium">
                       Sign in
                     </button>
                   </>
-                )}
+                ) : view === "phone" || view === "phone-verify" ? (
+                  <button onClick={() => switchView("login")} className="text-amber-500 hover:text-amber-400 font-medium">
+                    Back to Login
+                  </button>
+                ) : null}
               </div>
             </>
           )}
