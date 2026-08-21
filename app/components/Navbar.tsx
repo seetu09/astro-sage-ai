@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
@@ -8,11 +8,12 @@ import { useAuth } from "../context/AuthContext";
 import AuthModal from "./AuthModal";
 import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
+import UserProfileDropdown, { type ProfileMenuAction } from "./UserProfileDropdown";
 import { Menu, X, ChevronDown, Sparkles } from "lucide-react";
 
 export default function Navbar() {
   const { t } = useLanguage();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
@@ -35,6 +36,18 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handlePlaceholderAction = useCallback((_action: ProfileMenuAction) => {
+    // Placeholder for future profile pages and empty-state modals.
+    setProfileDropdownOpen(false);
+    setMobileMenuOpen(false);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    logout();
+    setProfileDropdownOpen(false);
+    setMobileMenuOpen(false);
+  }, [logout]);
 
   const mainLinks = [
     { href: "/daily-horoscope", label: t.nav.dailyHoroscope },
@@ -143,10 +156,12 @@ export default function Navbar() {
                     </div>
                     <span className="hidden lg:inline">{user?.name?.split(" ")[0]}</span>
                   </button>
-                  {profileDropdownOpen && (
-                    <div
-                      role="menu"
-                      className="absolute top-full right-0 mt-1 w-48 bg-[#FFFDF6]/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-amber-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-lg py-1 z-50"
+                  {profileDropdownOpen && user && (
+                    <UserProfileDropdown
+                      user={user}
+                      onPlaceholderAction={handlePlaceholderAction}
+                      onLogout={handleLogout}
+                      className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)]"
                     />
                   )}
                 </div>
@@ -228,10 +243,12 @@ export default function Navbar() {
                       </div>
                       {user?.name}
                     </button>
-                    {profileDropdownOpen && (
-                      <div
-                        role="menu"
-                        className="absolute left-0 right-0 top-full mt-1 bg-[#FFFDF6]/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-amber-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-lg py-1 z-50"
+                    {profileDropdownOpen && user && (
+                      <UserProfileDropdown
+                        user={user}
+                        onPlaceholderAction={handlePlaceholderAction}
+                        onLogout={handleLogout}
+                        className="relative mt-2 w-full"
                       />
                     )}
                   </div>
