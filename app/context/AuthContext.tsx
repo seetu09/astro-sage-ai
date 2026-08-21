@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { getSupabaseClient } from "../../lib/supabase";
 
 export interface User {
   id: string;
@@ -21,6 +23,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
   googleLogin: () => Promise<void>;
@@ -32,12 +35,30 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: async () => {},
   register: async () => {},
+  resetPassword: async () => {},
   logout: () => {},
   updateProfile: async () => {},
   googleLogin: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+function mapSupabaseUser(user: SupabaseUser): User {
+  const metadata = user.user_metadata;
+
+  return {
+    id: user.id,
+    name: metadata.name || metadata.full_name || user.email?.split("@")[0] || "User",
+    email: user.email || "",
+    avatar: metadata.avatar_url || metadata.picture,
+    birthDate: metadata.birthDate,
+    birthTime: metadata.birthTime,
+    birthPlace: metadata.birthPlace,
+    latitude: metadata.latitude,
+    longitude: metadata.longitude,
+    timezone: metadata.timezone,
+  };
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -46,113 +67,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const token = localStorage.getItem("astroveda_token");
-        if (token) {
-          const res = await fetch("/api/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setUser(data.user);
-          } else {
-            localStorage.removeItem("astroveda_token");
-          }
-        }
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setUser(data.session?.user ? mapSupabaseUser(data.session.user) : null);
       } catch (error) {
         console.error("Session check failed:", error);
       } finally {
         setIsLoading(false);
       }
     };
+
     checkSession();
+
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const supabase = getSupabaseClient();
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ? mapSupabaseUser(session.user) : null);
+        setIsLoading(false);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
+    } catch (error) {
+      console.error("Auth listener setup failed:", error);
+    }
+
+    return () => unsubscribe?.();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || "Login failed");
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (data.user) setUser(mapSupabaseUser(data.user));
+    } finally {
+      setIsLoading(false);
     }
-
-    const data = await res.json();
-    localStorage.setItem("astroveda_token", data.token);
-    setUser(data.user);
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || "Registration failed");
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } },
+      });
+      if (error) throw error;
+      setUser(data.session?.user ? mapSupabaseUser(data.session.user) : null);
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    const data = await res.json();
-    localStorage.setItem("astroveda_token", data.token);
-    setUser(data.user);
+  const resetPassword = useCallback(async (email: string) => {
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const googleLogin = useCallback(async () => {
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const popup = window.open(
-      "/api/auth/google",
-      "Google Login",
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-
-    return new Promise<void>((resolve, reject) => {
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data.type === "AUTH_SUCCESS") {
-          localStorage.setItem("astroveda_token", event.data.token);
-          setUser(event.data.user);
-          window.removeEventListener("message", handleMessage);
-          resolve();
-        } else if (event.data.type === "AUTH_ERROR") {
-          window.removeEventListener("message", handleMessage);
-          reject(new Error(event.data.message));
-        }
-      };
-      window.addEventListener("message", handleMessage);
-    });
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      if (error) throw error;
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("astroveda_token");
     setUser(null);
+    void getSupabaseClient().auth.signOut();
   }, []);
 
   const updateProfile = useCallback(async (data: Partial<User>) => {
-    const token = localStorage.getItem("astroveda_token");
-    const res = await fetch("/api/auth/profile", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const { data: authData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.message || "Update failed");
+      const { data: result, error } = await supabase.auth.updateUser({
+        data: { ...authData.user.user_metadata, ...data },
+      });
+      if (error) throw error;
+      setUser(mapSupabaseUser(result.user));
+    } finally {
+      setIsLoading(false);
     }
-
-    const result = await res.json();
-    setUser(result.user);
   }, []);
 
   return (
@@ -163,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        resetPassword,
         logout,
         updateProfile,
         googleLogin,
