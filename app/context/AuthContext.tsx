@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { getSupabaseClient } from "../../lib/supabase";
+import { getSupabaseClient, uploadAvatar as uploadAvatarToStorage } from "../../lib/supabase";
 import type { UserProfile } from "@/types/user";
 
 export type User = UserProfile;
@@ -16,6 +16,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
   googleLogin: () => Promise<void>;
   sendPhoneOtp: (phoneNumber: string) => Promise<void>;
   verifyPhoneOtp: (phoneNumber: string, otp: string) => Promise<void>;
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   resetPassword: async () => {},
   logout: () => {},
   updateProfile: async () => {},
+  uploadAvatar: async () => {},
   googleLogin: async () => {},
   sendPhoneOtp: async () => {},
   verifyPhoneOtp: async () => {},
@@ -197,6 +199,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const uploadAvatar = useCallback(async (file: File) => {
+    if (!user) throw new Error("You must be signed in to update your avatar.");
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseClient();
+      const publicUrl = await uploadAvatarToStorage(user.id, file);
+
+      const { data: authData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      const { data: result, error } = await supabase.auth.updateUser({
+        data: { ...authData.user.user_metadata, avatar_url: publicUrl },
+      });
+      if (error) throw error;
+
+      // Best-effort sync to a profiles table if it exists.
+      try {
+        await supabase.from("profiles").upsert({
+          id: user.id,
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (profileError) {
+        console.warn("Could not sync avatar to profiles table:", profileError);
+      }
+
+      setUser(mapSupabaseUser(result.user));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -208,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         logout,
         updateProfile,
+        uploadAvatar,
         googleLogin,
         sendPhoneOtp,
         verifyPhoneOtp,

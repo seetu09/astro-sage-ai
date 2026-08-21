@@ -153,9 +153,18 @@ export default function Navbar() {
                     aria-expanded={profileDropdownOpen}
                     aria-haspopup="menu"
                   >
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-xs sm:text-sm">
-                      {user?.name?.charAt(0) || "U"}
-                    </div>
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={`${user.name}'s profile`}
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-2 ring-amber-200/80 dark:ring-[#FFD166]/30"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-xs sm:text-sm">
+                        {user?.name?.charAt(0) || "U"}
+                      </div>
+                    )}
                     <span className="hidden lg:inline">{user?.name?.split(" ")[0]}</span>
                   </button>
                   {profileDropdownOpen && user && (
@@ -240,9 +249,18 @@ export default function Navbar() {
                       aria-expanded={profileDropdownOpen}
                       aria-haspopup="menu"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-sm">
-                        {user?.name?.charAt(0) || "U"}
-                      </div>
+                      {user?.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={`${user.name}'s profile`}
+                          className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-200/80 dark:ring-[#FFD166]/30"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-sm">
+                          {user?.name?.charAt(0) || "U"}
+                        </div>
+                      )}
                       {user?.name}
                     </button>
                     {profileDropdownOpen && user && (

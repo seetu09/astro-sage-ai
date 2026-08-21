@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
+  Camera,
   CircleUserRound,
   Download,
   FileClock,
@@ -73,11 +74,14 @@ function downloadReceipt(transaction: WalletTransaction, customerName: string, e
 }
 
 export default function UserProfileModal({ isOpen, initialView, onClose }: UserProfileModalProps) {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const { walletBalance, freeMessagesLeft, transactions, openTopUp } = useWallet();
   const [activeView, setActiveView] = useState<ProfileMenuAction>(initialView);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: "", birthDate: "", birthTime: "", birthPlace: "", avatar: "" });
   const [kundaliHistory, setKundaliHistory] = useState<KundaliHistoryEntry[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
@@ -95,6 +99,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     setKundaliHistory(getKundaliHistory(user.id));
     setChatHistory(getChatHistory(user.id));
     setSaveMessage("");
+    setUploadMessage("");
   }, [initialView, isOpen, user]);
 
   useEffect(() => {
@@ -138,19 +143,64 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     }
   };
 
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadMessage("");
+    try {
+      await uploadAvatar(file);
+      setUploadMessage("Avatar updated successfully.");
+    } catch (error) {
+      setUploadMessage(error instanceof Error ? error.message : "Unable to upload avatar.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const renderPersonalDetails = () => (
     <form onSubmit={handleSave} className="space-y-5">
       <div className="flex items-center gap-4 border-b border-amber-200/60 pb-5 dark:border-white/10">
-        {form.avatar ? (
-          <img src={form.avatar} alt="Profile preview" className="h-16 w-16 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white dark:bg-[#FFD166] dark:text-[#080811]">
-            {form.name.charAt(0).toUpperCase() || "U"}
-          </div>
-        )}
+        <div className="relative shrink-0">
+          {form.avatar ? (
+            <img src={form.avatar} alt="Profile preview" className="h-16 w-16 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white dark:bg-[#FFD166] dark:text-[#080811]">
+              {form.name.charAt(0).toUpperCase() || "U"}
+            </div>
+          )}
+          {isUploading && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+              <Loader2 className="h-6 w-6 animate-spin text-white" />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            aria-label="Upload profile picture"
+            className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#FFFDF6] bg-amber-600 text-white shadow-md transition hover:bg-amber-700 disabled:opacity-60 dark:border-[#121026] dark:bg-[#FFD166] dark:text-[#080811] dark:hover:bg-[#E0A96D]"
+          >
+            <Camera className="h-3.5 w-3.5" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+        </div>
         <div className="min-w-0">
           <p className="truncate font-semibold text-amber-950 dark:text-[#F3F4F6]">{user.email}</p>
           <p className="mt-1 text-xs text-amber-800/60 dark:text-[#9CA3AF]">Account email cannot be changed here.</p>
+          {uploadMessage && (
+            <p className={`mt-1 text-xs font-medium ${uploadMessage.includes("successfully") ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`} aria-live="polite">
+              {uploadMessage}
+            </p>
+          )}
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -169,10 +219,6 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
         <label className="sm:col-span-2 text-sm font-medium text-amber-900/70 dark:text-[#D1D5DB]">
           Place of birth
           <input className={`${inputClass} mt-1.5`} value={form.birthPlace} onChange={(event) => setForm({ ...form, birthPlace: event.target.value })} placeholder="City, State, Country" />
-        </label>
-        <label className="sm:col-span-2 text-sm font-medium text-amber-900/70 dark:text-[#D1D5DB]">
-          Avatar image URL
-          <input type="url" className={`${inputClass} mt-1.5`} value={form.avatar} onChange={(event) => setForm({ ...form, avatar: event.target.value })} placeholder="https://example.com/avatar.jpg" />
         </label>
       </div>
       <div className="flex flex-col-reverse items-stretch gap-3 border-t border-amber-200/60 pt-5 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
