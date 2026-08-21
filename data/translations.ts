@@ -22,9 +22,15 @@ interface TranslationShape {
   };
   hero: {
     title: string;
+    titleHighlight: string;
     subtitle: string;
+    badge: string;
+    searchPlaceholder: string;
+    searchAriaLabel: string;
     ctaPrimary: string;
     ctaSecondary: string;
+    trendingLabel: string;
+    trending: { emoji: string; label: string }[];
   };
   chat: {
     title: string;
@@ -353,10 +359,21 @@ export const translations: Record<Language, TranslationShape> = {
       askGuru: 'Ask Guru',
     },
     hero: {
-      title: 'Discover Your Cosmic Path',
-      subtitle: 'Unlock the secrets of the universe with personalized astrological guidance powered by ancient wisdom and modern AI.',
-      ctaPrimary: 'Get Your Reading',
+      title: 'Decode Your',
+      titleHighlight: 'Cosmic Blueprint',
+      subtitle: 'Ask about your career transits, relationship synergy, or Sade Sati in plain English.',
+      badge: 'Ancient Vedic Math × Next-Gen AI',
+      searchPlaceholder: 'e.g., When is my next career breakthrough? or Is 2026 good for job switch?',
+      searchAriaLabel: 'Ask the AI Guru',
+      ctaPrimary: 'Ask Guru',
       ctaSecondary: 'Talk to AI Guru',
+      trendingLabel: 'Trending:',
+      trending: [
+        { emoji: '💼', label: '2026 Job Switch Timing' },
+        { emoji: '⚡', label: 'Sade Sati Impact' },
+        { emoji: '❤️', label: 'Marriage & Mangal Dosha' },
+        { emoji: '🔮', label: 'Current Mahadasha Meaning' },
+      ],
     },
     chat: {
       title: 'AI Astrology Guru',
@@ -683,10 +700,21 @@ export const translations: Record<Language, TranslationShape> = {
       askGuru: 'गुरु से पूछें',
     },
     hero: {
-      title: 'अपने ब्रह्मांडीय पथ की खोज करें',
-      subtitle: 'प्राचीन ज्ञान और आधुनिक AI द्वारा संचालित व्यक्तिगत ज्योतिषीय मार्गदर्शन के साथ ब्रह्मांड के रहस्यों को अनलॉक करें।',
-      ctaPrimary: 'अपनी रीडिंग प्राप्त करें',
+      title: 'अपने ब्रह्मांडीय ब्लूप्रिंट को',
+      titleHighlight: 'डिकोड करें',
+      subtitle: 'अपने करियर ग्रहों, रिश्ते की संगति, या साढ़े साती के बारे में साधारण भाषा में पूछें।',
+      badge: 'प्राचीन वैदिक गणित × अगली पीढ़ी का AI',
+      searchPlaceholder: 'जैसे, मेरा अगला करियर ब्रेकट्रूढ़ कब है? या क्या 2026 में नौकरी बदलना उपयोगी रहेगा?',
+      searchAriaLabel: 'AI गुरु से पूछें',
+      ctaPrimary: 'गुरु से पूछें',
       ctaSecondary: 'AI गुरु से बात करें',
+      trendingLabel: 'ट्रेंडिंग:',
+      trending: [
+        { emoji: '💼', label: '2026 में नौकरी बदलने का समय' },
+        { emoji: '⚡', label: 'साढ़े साती का प्रभाव' },
+        { emoji: '❤️', label: 'विवाह और मंगल दोष' },
+        { emoji: '🔮', label: 'वर्तमान महादशा का अर्थ' },
+      ],
     },
     chat: {
       title: 'AI ज्योतिष गुरु',

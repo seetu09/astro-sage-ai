@@ -4,19 +4,14 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Search, ArrowRight } from "lucide-react";
 import BirthDetailsModal from "./BirthDetailsModal";
+import { useLanguage } from "../context/LanguageContext";
 
 interface HeroSectionProps {
   onAskGuru?: (question: string) => void;
 }
 
-const TRENDING_PROMPTS = [
-  { emoji: "💼", label: "2026 Job Switch Timing" },
-  { emoji: "⚡", label: "Sade Sati Impact" },
-  { emoji: "❤️", label: "Marriage & Mangal Dosha" },
-  { emoji: "🔮", label: "Current Mahadasha Meaning" },
-];
-
 export default function HeroSection({ onAskGuru }: HeroSectionProps) {
+  const { t } = useLanguage();
   const [question, setQuestion] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -43,20 +38,20 @@ export default function HeroSection({ onAskGuru }: HeroSectionProps) {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50/80 dark:bg-[#FFD166]/10 border border-amber-200/60 dark:border-[#FFD166]/20 text-amber-700 dark:text-[#FFD166] text-sm font-medium mb-6 animate-glow">
               <Sparkles className="w-4 h-4" />
-              ✨ Ancient Vedic Math × Next-Gen AI
+              {t.hero.badge}
             </div>
 
             {/* Main Heading */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-6 leading-tight">
-              Decode Your{" "}
+              {t.hero.title}{" "}
               <span className="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-500 dark:from-[#FFD166] dark:to-[#E0A96D] bg-clip-text text-transparent drop-shadow-sm">
-                Cosmic Blueprint
+                {t.hero.titleHighlight}
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-lg sm:text-xl text-amber-800/70 dark:text-[#9CA3AF] max-w-2xl mx-auto mb-10">
-              Ask about your career transits, relationship synergy, or Sade Sati in plain English.
+              {t.hero.subtitle}
             </p>
 
             {/* Omni-Search Bar */}
@@ -69,16 +64,16 @@ export default function HeroSection({ onAskGuru }: HeroSectionProps) {
                     type="text"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="e.g., When is my next career breakthrough? or Is 2026 good for job switch?"
+                    placeholder={t.hero.searchPlaceholder}
                     className="flex-1 bg-transparent border-none outline-none text-sm sm:text-base text-amber-900 dark:text-[#F3F4F6] placeholder:text-amber-700/40 dark:placeholder-[#6B7280] py-2.5 min-h-[44px]"
-                    aria-label="Ask the AI Guru"
+                    aria-label={t.hero.searchAriaLabel}
                   />
                   <button
                     type="submit"
                     className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all flex-shrink-0 min-h-[44px]"
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span className="hidden sm:inline">Ask Guru</span>
+                    <span className="hidden sm:inline">{t.hero.ctaPrimary}</span>
                     <ArrowRight className="w-4 h-4 hidden sm:block" />
                   </button>
                 </div>
@@ -87,8 +82,8 @@ export default function HeroSection({ onAskGuru }: HeroSectionProps) {
 
             {/* Trending Prompt Chips */}
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <span className="text-xs text-amber-700/60 dark:text-[#6B7280] font-medium mr-1">Trending:</span>
-              {TRENDING_PROMPTS.map((prompt) => (
+              <span className="text-xs text-amber-700/60 dark:text-[#6B7280] font-medium mr-1">{t.hero.trendingLabel}</span>
+              {t.hero.trending.map((prompt) => (
                 <button
                   key={prompt.label}
                   onClick={() => handleChipClick(prompt.label)}
