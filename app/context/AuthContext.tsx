@@ -96,7 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      if (data.user) setUser(mapSupabaseUser(data.user));
+      if (!data.user) {
+        throw new Error("Login failed. Please check your credentials and try again.");
+      }
+      setUser(mapSupabaseUser(data.user));
     } finally {
       setIsLoading(false);
     }

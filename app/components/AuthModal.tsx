@@ -32,8 +32,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     birthPlace: "",
   });
 
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -116,6 +114,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       return () => clearTimeout(timer);
     }
   }, [otpResendCountdown]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
