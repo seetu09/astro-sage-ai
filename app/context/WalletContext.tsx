@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { useAuth } from "./AuthContext";
+import type { WalletTransaction } from "@/types/user";
 
 const FREE_MESSAGES_LIMIT = 3;
 const PRICE_PER_QUESTION = 5;
@@ -10,8 +12,9 @@ interface WalletContextType {
   walletBalance: number;
   isTopUpOpen: boolean;
   pendingPrompt: string | null;
+  transactions: WalletTransaction[];
   consumeMessage: () => "free" | "wallet" | "blocked";
-  addFunds: (amount: number) => void;
+  addFunds: (amount: number, payment?: { orderId: string; paymentId: string }) => void;
   setPendingPrompt: (prompt: string) => void;
   clearPendingPrompt: () => void;
   openTopUp: () => void;
@@ -23,6 +26,7 @@ const WalletContext = createContext<WalletContextType>({
   walletBalance: 0,
   isTopUpOpen: false,
   pendingPrompt: null,
+  transactions: [],
   consumeMessage: () => "free",
   addFunds: () => {},
   setPendingPrompt: () => {},
@@ -34,10 +38,15 @@ const WalletContext = createContext<WalletContextType>({
 export const useWallet = () => useContext(WalletContext);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [freeMessagesLeft, setFreeMessagesLeft] = useState(FREE_MESSAGES_LIMIT);
   const [walletBalance, setWalletBalance] = useState(0);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [pendingPrompt, setPendingPromptState] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [transactionsHydrated, setTransactionsHydrated] = useState(false);
+
+  const transactionStorageKey = user ? `astroveda-wallet-transactions-${user.id}` : null;
 
   // Hydrate state from localStorage on mount
   useEffect(() => {
@@ -55,6 +64,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (!transactionStorageKey) {
+      setTransactions([]);
+      setTransactionsHydrated(false);
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem(transactionStorageKey);
+      setTransactions(stored ? JSON.parse(stored) : []);
+    } catch {
+      setTransactions([]);
+    } finally {
+      setTransactionsHydrated(true);
+    }
+  }, [transactionStorageKey]);
+
   // Persist state to localStorage
   useEffect(() => {
     try {
@@ -64,6 +90,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // localStorage unavailable — ignore
     }
   }, [freeMessagesLeft, walletBalance]);
+
+  useEffect(() => {
+    if (!transactionStorageKey || !transactionsHydrated) return;
+
+    try {
+      localStorage.setItem(transactionStorageKey, JSON.stringify(transactions));
+    } catch {
+      // localStorage unavailable - keep the in-memory transaction list.
+    }
+  }, [transactionStorageKey, transactions, transactionsHydrated]);
 
   const consumeMessage = useCallback((): "free" | "wallet" | "blocked" => {
     if (freeMessagesLeft > 0) {
@@ -77,9 +113,27 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return "blocked";
   }, [freeMessagesLeft, walletBalance]);
 
-  const addFunds = useCallback((amount: number) => {
+  const addFunds = useCallback((amount: number, payment?: { orderId: string; paymentId: string }) => {
     setWalletBalance((prev) => Math.round((prev + amount) * 100) / 100);
-  }, []);
+    if (user) {
+      const createdAt = new Date().toISOString();
+      setTransactions((current) => [
+        {
+          id: payment?.paymentId || `topup-${Date.now()}`,
+          userId: user.id,
+          type: "wallet_topup",
+          amount,
+          currency: "INR",
+          status: "completed",
+          createdAt,
+          orderId: payment?.orderId,
+          paymentId: payment?.paymentId,
+          description: "Wallet top-up",
+        },
+        ...current,
+      ]);
+    }
+  }, [user]);
 
   const setPendingPrompt = useCallback((prompt: string) => {
     setPendingPromptState(prompt);
@@ -99,6 +153,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         walletBalance,
         isTopUpOpen,
         pendingPrompt,
+        transactions,
         consumeMessage,
         addFunds,
         setPendingPrompt,

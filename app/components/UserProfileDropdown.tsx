@@ -1,6 +1,7 @@
 "use client";
 
 import type { User } from "../context/AuthContext";
+import type { ProfileMenuAction } from "@/types/user";
 import {
   CircleUserRound,
   FileClock,
@@ -10,12 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 
-export type ProfileMenuAction =
-  | "personal-details"
-  | "kundali-history"
-  | "chat-history"
-  | "wallet-details"
-  | "payment-history";
+export type { ProfileMenuAction } from "@/types/user";
 
 interface UserProfileDropdownProps {
   user: User;

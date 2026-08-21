@@ -6,8 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { Send, User, Bot, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useWallet } from '@/app/context/WalletContext';
+import { useAuth } from '@/app/context/AuthContext';
+import { saveChatHistory } from '@/lib/user-history';
 import EmptyState from '@/app/components/EmptyState';
-import TopUpModal from '@/app/components/TopUpModal';
 import { SkeletonChat } from '@/app/components/SkeletonLoader';
 
 interface Message {
@@ -44,6 +45,7 @@ function getMockResponse(lang: string): string {
 
 function ChatContent() {
   const { language, t } = useLanguage();
+  const { user } = useAuth();
   const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp, pendingPrompt, setPendingPrompt, clearPendingPrompt } = useWallet();
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,6 +56,8 @@ function ChatContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const hasPendingPromptRef = useRef(false);
   const prevBalanceRef = useRef(walletBalance);
+  const conversationIdRef = useRef(`chat-${Date.now()}`);
+  const conversationCreatedAtRef = useRef(new Date().toISOString());
 
   // Simulate initial load
   useEffect(() => {
@@ -98,6 +102,26 @@ function ChatContent() {
       container.scrollTop = container.scrollHeight;
     }
   }, [messages, isLoading, isInitializing]);
+
+  useEffect(() => {
+    if (!user || isInitializing || isLoading) return;
+
+    const userMessages = messages.filter((message) => message.role === 'user');
+    if (userMessages.length === 0) return;
+
+    saveChatHistory({
+      id: conversationIdRef.current,
+      userId: user.id,
+      createdAt: conversationCreatedAtRef.current,
+      updatedAt: new Date().toISOString(),
+      title: userMessages[0].content.slice(0, 72),
+      messages: messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp.toISOString(),
+      })),
+    });
+  }, [messages, isLoading, isInitializing, user]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -195,6 +219,8 @@ function ChatContent() {
   const clearChat = () => {
     setMessages([{ id: 'welcome', role: 'assistant', content: t.chat.welcome, timestamp: new Date() }]);
     setHasError(false);
+    conversationIdRef.current = `chat-${Date.now()}`;
+    conversationCreatedAtRef.current = new Date().toISOString();
   };
 
   return (
@@ -325,7 +351,6 @@ function ChatContent() {
 
       {/* Input */}
       <div className="border-t border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
-        <TopUpModal />
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
           <input
             type="text"

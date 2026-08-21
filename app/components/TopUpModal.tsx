@@ -6,6 +6,7 @@ import { useWallet } from "../context/WalletContext";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import PaymentButton from "./PaymentButton";
+import type { PaymentSuccessDetails } from "./PaymentButton";
 
 const MIN_CUSTOM_AMOUNT = 20;
 
@@ -59,8 +60,8 @@ export default function TopUpModal() {
     }
   };
 
-  const handleSuccess = () => {
-    addFunds(displayAmount);
+  const handleSuccess = (payment: PaymentSuccessDetails) => {
+    addFunds(displayAmount, payment);
     closeTopUp();
   };
 

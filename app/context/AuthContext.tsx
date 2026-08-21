@@ -3,19 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../../lib/supabase";
+import type { UserProfile } from "@/types/user";
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  birthDate?: string;
-  birthTime?: string;
-  birthPlace?: string;
-  latitude?: number;
-  longitude?: number;
-  timezone?: string;
-}
+export type User = UserProfile;
 
 interface AuthContextType {
   user: User | null;

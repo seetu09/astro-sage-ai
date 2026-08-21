@@ -11,6 +11,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import CosmicBackground from "./components/CosmicBackground";
 import WarmGlow from "./components/WarmGlow";
 import InstallBanner from "./components/InstallBanner";
+import TopUpModal from "./components/TopUpModal";
 
 const inter = Inter({ subsets: ["latin"] });
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"] });
@@ -139,6 +140,7 @@ export default function RootLayout({
                   <Navbar />
                   <main className="min-h-screen relative z-10">{children}</main>
                   <Footer />
+                  <TopUpModal />
                 </WalletProvider>
               </AuthProvider>
             </LanguageProvider>

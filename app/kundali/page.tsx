@@ -7,6 +7,8 @@ import KundliPDF from '@/app/components/KundliPDF';
 import KundaliChart from '@/app/components/KundaliChart';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import { useLanguage } from '@/app/context/LanguageContext';
+import { useAuth } from '@/app/context/AuthContext';
+import { saveKundaliHistory } from '@/lib/user-history';
 
 interface Planet {
   name: string;
@@ -90,6 +92,7 @@ function generateMockKundli(formData: {
 
 export default function KundaliPage() {
   const { language, t } = useLanguage();
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -107,6 +110,21 @@ export default function KundaliPage() {
     const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth, placeOfBirth, latitude, longitude, timezone });
     setKundliData(data);
     setShowResult(true);
+    if (user) {
+      saveKundaliHistory({
+        id: `kundali-${Date.now()}`,
+        userId: user.id,
+        createdAt: new Date().toISOString(),
+        name: data.name,
+        dateOfBirth: data.dateOfBirth,
+        timeOfBirth: data.timeOfBirth,
+        placeOfBirth: data.placeOfBirth,
+        ascendant: data.ascendant,
+        moonSign: data.moonSign,
+        sunSign: data.sunSign,
+        nakshatra: data.nakshatra,
+      });
+    }
   };
 
   const handleBack = () => {

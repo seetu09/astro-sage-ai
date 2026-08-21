@@ -9,6 +9,7 @@ import AuthModal from "./AuthModal";
 import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 import UserProfileDropdown, { type ProfileMenuAction } from "./UserProfileDropdown";
+import UserProfileModal from "./UserProfileModal";
 import { Menu, X, ChevronDown, Sparkles } from "lucide-react";
 
 export default function Navbar() {
@@ -19,6 +20,7 @@ export default function Navbar() {
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [profileModalAction, setProfileModalAction] = useState<ProfileMenuAction | null>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileProfileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -37,8 +39,8 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handlePlaceholderAction = useCallback((_action: ProfileMenuAction) => {
-    // Placeholder for future profile pages and empty-state modals.
+  const handleProfileAction = useCallback((action: ProfileMenuAction) => {
+    setProfileModalAction(action);
     setProfileDropdownOpen(false);
     setMobileMenuOpen(false);
   }, []);
@@ -159,7 +161,7 @@ export default function Navbar() {
                   {profileDropdownOpen && user && (
                     <UserProfileDropdown
                       user={user}
-                      onPlaceholderAction={handlePlaceholderAction}
+                      onPlaceholderAction={handleProfileAction}
                       onLogout={handleLogout}
                       className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)]"
                     />
@@ -246,7 +248,7 @@ export default function Navbar() {
                     {profileDropdownOpen && user && (
                       <UserProfileDropdown
                         user={user}
-                        onPlaceholderAction={handlePlaceholderAction}
+                        onPlaceholderAction={handleProfileAction}
                         onLogout={handleLogout}
                         className="relative mt-2 w-full"
                       />
@@ -267,6 +269,13 @@ export default function Navbar() {
       </nav>
 
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      {profileModalAction && (
+        <UserProfileModal
+          isOpen
+          initialView={profileModalAction}
+          onClose={() => setProfileModalAction(null)}
+        />
+      )}
     </>
   );
 }

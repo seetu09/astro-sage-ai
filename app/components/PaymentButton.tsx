@@ -4,13 +4,18 @@ import React, { useState, useEffect } from "react";
 import Script from "next/script";
 import { Loader2, Lock, AlertCircle } from "lucide-react";
 
+export interface PaymentSuccessDetails {
+  orderId: string;
+  paymentId: string;
+}
+
 interface PaymentButtonProps {
   amount: number;
   userEmail: string;
   userName?: string;
   paymentType?: string;
   buttonText?: string;
-  onSuccess?: () => void;
+  onSuccess?: (details: PaymentSuccessDetails) => void;
   onFailure?: () => void;
   className?: string;
   createOrderEndpoint?: string;
@@ -115,7 +120,10 @@ export default function PaymentButton({
 
             if (verifyData.success) {
               setIsLoading(false);
-              onSuccess?.();
+              onSuccess?.({
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+              });
             } else {
               setError(verifyData.error || "Payment verification failed");
               setIsLoading(false);
