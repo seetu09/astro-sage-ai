@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "../context/LanguageContext";
@@ -16,7 +16,25 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileProfileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const clickedInsideDesktopProfile = profileDropdownRef.current?.contains(target);
+      const clickedInsideMobileProfile = mobileProfileDropdownRef.current?.contains(target);
+
+      if (!clickedInsideDesktopProfile && !clickedInsideMobileProfile) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const mainLinks = [
     { href: "/daily-horoscope", label: t.nav.dailyHoroscope },
@@ -113,15 +131,25 @@ export default function Navbar() {
               </div>
 
               {isAuthenticated ? (
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-sm font-medium text-amber-900 dark:text-[#F3F4F6] hover:bg-amber-100/70 dark:hover:bg-white/5 rounded-lg transition-colors"
-                >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-xs sm:text-sm">
-                    {user?.name?.charAt(0) || "U"}
-                  </div>
-                  <span className="hidden lg:inline">{user?.name?.split(" ")[0]}</span>
-                </button>
+                <div ref={profileDropdownRef} className="relative">
+                  <button
+                    onClick={() => setProfileDropdownOpen((open) => !open)}
+                    className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 text-sm font-medium text-amber-900 dark:text-[#F3F4F6] hover:bg-amber-100/70 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    aria-expanded={profileDropdownOpen}
+                    aria-haspopup="menu"
+                  >
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-xs sm:text-sm">
+                      {user?.name?.charAt(0) || "U"}
+                    </div>
+                    <span className="hidden lg:inline">{user?.name?.split(" ")[0]}</span>
+                  </button>
+                  {profileDropdownOpen && (
+                    <div
+                      role="menu"
+                      className="absolute top-full right-0 mt-1 w-48 bg-[#FFFDF6]/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-amber-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-lg py-1 z-50"
+                    />
+                  )}
+                </div>
               ) : (
                 <button
                   onClick={() => setAuthModalOpen(true)}
@@ -186,15 +214,27 @@ export default function Navbar() {
                   {t.nav.askGuru}
                 </Link>
                 {isAuthenticated ? (
-                  <button
-                    onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-900 dark:text-[#F3F4F6] hover:bg-amber-100/70 dark:hover:bg-white/5 rounded-lg"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-sm">
-                      {user?.name?.charAt(0) || "U"}
-                    </div>
-                    {user?.name}
-                  </button>
+                  <div ref={mobileProfileDropdownRef} className="relative">
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen((open) => !open);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-900 dark:text-[#F3F4F6] hover:bg-amber-100/70 dark:hover:bg-white/5 rounded-lg"
+                      aria-expanded={profileDropdownOpen}
+                      aria-haspopup="menu"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] flex items-center justify-center text-white dark:text-[#080811] font-bold text-sm">
+                        {user?.name?.charAt(0) || "U"}
+                      </div>
+                      {user?.name}
+                    </button>
+                    {profileDropdownOpen && (
+                      <div
+                        role="menu"
+                        className="absolute left-0 right-0 top-full mt-1 bg-[#FFFDF6]/95 dark:bg-[#121026]/95 backdrop-blur-xl border border-amber-200/60 dark:border-white/10 rounded-xl shadow-sunlit-soft dark:shadow-lg py-1 z-50"
+                      />
+                    )}
+                  </div>
                 ) : (
                   <button
                     onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
