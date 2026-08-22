@@ -90,16 +90,36 @@ export async function generateKundliPdf(options: GeneratePdfOptions): Promise<js
     const page = pages[i];
     onProgress?.({ current: i + 1, total: pages.length });
 
-    const canvas = await html2canvas(page, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      windowWidth: page.scrollWidth,
-      windowHeight: page.scrollHeight,
-    });
+    let canvas;
+    try {
+      canvas = await html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: true,
+        backgroundColor: '#ffffff',
+        windowWidth: page.scrollWidth,
+        windowHeight: page.scrollHeight,
+      });
+    } catch (err) {
+      console.error(
+        `PDF Export Detailed Error: html2canvas failed on page ${i + 1}/${pages.length}.`,
+        err,
+        page
+      );
+      throw err;
+    }
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    let imgData: string;
+    try {
+      imgData = canvas.toDataURL('image/jpeg', 0.95);
+    } catch (err) {
+      console.error(
+        `PDF Export Detailed Error: canvas.toDataURL failed on page ${i + 1}/${pages.length} (canvas may be tainted).`,
+        err
+      );
+      throw err;
+    }
 
     if (i > 0) {
       pdf.addPage();

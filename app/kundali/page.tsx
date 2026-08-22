@@ -226,7 +226,7 @@ export default function KundaliPage() {
         onProgress: (p) => setDownloadProgress(p),
       });
     } catch (err) {
-      console.error('PDF generation error:', err);
+      console.error("PDF Export Detailed Error:", err);
       alert(getUILabel('pdfError', selectedLanguage));
     } finally {
       setDownloadProgress(null);

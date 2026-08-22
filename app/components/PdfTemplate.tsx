@@ -109,10 +109,10 @@ function getSignSymbol(signNum: number): string {
   return SIGN_SYMBOLS[signNum - 1] ?? '♈';
 }
 
-function getPanchang(kundliData: PdfKundliData, locale: LocaleCode) {
-  const asc = signNum(kundliData.ascendant);
-  const moon = signNum(kundliData.moonSign);
-  const sun = signNum(kundliData.sunSign);
+function getPanchang(ascendant: string, moonSign: string, sunSign: string, nakshatra: string, locale: LocaleCode) {
+  const asc = signNum(ascendant);
+  const moon = signNum(moonSign);
+  const sun = signNum(sunSign);
   // Deterministic panchang derived from chart data (consistent with mock approach)
   const tithiIndex = ((moon - sun + 12) % 12) + 1;
   const tithis = locale === 'hi'
@@ -129,15 +129,15 @@ function getPanchang(kundliData: PdfKundliData, locale: LocaleCode) {
     { key: 'Tithi', value: tithis[(tithiIndex - 1) % tithis.length] },
     { key: 'Karan', value: karans[(asc + moon) % karans.length] },
     { key: 'Yog', value: yogas[(sun + moon) % yogas.length] },
-    { key: 'Nakshatra', value: kundliData.nakshatra },
+    { key: 'Nakshatra', value: nakshatra },
   ];
 }
 
-function buildDasha(kundliData: PdfKundliData) {
-  const moonSignIndex = signNum(kundliData.moonSign) - 1;
+function buildDasha(dateOfBirth: string, moonSign: string) {
+  const moonSignIndex = signNum(moonSign) - 1;
   const nakshatraIndex = Math.floor((moonSignIndex * 30 + 15) / (360 / 27));
   const startLordIndex = nakshatraIndex % 9;
-  const year = new Date(kundliData.dateOfBirth).getFullYear() || new Date().getFullYear();
+  const year = new Date(dateOfBirth).getFullYear() || new Date().getFullYear();
 
   const dasha: { planet: string; startDate: string; endDate: string }[] = [];
   let currentYear = year;
@@ -214,7 +214,7 @@ function PdfNorthChart({
       <div style={{ fontSize: 9, color: C.sub, marginBottom: 6 }}>
         {getSignSymbol(divAsc)} {getSignName(divAsc, locale)}
       </div>
-      <svg width="100%" height="auto" viewBox="0 0 400 400" style={{ maxWidth: 300, display: 'block', margin: '0 auto' }}>
+      <svg width={300} height={300} viewBox="0 0 400 400" style={{ display: 'block', margin: '0 auto' }}>
         <rect x="0" y="0" width="400" height="400" rx="12" fill="#FAFAFF" />
         <rect x="20" y="20" width="360" height="360" rx="8" fill="none" stroke="#C7D2FE" strokeWidth="2" />
         <line x1="20" y1="20" x2="380" y2="380" stroke="#E0E7FF" strokeWidth="1" />
@@ -354,24 +354,35 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
   const watermark = getUILabel('pdfWatermark', locale);
   const disclaimer = getUILabel('pdfDisclaimer', locale);
 
-  const asc = signNum(kundliData.ascendant);
-  const moon = signNum(kundliData.moonSign);
-  const sun = signNum(kundliData.sunSign);
+  // Defensive defaults — a partial/undefined payload must never crash html2canvas.
+  const safeName = kundliData.name || '—';
+  const safeDateOfBirth = kundliData.dateOfBirth || '—';
+  const safeTimeOfBirth = kundliData.timeOfBirth || '—';
+  const safePlaceOfBirth = kundliData.placeOfBirth || '—';
+  const safeAscendant = kundliData.ascendant || 'Aries';
+  const safeMoonSign = kundliData.moonSign || 'Aries';
+  const safeSunSign = kundliData.sunSign || 'Aries';
+  const safeNakshatra = kundliData.nakshatra || '—';
+  const safePlanets = Array.isArray(kundliData.planets) ? kundliData.planets : [];
+
+  const asc = signNum(safeAscendant);
+  const moon = signNum(safeMoonSign);
+  const sun = signNum(safeSunSign);
 
   const planets = useMemo(
     () =>
-      kundliData.planets.map((p) => ({
-        planet: p.name,
-        sign: signNum(p.sign),
-        degree: p.degree,
-        house: p.house,
+      safePlanets.map((p) => ({
+        planet: p.name || 'Unknown',
+        sign: signNum(p.sign || 'Aries'),
+        degree: typeof p.degree === 'number' ? p.degree : 0,
+        house: typeof p.house === 'number' ? p.house : 1,
         retrograde: p.status === 'Retrograde',
       })),
-    [kundliData]
+    [safePlanets]
   );
 
-  const panchang = getPanchang(kundliData, locale);
-  const dasha = useMemo(() => buildDasha(kundliData), [kundliData]);
+  const panchang = getPanchang(safeAscendant, safeMoonSign, safeSunSign, safeNakshatra, locale);
+  const dasha = useMemo(() => buildDasha(safeDateOfBirth, safeMoonSign), [safeDateOfBirth, safeMoonSign]);
   const ashtakvarga = useMemo(
     () => computeAshtakvarga(asc, planets.map((p) => ({ planet: p.planet, sign: p.sign }))),
     [asc, planets]
@@ -419,7 +430,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
   return (
     <div style={{ background: '#fff' }}>
       {/* ================= PAGE 1 — Birth & Panchang ================= */}
-      <div style={pageStyle}>
+      <div className="pdf-page" style={pageStyle}>
         <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
 
         <PdfSectionTitle>{getUILabel('pdfPage1Title', locale)}</PdfSectionTitle>
@@ -431,10 +442,10 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
-              { l: locale === 'hi' ? 'नाम' : 'Name', v: kundliData.name },
-              { l: locale === 'hi' ? 'जन्म तिथि' : 'Date of Birth', v: kundliData.dateOfBirth },
-              { l: locale === 'hi' ? 'जन्म समय' : 'Time of Birth', v: kundliData.timeOfBirth },
-              { l: locale === 'hi' ? 'जन्म स्थान' : 'Place of Birth', v: kundliData.placeOfBirth },
+              { l: locale === 'hi' ? 'नाम' : 'Name', v: safeName },
+              { l: locale === 'hi' ? 'जन्म तिथि' : 'Date of Birth', v: safeDateOfBirth },
+              { l: locale === 'hi' ? 'जन्म समय' : 'Time of Birth', v: safeTimeOfBirth },
+              { l: locale === 'hi' ? 'जन्म स्थान' : 'Place of Birth', v: safePlaceOfBirth },
             ].map((it) => (
               <div key={it.l} style={{ background: '#fff', border: `1px solid ${C.line}`, borderRadius: 8, padding: '8px 10px' }}>
                 <div style={{ fontSize: 8.5, color: C.faint, textTransform: 'uppercase', letterSpacing: 0.5 }}>{it.l}</div>
@@ -478,7 +489,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
       </div>
 
       {/* ================= PAGE 2 — D1, D9 & Planet Table ================= */}
-      <div style={pageStyle}>
+      <div className="pdf-page" style={pageStyle}>
         <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
 
         <PdfSectionTitle>{getUILabel('pdfPage2Title', locale)}</PdfSectionTitle>
@@ -534,7 +545,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
       </div>
 
       {/* ================= PAGE 3 — KP & Dasha ================= */}
-      <div style={pageStyle}>
+      <div className="pdf-page" style={pageStyle}>
         <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
 
         <PdfSectionTitle>{getUILabel('pdfPage3Title', locale)}</PdfSectionTitle>
@@ -608,7 +619,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
       </div>
 
       {/* ================= PAGE 4 — Divisional Charts & Ashtakvarga ================= */}
-      <div style={pageStyle}>
+      <div className="pdf-page" style={pageStyle}>
         <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
 
         <PdfSectionTitle>{getUILabel('pdfPage4Title', locale)}</PdfSectionTitle>
@@ -669,7 +680,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
       </div>
 
       {/* ================= PAGE 5 — Yogas, Doshas & Remedies ================= */}
-      <div style={lastPageStyle}>
+      <div className="pdf-page" style={lastPageStyle}>
         <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
 
         <PdfSectionTitle>{getUILabel('pdfPage5Title', locale)}</PdfSectionTitle>
@@ -705,7 +716,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[
-              { l: getDoshaLabel('manglik', locale), present: kundliData.planets.find((p) => p.name === 'Mars' && [1, 2, 4, 7, 8, 12].includes(p.house)) !== undefined },
+              { l: getDoshaLabel('manglik', locale), present: safePlanets.find((p) => p.name === 'Mars' && [1, 2, 4, 7, 8, 12].includes(p.house)) !== undefined },
               { l: getDoshaLabel('kaalSarp', locale), present: false },
               { l: getDoshaLabel('sadeSati', locale), present: false },
             ].map((d) => (
