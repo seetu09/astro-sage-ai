@@ -1,55 +1,112 @@
-'use client';
-
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, ArrowRight, BookOpen } from 'lucide-react';
-import { useLanguage } from '@/app/context/LanguageContext';
-import { blogPosts } from '@/data/blog-posts';
+import { ArrowRight, BookOpen, Calendar } from 'lucide-react';
+import fs from 'fs/promises';
+import path from 'path';
 
-const categoryColors: Record<string, string> = {
-  career: 'bg-blue-500/20 text-blue-400',
-  love: 'bg-pink-500/20 text-pink-400',
-  health: 'bg-green-500/20 text-green-400',
-  spirituality: 'bg-purple-500/20 text-purple-400',
-  remedies: 'bg-amber-500/20 text-amber-400',
+export const dynamic = 'force-dynamic';
+
+type Post = {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  excerpt: string;
+  content: string;
+  image: string;
+  createdAt: string;
 };
 
-export default function BlogPage() {
-  const { language, t } = useLanguage();
+const POSTS_FILE = path.join(process.cwd(), 'data', 'posts.json');
+
+async function getPosts(): Promise<Post[]> {
+  try {
+    return JSON.parse(await fs.readFile(POSTS_FILE, 'utf-8'));
+  } catch {
+    return [];
+  }
+}
+
+const categoryColors: Record<string, string> = {
+  'Vedic Astrology': 'bg-purple-500/20 text-purple-400',
+  'Love & Compatibility': 'bg-pink-500/20 text-pink-400',
+  'Planetary Transits': 'bg-cyan-500/20 text-cyan-400',
+  Remedies: 'bg-amber-500/20 text-amber-400',
+};
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+
+export default async function BlogPage() {
+  const posts = await getPosts();
 
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-6xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-serif text-[var(--text-primary)] mb-4">{t.blog.title}</h1>
-          <p className="text-[var(--text-secondary)] max-w-xl mx-auto">{t.blog.subtitle}</p>
-        </motion.div>
+        <header className="text-center mb-12">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-serif text-[var(--text-primary)] mb-4">
+            Astrology Blog
+          </h1>
+          <p className="text-[var(--text-secondary)] max-w-xl mx-auto">
+            Cosmic insights on Vedic astrology, love compatibility, planetary transits and remedies.
+          </p>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {blogPosts.map((post, index) => (
-            <motion.article key={post.slug} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-              <Link href={`/blog/${post.slug}`} className="astro-card block group h-full">
-                <div className="aspect-video rounded-lg overflow-hidden mb-4 bg-[var(--bg-secondary)]">
-                  <img src={post.image} alt={post.title[language]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        {posts.length === 0 ? (
+          <div className="astro-card flex flex-col items-center text-center py-16">
+            <div className="w-14 h-14 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mb-4">
+              <BookOpen className="w-6 h-6 text-[var(--accent)]" />
+            </div>
+            <p className="font-medium text-[var(--text-primary)]">No articles yet</p>
+            <p className="text-sm text-[var(--text-muted)] mt-1">
+              New cosmic wisdom is on its way — check back soon.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {posts.map((post) => (
+              <Link
+                key={post.id}
+                href={`/blog/${post.slug}`}
+                className="astro-card group flex flex-col p-0 overflow-hidden"
+              >
+                <div className="aspect-video overflow-hidden bg-[var(--bg-secondary)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-                <div className="flex items-center gap-3 mb-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${categoryColors[post.category]}`}>{t.blog.categories[post.category]}</span>
-                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1"><Clock className="w-3 h-3" />{post.readTime}</span>
-                </div>
-                <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2 group-hover:text-[var(--accent)] transition-colors line-clamp-2">{post.title[language]}</h2>
-                <p className="text-sm text-[var(--text-muted)] mb-4 line-clamp-3">{post.excerpt[language]}</p>
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-[var(--accent)]/10 flex items-center justify-center"><BookOpen className="w-3 h-3 text-[var(--accent)]" /></div>
-                    <span className="text-xs text-[var(--text-muted)]">{post.author}</span>
+
+                <div className="flex flex-col flex-1 p-6">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        categoryColors[post.category] ?? 'bg-[var(--accent)]/15 text-[var(--accent)]'
+                      }`}
+                    >
+                      {post.category}
+                    </span>
+                    <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 shrink-0">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(post.createdAt)}
+                    </span>
                   </div>
-                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(post.date).toLocaleDateString()}</span>
+
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 mb-2">
+                    {post.title}
+                  </h2>
+                  <p className="text-sm text-[var(--text-muted)] line-clamp-3 mb-4">{post.excerpt}</p>
+
+                  <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)]">
+                    Read Article
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
                 </div>
-                <div className="flex items-center gap-1 text-sm text-[var(--accent)] mt-3 opacity-0 group-hover:opacity-100 transition-opacity">{t.blog.readMore}<ArrowRight className="w-4 h-4" /></div>
               </Link>
-            </motion.article>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
