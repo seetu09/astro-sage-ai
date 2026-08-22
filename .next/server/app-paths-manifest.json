@@ -1,1 +1,5 @@
-{}
+{
+  "/api/admin/blogs/route": "app/api/admin/blogs/route.js",
+  "/admin/page": "app/admin/page.js",
+  "/blog/page": "app/blog/page.js"
+}

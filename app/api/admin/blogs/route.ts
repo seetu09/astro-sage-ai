@@ -27,6 +27,13 @@ export async function POST(req: NextRequest) {
     const imageFile = formData.get("imageFile") as File | null;
     const adminPassword = formData.get("adminPassword") as string;
 
+    if (!process.env.ADMIN_PASSWORD) {
+      return NextResponse.json(
+        { message: "Server misconfigured: ADMIN_PASSWORD is not set in environment variables." },
+        { status: 500 }
+      );
+    }
+
     if (!title || !category || !excerpt || !content || !imageFile) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
@@ -55,6 +62,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, slug: post.slug }, { status: 201 });
   } catch (error) {
+    console.error("[POST /api/admin/blogs]", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
@@ -64,6 +72,7 @@ export async function GET() {
     const posts = JSON.parse(await fs.readFile(POSTS_FILE, "utf-8"));
     return NextResponse.json({ posts });
   } catch (error) {
+    console.error("[GET /api/admin/blogs]", error);
     return NextResponse.json({ posts: [] });
   }
 }
