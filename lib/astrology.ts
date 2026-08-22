@@ -1,6 +1,17 @@
 // ─── Astronomy Helpers ────────────────────────────────────────────────────
 // Extracted from app/api/kundali/generate/route.ts for reuse in matchmaking.
 
+export const DEFAULT_NOON_TIME = "12:00";
+
+/**
+ * Resolve the birth time for calculations.
+ * When the time is unknown or missing, default to 12:00 (noon),
+ * which is the conventional reference time for Surya/Chandra chart estimation.
+ */
+export function resolveBirthTime(birthTime: string, timeUnknown: boolean): string {
+  return timeUnknown || !birthTime ? DEFAULT_NOON_TIME : birthTime;
+}
+
 export function calculateJulianDay(year: number, month: number, day: number, hour: number, minute: number): number {
   const a = Math.floor((14 - month) / 12);
   const y = year + 4800 - a;
@@ -50,7 +61,7 @@ export function deriveMoonDetails(
   timeUnknown: boolean
 ): MoonDetails {
   const [year, month, day] = birthDate.split("-").map(Number);
-  const time = timeUnknown || !birthTime ? "12:00" : birthTime;
+  const time = resolveBirthTime(birthTime, timeUnknown);
   const [hour, minute] = time.split(":").map(Number);
 
   const jd = calculateJulianDay(year, month, day, hour, minute);

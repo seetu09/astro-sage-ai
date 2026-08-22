@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Info, Sparkles } from 'lucide-react';
 import KundliPDF from '@/app/components/KundliPDF';
 import KundaliChart from '@/app/components/KundaliChart';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useAuth } from '@/app/context/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 
 interface Planet {
@@ -97,6 +99,7 @@ export default function KundaliPage() {
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [timeOfBirth, setTimeOfBirth] = useState('');
+  const [timeUnknown, setTimeUnknown] = useState(false);
   const [placeOfBirth, setPlaceOfBirth] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -104,12 +107,37 @@ export default function KundaliPage() {
   const [showResult, setShowResult] = useState(false);
   const [kundliData, setKundliData] = useState<KundliData | null>(null);
   const [showPDF, setShowPDF] = useState(false);
+  const { profile, saveProfile } = useUserProfile();
+
+  // Pre-fill saved profile data on mount
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name || '');
+      setDateOfBirth(profile.dob || '');
+      setTimeOfBirth(profile.tob || '');
+      setTimeUnknown(profile.timeUnknown || false);
+      setPlaceOfBirth(profile.city || '');
+      if (profile.lat != null) setLatitude(profile.lat);
+      if (profile.lon != null) setLongitude(profile.lon);
+    }
+  }, [profile]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth, placeOfBirth, latitude, longitude, timezone });
+    const resolvedTime = resolveBirthTime(timeOfBirth, timeUnknown);
+    const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth: resolvedTime, placeOfBirth, latitude, longitude, timezone });
     setKundliData(data);
     setShowResult(true);
+    // Persist birth details for reuse across Kundali, Matchmaking & Chat
+    saveProfile({
+      name,
+      dob: dateOfBirth,
+      tob: resolvedTime,
+      city: placeOfBirth,
+      lat: latitude,
+      lon: longitude,
+      timeUnknown,
+    });
     if (user) {
       saveKundaliHistory({
         id: `kundali-${Date.now()}`,
@@ -193,11 +221,29 @@ export default function KundaliPage() {
                   <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.timeOfBirth}</label>
                   <input
                     type="time"
-                    value={timeOfBirth}
+                    value={timeUnknown ? '12:00' : timeOfBirth}
                     onChange={(e) => setTimeOfBirth(e.target.value)}
-                    className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm [color-scheme:light] dark:[color-scheme:dark]"
-                    required
+                    disabled={timeUnknown}
+                    className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm [color-scheme:light] dark:[color-scheme:dark] disabled:opacity-40 disabled:cursor-not-allowed"
                   />
+                  <label className="flex items-center gap-2 mt-2 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={timeUnknown}
+                      onChange={(e) => {
+                        setTimeUnknown(e.target.checked);
+                        if (e.target.checked) setTimeOfBirth('12:00');
+                      }}
+                      className="w-4 h-4 rounded border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 accent-violet-600 dark:accent-[#FFD166]"
+                    />
+                    {t.kundali.timeUnknown}
+                  </label>
+                  {timeUnknown && (
+                    <p className="mt-2 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
+                      <Info className="w-3 h-3 shrink-0" />
+                      {t.kundali.noonReferenceBadge}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -259,6 +305,12 @@ export default function KundaliPage() {
               <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
                 {t.kundali.generatedFor.replace('{name}', kundliData?.name || '')}
               </p>
+              {timeUnknown && (
+                <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
+                  <Info className="w-3 h-3 shrink-0" />
+                  {t.kundali.noonReferenceBadge}
+                </p>
+              )}
             </div>
 
             {/* Info Cards */}

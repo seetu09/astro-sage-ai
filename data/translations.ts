@@ -192,6 +192,8 @@ interface TranslationShape {
     emailPlaceholder: string;
     dateOfBirth: string;
     timeOfBirth: string;
+    timeUnknown: string;
+    noonReferenceBadge: string;
     placeOfBirth: string;
     placePlaceholder: string;
     generateButton: string;
@@ -573,6 +575,8 @@ export const translations: Record<Language, TranslationShape> = {
       emailPlaceholder: 'your@email.com',
       dateOfBirth: 'Date of Birth',
       timeOfBirth: 'Time of Birth',
+      timeUnknown: 'Time of birth unknown',
+      noonReferenceBadge: 'Estimated chart calculated using noon reference time',
       placeOfBirth: 'Place of Birth',
       placePlaceholder: 'Enter city, town, or PIN code...',
       generateButton: 'Generate Kundli',
@@ -952,6 +956,8 @@ export const translations: Record<Language, TranslationShape> = {
       emailPlaceholder: 'your@email.com',
       dateOfBirth: 'जन्म तिथि',
       timeOfBirth: 'जन्म समय',
+      timeUnknown: 'जन्म समय अज्ञात है',
+      noonReferenceBadge: 'दोपहर संदर्भ समय का उपयोग कर आकलित चार्ट',
       placeOfBirth: 'जन्म स्थान',
       placePlaceholder: 'शहर, कस्बा या पिन कोड दर्ज करें...',
       generateButton: 'कुंडली बनाएं',

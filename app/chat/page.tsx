@@ -7,6 +7,7 @@ import { Send, User, Bot, Sparkles, Loader2, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useWallet } from '@/app/context/WalletContext';
 import { useAuth } from '@/app/context/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { saveChatHistory } from '@/lib/user-history';
 import EmptyState from '@/app/components/EmptyState';
 import { SkeletonChat } from '@/app/components/SkeletonLoader';
@@ -46,6 +47,7 @@ function getMockResponse(lang: string): string {
 function ChatContent() {
   const { language, t } = useLanguage();
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp, pendingPrompt, setPendingPrompt, clearPendingPrompt } = useWallet();
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -149,7 +151,7 @@ function ChatContent() {
         const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
         setMessages((prev) => [...prev, assistantMessage]);
       } else {
-        const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, language }) });
+        const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, language, profile }) });
         if (!response.ok) throw new Error('API Error');
         const data = await response.json();
         const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response || t.chat.error, timestamp: new Date() };
@@ -190,7 +192,7 @@ function ChatContent() {
           const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
           setMessages((prev) => [...prev, assistantMessage]);
         } else {
-          const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: prompt, language }) });
+          const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: prompt, language, profile }) });
           if (!response.ok) throw new Error('API Error');
           const data = await response.json();
           const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response || t.chat.error, timestamp: new Date() };

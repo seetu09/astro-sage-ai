@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, Search, Crosshair } from "lucide-react";
+import { Check, Loader2, MapPin, Search, Crosshair } from "lucide-react";
 
 interface GeocodingResult {
   name: string;
@@ -222,14 +222,17 @@ export default function PlaceAutocomplete({
       request
         .then((list) => {
           setResults(list);
-          setIsOpen(list.length > 0);
+          // Keep the dropdown open when the query is non-empty so the
+          // "Use as typed" fallback row can appear even with zero results.
+          setIsOpen(true);
           setActiveIndex(-1);
           setError(null);
         })
         .catch((err) => {
           if (err?.name === "AbortError") return;
           setResults([]);
-          setIsOpen(false);
+          // Keep the dropdown open to show the error + "Use as typed" fallback.
+          setIsOpen(true);
           setError("Couldn't find that place. Please try again.");
         })
         .finally(() => setIsLoading(false));
@@ -368,6 +371,19 @@ export default function PlaceAutocomplete({
     setResults([]);
     setIsOpen(false);
     setIsLoading(false);
+    setActiveIndex(-1);
+  };
+
+  // Fallback: save the user's manually typed text when geocoding fails or returns nothing
+  const handleUseTyped = () => {
+    const query = value.trim();
+    if (!query) return;
+    callbacksRef.current.onChange(query);
+    callbacksRef.current.onClear?.();
+    setResults([]);
+    setIsOpen(false);
+    setIsLoading(false);
+    setError(null);
     setActiveIndex(-1);
   };
 
@@ -573,6 +589,24 @@ export default function PlaceAutocomplete({
           {!isLoading && !error && results.length === 0 && (
             <li className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
               No locations found
+            </li>
+          )}
+
+          {/* Fallback: allow saving the typed text when search fails or returns nothing */}
+          {!isLoading && (error || results.length === 0) && value.trim().length >= 2 && (
+            <li
+              role="option"
+              aria-selected={false}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleUseTyped();
+              }}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm cursor-pointer transition-colors border-b border-slate-200/60 dark:border-white/5 last:border-0 text-violet-700 dark:text-[#FFD166] hover:bg-violet-50 dark:hover:bg-white/10"
+            >
+              <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="truncate">
+                Use &ldquo;{value.trim()}&rdquo; as typed
+              </span>
             </li>
           )}
 

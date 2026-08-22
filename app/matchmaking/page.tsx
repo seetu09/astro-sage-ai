@@ -13,6 +13,7 @@ import {
 import { deriveMoonDetails } from "@/lib/astrology";
 import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 // ─── Venus / Mars Relationship Profiles (by Rashi index 0-11) ──────────────
 const VENUS_PROFILES_EN = [
@@ -120,9 +121,11 @@ const inputClass =
 
 export default function MatchmakingPage() {
   const { language, t } = useLanguage();
+  const { profile, saveProfile } = useUserProfile();
   const [activeTab, setActiveTab] = useState<"form" | "results">("form");
   const [male, setMale] = useState<PersonForm>(emptyPerson);
   const [female, setFemale] = useState<PersonForm>(emptyPerson);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [result, setResult] = useState<MatchResult | null>(null);
   const [personDetails, setPersonDetails] = useState<{ male: PersonDetails; female: PersonDetails } | null>(null);
@@ -130,6 +133,22 @@ export default function MatchmakingPage() {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill Partner 1 (self) from the saved user profile
+  useEffect(() => {
+    if (!profile || profileLoaded) return;
+    setProfileLoaded(true);
+    setMale((prev) => ({
+      ...prev,
+      name: profile.name || prev.name,
+      dateOfBirth: profile.dob || prev.dateOfBirth,
+      timeOfBirth: profile.tob || prev.timeOfBirth,
+      timeUnknown: profile.timeUnknown ?? prev.timeUnknown,
+      placeOfBirth: profile.city || prev.placeOfBirth,
+      latitude: profile.lat ?? prev.latitude,
+      longitude: profile.lon ?? prev.longitude,
+    }));
+  }, [profile, profileLoaded]);
 
   // Pre-fill from shared invite link (?partner1_name=...&partner1_dob=...&partner2_name=...&partner2_dob=...)
   useEffect(() => {
@@ -171,6 +190,19 @@ export default function MatchmakingPage() {
       setPersonDetails({ male: maleDetails, female: femaleDetails });
       setKnowPartnerOpen(false);
       setInviteCopied(false);
+
+      // Persist Partner 1 (self) birth details for reuse across Kundali, Matchmaking & Chat
+      if (male.dateOfBirth || male.placeOfBirth || male.name) {
+        saveProfile({
+          name: male.name,
+          dob: male.dateOfBirth,
+          tob: male.timeOfBirth || "12:00",
+          city: male.placeOfBirth,
+          lat: male.latitude,
+          lon: male.longitude,
+          timeUnknown: male.timeUnknown,
+        });
+      }
 
       // Build shareable invite URL
       try {

@@ -1,4 +1,4 @@
-"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[901],{26032:function(e,t,n){n.d(t,{Z:function(){return r}});/**
+"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[902],{26032:function(e,t,n){n.d(t,{Z:function(){return r}});/**
  * @license lucide-react v0.344.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -8,7 +8,12 @@
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */let r=(0,n(81066).Z)("CheckCircle2",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"m9 12 2 2 4-4",key:"dzmm74"}]])},42421:function(e,t,n){n.d(t,{Z:function(){return r}});/**
+ */let r=(0,n(81066).Z)("CheckCircle2",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["path",{d:"m9 12 2 2 4-4",key:"dzmm74"}]])},22468:function(e,t,n){n.d(t,{Z:function(){return r}});/**
+ * @license lucide-react v0.344.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let r=(0,n(81066).Z)("Check",[["path",{d:"M20 6 9 17l-5-5",key:"1gmf2c"}]])},42421:function(e,t,n){n.d(t,{Z:function(){return r}});/**
  * @license lucide-react v0.344.0 - ISC
  *
  * This source code is licensed under the ISC license.
