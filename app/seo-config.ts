@@ -33,6 +33,11 @@ export const pageSEO: Record<string, PageSEO> = {
     description: "Free Kundali matching (Gun Milan) for marriage. Check compatibility with Ashtakoot Guna matching, Mangal Dosha analysis & relationship insights.",
     keywords: ["kundali matching", "gun milan", "marriage compatibility", "kundli milan", "mangal dosha check"],
   },
+  "/love-meter": {
+    title: "Cosmic Love Meter - Relationship Compatibility & Synergy",
+    description: "Measure your love compatibility with our free Cosmic Love Meter. Get your emotional harmony, communication synergy, and romantic spark score instantly.",
+    keywords: ["love meter", "love compatibility", "relationship compatibility", "zodiac love match", "couple compatibility"],
+  },
   "/chat": {
     title: "AI Astrology Chat - Ask Guru Your Questions",
     description: "Chat with our AI Astrology Guru. Ask questions about your career, love life, health, and get personalized Vedic astrology guidance instantly.",

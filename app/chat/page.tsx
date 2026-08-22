@@ -123,21 +123,22 @@ function ChatContent() {
     });
   }, [messages, isLoading, isInitializing, user]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (preset?: string) => {
+    const text = (preset ?? input).trim();
+    if (!text || isLoading) return;
 
     // Paywall: consume a free question or wallet credit; block if insufficient funds
     const result = consumeMessage();
     if (result === 'blocked') {
       // Store the pending prompt so it can be auto-sent after a successful wallet top-up
-      setPendingPrompt(input.trim());
+      setPendingPrompt(text);
       openTopUp();
       return; // Preserve the typed prompt — do not clear input or send
     }
 
-    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input.trim(), timestamp: new Date() };
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: text, timestamp: new Date() };
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    if (!preset) setInput('');
     setIsLoading(true);
     setHasError(false);
 
@@ -148,7 +149,7 @@ function ChatContent() {
         const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
         setMessages((prev) => [...prev, assistantMessage]);
       } else {
-        const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: input.trim(), language }) });
+        const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, language }) });
         if (!response.ok) throw new Error('API Error');
         const data = await response.json();
         const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response || t.chat.error, timestamp: new Date() };
@@ -222,6 +223,12 @@ function ChatContent() {
     conversationIdRef.current = `chat-${Date.now()}`;
     conversationCreatedAtRef.current = new Date().toISOString();
   };
+
+  const relationshipPills = [
+    { label: t.chat.pillRelationship, promptKey: 'pillRelationship' },
+    { label: t.chat.pillCommunication, promptKey: 'pillCommunication' },
+    { label: t.chat.pillPersonality, promptKey: 'pillPersonality' },
+  ];
 
   return (
     <div className="fixed inset-x-0 bottom-0 top-14 sm:top-16 flex flex-col overflow-hidden z-10">
@@ -351,6 +358,19 @@ function ChatContent() {
 
       {/* Input */}
       <div className="border-t border-[var(--border)] bg-[var(--bg-secondary)]/50 px-3 sm:px-4 py-2.5 sm:py-3">
+        {/* Relationship pre-prompt pills */}
+        <div className="max-w-4xl mx-auto mb-2.5 sm:mb-3 flex flex-wrap items-center gap-2">
+          {relationshipPills.map((pill) => (
+            <button
+              key={pill.promptKey}
+              onClick={() => handleSend(pill.label)}
+              disabled={isLoading || isInitializing}
+              className="inline-flex items-center px-3 py-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border)] text-xs sm:text-sm text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
           <input
             type="text"
@@ -364,7 +384,7 @@ function ChatContent() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={isLoading || isInitializing || !input.trim()}
             className="p-2.5 sm:p-3 rounded-lg bg-[var(--accent)] text-[var(--bg-primary)] hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex-shrink-0"
           >

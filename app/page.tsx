@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useLanguage } from "./context/LanguageContext";
 import { motion } from "framer-motion";
-import { MessageCircle, Scroll, Star, Heart, Calendar, Users } from "lucide-react";
+import { MessageCircle, Scroll, Star, Heart, Calendar, Users, HeartHandshake } from "lucide-react";
 import HeroSection from './components/HeroSection';
 import LiveDemo from './components/LiveDemo';
 import HowItWorks from './components/HowItWorks';
@@ -15,7 +15,23 @@ import Testimonials from './components/Testimonials';
 export default function HomePage() {
   const { t, language } = useLanguage();
 
-  const features = [
+  const features: {
+    title: { en: string; hi: string };
+    description: { en: string; hi: string };
+    icon: React.ComponentType<{ className?: string }>;
+    href: string;
+    featured?: boolean;
+  }[] = [
+    {
+      title: { en: "Cosmic Love Meter & Relationship Synergy", hi: "कॉस्मिक लव मीटर और रिश्तों की संगति" },
+      description: {
+        en: "Measure your emotional, communication, and romantic spark instantly with our free zodiac-based love compatibility tool.",
+        hi: "हमारे मुफ्त राशि-आधारित प्रेम अनुकूलता उपकरण से अपनी भावनात्मक, संचार और रोमांटिक चिंगारी तुरंत मापें।",
+      },
+      icon: HeartHandshake,
+      href: "/love-meter",
+      featured: true,
+    },
     {
       title: { en: "Daily Horoscope", hi: "दैनिक राशिफल" },
       description: {
@@ -106,13 +122,44 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <motion.div key={index} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-                <Link href={feature.href} className="block p-6 bg-[#FFFDF6] dark:bg-[#121026]/70 border border-amber-200/60 dark:border-white/10 rounded-2xl backdrop-blur-xl hover:border-amber-400 dark:hover:border-[#FFD166]/50 hover:bg-[#FFFDF6] dark:hover:bg-[#121026]/90 hover:shadow-sunlit-soft dark:hover:shadow-none transition-all group">
-                  <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-[#FFD166]/10 flex items-center justify-center mb-4 group-hover:bg-amber-100 dark:group-hover:bg-[#FFD166]/20 transition-colors">
-                    <feature.icon className="w-6 h-6 text-amber-700 dark:text-[#FFD166]" />
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className={feature.featured ? "md:col-span-2 lg:col-span-3" : ""}
+              >
+                <Link
+                  href={feature.href}
+                  className={`block p-6 bg-[#FFFDF6] dark:bg-[#121026]/70 border rounded-2xl backdrop-blur-xl transition-all group ${
+                    feature.featured
+                      ? "bg-gradient-to-r from-[#FFFDF6] via-pink-50 to-[#FFFDF6] dark:from-[#121026]/70 dark:via-[#7B2CBF]/10 dark:to-[#121026]/70 border-pink-300/60 dark:border-[#FFD166]/30 hover:border-pink-400 dark:hover:border-[#FFD166]/60 hover:shadow-sunlit-soft dark:hover:shadow-glow-gold"
+                      : "border-amber-200/60 dark:border-white/10 hover:border-amber-400 dark:hover:border-[#FFD166]/50 hover:bg-[#FFFDF6] dark:hover:bg-[#121026]/90 hover:shadow-sunlit-soft dark:hover:shadow-none"
+                  }`}
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-colors ${
+                      feature.featured
+                        ? "bg-gradient-to-br from-pink-500 to-rose-600 dark:from-[#FFD166] dark:to-[#E0A96D]"
+                        : "bg-amber-50 dark:bg-[#FFD166]/10 group-hover:bg-amber-100 dark:group-hover:bg-[#FFD166]/20"
+                    }`}>
+                      <feature.icon className={`w-7 h-7 ${feature.featured ? "text-white dark:text-[#080811]" : "text-amber-700 dark:text-[#FFD166]"}`} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`${feature.featured ? "text-2xl" : "text-xl"} font-semibold text-amber-900 dark:text-[#F3F4F6] mb-1`}>
+                        {feature.title[language]}
+                      </h3>
+                      <p className="text-amber-800/70 dark:text-[#9CA3AF]">
+                        {feature.description[language]}
+                      </p>
+                    </div>
+                    {feature.featured && (
+                      <span className="hidden sm:inline-flex items-center px-3 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-500 text-xs font-bold uppercase tracking-wide whitespace-nowrap">
+                        {language === "en" ? "Free" : "मुफ्त"}
+                      </span>
+                    )}
                   </div>
-                  <h3 className="text-xl font-semibold text-amber-900 dark:text-[#F3F4F6] mb-2">{feature.title[language]}</h3>
-                  <p className="text-amber-800/70 dark:text-[#9CA3AF]">{feature.description[language]}</p>
                 </Link>
               </motion.div>
             ))}

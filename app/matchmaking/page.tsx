@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, User, Sparkles, Shield, AlertTriangle, CheckCircle2, Settings2 } from "lucide-react";
+import { Heart, User, Sparkles, Shield, AlertTriangle, CheckCircle2, Settings2, ChevronDown, Link2, Share2 } from "lucide-react";
 import {
   calculateAshtakoot,
   RASHI_NAMES,
@@ -13,6 +13,67 @@ import {
 import { deriveMoonDetails } from "@/lib/astrology";
 import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
 import { useLanguage } from "@/app/context/LanguageContext";
+
+// ─── Venus / Mars Relationship Profiles (by Rashi index 0-11) ──────────────
+const VENUS_PROFILES_EN = [
+  "They express love boldly and passionately — grand gestures, spontaneous surprises, and protective energy.",
+  "They show affection through stability — thoughtful gifts, comfort, and unwavering loyalty.",
+  "They express love with words and curiosity — playful banter, deep conversations, and mental connection.",
+  "They express love by nurturing — emotional care, feeding you, and creating a safe home.",
+  "They show love generously and proudly — praise, theatrical romance, and warm-hearted gifts.",
+  "They express love through service — practical help, attention to detail, and quiet devotion.",
+  "They express love elegantly — charm, fairness, romantic gestures, and a harmonious atmosphere.",
+  "They express love intensely and all-in — deep emotional merging, passion, and fierce protectiveness.",
+  "They express love through adventure and optimism — shared goals, honest words, and big dreams.",
+  "They show love responsibly — commitment, long-term planning, and grounded reliability.",
+  "They express love as friendship first — intellectual banter, freedom, and quirky surprises.",
+  "They express love romantically and empathetically — dreamy gestures, deep intuition, and selfless care.",
+];
+
+const VENUS_PROFILES_HI = [
+  "वे जुनून और साहस के साथ प्रेम व्यक्त करते हैं — भव्य इशारे, आकस्मिक आश्चर्य और सुरक्षात्मक ऊर्जा।",
+  "वे स्थिरता के माध्यम से स्नेह दिखाते हैं — सोच-समझकर उपहार, आराम और अटूट निष्ठा।",
+  "वे शब्दों और जिज्ञासा से प्रेम व्यक्त करते हैं — चंचल बातचीत, गहरी चर्चा और मानसिक जुड़ाव।",
+  "वे पोषण करके प्रेम व्यक्त करते हैं — भावनात्मक देखभाल, खिलाना और सुरक्षित घर बनाना।",
+  "वे उदारता और गर्व से प्रेम दिखाते हैं — प्रशंसा, नाटकीय रोमांस और गर्मजोशी भरे उपहार।",
+  "वे सेवा के माध्यम से प्रेम व्यक्त करते हैं — व्यावहारिक मदद, विवरण पर ध्यान और शांत भक्ति।",
+  "वे शालीनता से प्रेम व्यक्त करते हैं — आकर्षण, निष्पक्षता, रोमांटिक इशारे और सामंजस्यपूर्ण वातावरण।",
+  "वे तीव्रता और पूर्ण समर्पण से प्रेम व्यक्त करते हैं — गहरा भावनात्मक विलय, जुनून और प्रबल सुरक्षा।",
+  "वे साहस और आशावाद के माध्यम से प्रेम व्यक्त करते हैं — साझा लक्ष्य, ईमानदार शब्द और बड़े सपने।",
+  "वे जिम्मेदारी से प्रेम दिखाते हैं — प्रतिबद्धता, दीर्घकालिक योजना और मजबूत विश्वसनीयता।",
+  "वे पहले दोस्ती के रूप में प्रेम व्यक्त करते हैं — बौद्धिक बातचीत, स्वतंत्रता और अनोखे आश्चर्य।",
+  "वे रोमांटिक और सहानुभूतिपूर्ण ढंग से प्रेम व्यक्त करते हैं — स्वप्निल इशारे, गहरी अंतर्ज्ञान और निस्वार्थ देखभाल।",
+];
+
+const CONFLICT_PROFILES_EN = [
+  "They need space to cool off before discussing fights. Avoid raising your voice — a calm, direct approach wins them over.",
+  "They need time to process. Be patient, practical, and avoid rushing the conversation. Consistency rebuilds trust.",
+  "They talk things out logically. Use clear words, avoid emotional overload, and keep the discussion playful where possible.",
+  "They withdraw when hurt. Reassure them emotionally first — a warm hug opens the door to resolution.",
+  "Pride can get in the way. Acknowledge their effort before critiquing, and let them save face gracefully.",
+  "They overthink in silence. Gently invite them to share and validate their efforts — details matter to them.",
+  "They seek fairness and harmony. Stay balanced, hear both sides, and avoid public criticism at all costs.",
+  "Fights can intensify fast. Give them loyalty signals and avoid threats — deep trust resolves everything.",
+  "They prefer honest, direct confrontation. Frame conflict as a shared adventure to overcome together.",
+  "They go quiet and stubborn. Give them structure — clear steps, deadlines, and a solemn commitment go far.",
+  "They detach emotionally during conflict. Bring humor and intellectual engagement back to break the ice.",
+  "They absorb others' feelings deeply. Be gentle, lead with empathy, and never dismiss their emotions.",
+];
+
+const CONFLICT_PROFILES_HI = [
+  "उन्हें बहस से पहले शांत होने के लिए स्थान चाहिए। आवाज़ न उठाएं — शांत, सीधा दृष्टिकोण उन्हें जीत लेता है।",
+  "उन्हें प्रक्रिया के लिए समय चाहिए। धैर्य रखें, व्यावहारिक बनें और बातचीत में जल्दबाजी न करें। स्थिरता विश्वास बनाती है।",
+  "वे तार्किक रूप से बात करते हैं। स्पष्ट शब्दों का उपयोग करें, भावनात्मक अधिभार से बचें और बातचीत को हल्का रखें।",
+  "वे आहत होने पर पीछे हट जाते हैं। पहले उन्हें भावनात्मक रूप से आश्वस्त करें — एक गर्म आलिंगन समाधान का द्वार खोलता है।",
+  "गर्व रास्ते में आ सकता है। आलोचना से पहले उनके प्रयास को स्वीकार करें और उन्हें शालीनता से सम्मान बचाने दें।",
+  "वे चुपचाप अधिक सोचते हैं। धीरे से उन्हें साझा करने के लिए आमंत्रित करें और उनके प्रयासों को मान्यता दें।",
+  "वे निष्पक्षता और सद्भाव चाहते हैं। संतुलित रहें, दोनों पक्ष सुनें और सार्वजनिक आलोचना से बचें।",
+  "लड़ाई तेजी से बढ़ सकती है। उन्हें निष्ठा के संकेत दें और धमकियों से बचें — गहरा विश्वास सब कुछ हल करता है।",
+  "वे ईमानदार, सीधा टकराव पसंद करते हैं। संघर्ष को एक साथ पार करने वाला साझा रोमांच बनाएं।",
+  "वे चुप और जिद्दी हो जाते हैं। उन्हें संरचना दें — स्पष्ट कदम, समयसीमा और पवित्र प्रतिबद्धता बहुत काम करती है।",
+  "वे संघर्ष के दौरान भावनात्मक रूप से अलग हो जाते हैं। बर्फ तोड़ने के लिए हास्य और बौद्धिक जुड़ाव वापस लाएं।",
+  "वे दूसरों की भावनाओं को गहराई से अवशोषित करते हैं। कोमल बनें, सहानुभूति से आगे बढ़ें और उनकी भावनाओं को कभी खारिज न करें।",
+];
 
 const STATUS_COLORS: Record<string, string> = {
   excellent: "bg-green-500/10 text-green-500 border-green-500/20",
@@ -64,7 +125,28 @@ export default function MatchmakingPage() {
   const [female, setFemale] = useState<PersonForm>(emptyPerson);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [result, setResult] = useState<MatchResult | null>(null);
+  const [personDetails, setPersonDetails] = useState<{ male: PersonDetails; female: PersonDetails } | null>(null);
+  const [knowPartnerOpen, setKnowPartnerOpen] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill from shared invite link (?partner1_name=...&partner1_dob=...&partner2_name=...&partner2_dob=...)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const p1Name = params.get("partner1_name");
+      const p1Dob = params.get("partner1_dob");
+      const p2Name = params.get("partner2_name");
+      const p2Dob = params.get("partner2_dob");
+      if (p1Name || p1Dob || p2Name || p2Dob) {
+        setMale((prev) => ({ ...prev, name: p1Name || prev.name, dateOfBirth: p1Dob || prev.dateOfBirth }));
+        setFemale((prev) => ({ ...prev, name: p2Name || prev.name, dateOfBirth: p2Dob || prev.dateOfBirth }));
+      }
+    } catch {
+      // SSR / privacy mode — ignore
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +168,22 @@ export default function MatchmakingPage() {
       const femaleDetails = buildDetails(female);
       const matchResult = calculateAshtakoot(maleDetails, femaleDetails);
       setResult(matchResult);
+      setPersonDetails({ male: maleDetails, female: femaleDetails });
+      setKnowPartnerOpen(false);
+      setInviteCopied(false);
+
+      // Build shareable invite URL
+      try {
+        const url = new URL(window.location.origin + window.location.pathname);
+        if (male.name) url.searchParams.set("partner1_name", male.name);
+        if (male.dateOfBirth) url.searchParams.set("partner1_dob", male.dateOfBirth);
+        if (female.name) url.searchParams.set("partner2_name", female.name);
+        if (female.dateOfBirth) url.searchParams.set("partner2_dob", female.dateOfBirth);
+        setInviteUrl(url.toString());
+      } catch {
+        // Privacy mode — leave empty
+      }
+
       setLoading(false);
       setActiveTab("results");
     }, 800);
@@ -215,11 +313,72 @@ export default function MatchmakingPage() {
     </div>
   );
 
+  const handleCopyInvite = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — ignore
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!inviteUrl) return;
+    const text = encodeURIComponent(
+      language === "hi"
+        ? `चलो हमारी कुंडली मिलान जांचते हैं! ${inviteUrl}`
+        : `Let's check our Kundali compatibility! ${inviteUrl}`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  };
+
   const getVerdict = (points: number): string => {
     if (points >= 28) return t.matchmaking.excellent;
     if (points >= 22) return t.matchmaking.good;
     if (points >= 16) return t.matchmaking.average;
     return t.matchmaking.challenging;
+  };
+
+  // Relationship profile lookups
+  const venusProfiles = language === "hi" ? VENUS_PROFILES_HI : VENUS_PROFILES_EN;
+  const conflictProfiles = language === "hi" ? CONFLICT_PROFILES_HI : CONFLICT_PROFILES_EN;
+
+  const renderKnowYourPartner = () => {
+    if (!personDetails) return null;
+    const rows = [
+      { label: personDetails.male.name, details: personDetails.male },
+      { label: personDetails.female.name, details: personDetails.female },
+    ];
+    return (
+      <div className="space-y-6">
+        {rows.map((row, idx) => {
+          const rashiIdx = row.details.rashi - 1;
+          const venus = venusProfiles[rashiIdx];
+          const conflict = conflictProfiles[rashiIdx];
+          return (
+            <div key={idx} className="space-y-4">
+              <h4 className="font-bold text-[var(--text-primary)]">{row.label}</h4>
+              <div className="flex items-start gap-3 p-4 bg-[var(--hover-bg)] rounded-xl">
+                <span className="text-2xl">💕</span>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--accent)] mb-1">{t.matchmaking.affectionVenus}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{venus}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-4 bg-[var(--hover-bg)] rounded-xl">
+                <span className="text-2xl">⚔️</span>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--accent)] mb-1">{t.matchmaking.conflictMars}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">{conflict}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -389,6 +548,68 @@ export default function MatchmakingPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Know Your Partner */}
+                <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl">
+                  <button
+                    onClick={() => setKnowPartnerOpen((v) => !v)}
+                    className="w-full flex items-center justify-between p-6 text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">💞</span>
+                      <h3 className="text-xl font-bold text-[var(--text-primary)]">{t.matchmaking.knowYourPartner}</h3>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 text-[var(--text-muted)] transition-transform ${knowPartnerOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  <AnimatePresence>
+                    {knowPartnerOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 pb-6 border-t border-[var(--border-color)] pt-5">
+                          {renderKnowYourPartner()}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Invite Partner */}
+                {inviteUrl && (
+                  <div className="bg-gradient-to-br from-pink-500/10 via-rose-500/10 to-amber-500/10 border border-pink-500/20 rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                      <Link2 className="w-5 h-5 text-pink-500" />
+                      {t.matchmaking.invitePartner}
+                    </h3>
+                    <p className="text-sm text-[var(--text-secondary)] mb-4">{t.matchmaking.inviteSubtitle}</p>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        onClick={handleCopyInvite}
+                        className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl border font-semibold transition-all ${
+                          inviteCopied
+                            ? "bg-green-500/15 border-green-500/30 text-green-500"
+                            : "bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-primary)] hover:border-[var(--accent)]"
+                        }`}
+                      >
+                        {inviteCopied ? <CheckCircle2 className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                        {inviteCopied ? t.matchmaking.copied : t.matchmaking.copyLink}
+                      </button>
+                      <button
+                        onClick={handleWhatsAppShare}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold transition-all"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        {t.matchmaking.shareWhatsApp}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )
           )}

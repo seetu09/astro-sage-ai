@@ -58,6 +58,9 @@ interface TranslationShape {
     topUpProceed: string;
     topUpQuestions: string;
     topUpInvalidAmount: string;
+    pillRelationship: string;
+    pillCommunication: string;
+    pillPersonality: string;
   };
   horoscope: {
     title: string;
@@ -239,6 +242,33 @@ interface TranslationShape {
     good: string;
     average: string;
     challenging: string;
+    knowYourPartner: string;
+    affectionVenus: string;
+    conflictMars: string;
+    invitePartner: string;
+    inviteSubtitle: string;
+    copyLink: string;
+    copied: string;
+    shareWhatsApp: string;
+  };
+  loveMeter: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    partnerOne: string;
+    partnerTwo: string;
+    namePlaceholder: string;
+    birthDate: string;
+    zodiacSign: string;
+    selectSign: string;
+    calculate: string;
+    calculating: string;
+    overall: string;
+    compatibilityDetails: string;
+    emotionalHarmony: string;
+    communicationSynergy: string;
+    physicalSpark: string;
+    tryAnother: string;
   };
   dosha: {
     badge: string;
@@ -409,6 +439,9 @@ export const translations: Record<Language, TranslationShape> = {
       topUpProceed: 'Proceed to Pay',
       topUpQuestions: '{count} Questions',
       topUpInvalidAmount: 'Please enter a valid amount.',
+      pillRelationship: '❤️ Relationship Future & Marriage',
+      pillCommunication: '💬 Resolving Communication Issues',
+      pillPersonality: '✨ Partner Personality & Love Style',
     },
     horoscope: {
       title: 'Daily Horoscope',
@@ -590,6 +623,33 @@ export const translations: Record<Language, TranslationShape> = {
       good: 'Good Match',
       average: 'Average Match',
       challenging: 'Challenging Match',
+      knowYourPartner: 'Know Your Partner',
+      affectionVenus: 'How They Express Affection',
+      conflictMars: 'Conflict Resolution Tips',
+      invitePartner: 'Invite Partner',
+      inviteSubtitle: 'Share your matchmaking link with your partner on WhatsApp',
+      copyLink: 'Copy Link',
+      copied: 'Copied!',
+      shareWhatsApp: 'Share on WhatsApp',
+    },
+    loveMeter: {
+      badge: 'Cosmic Love Meter · Relationship Synergy',
+      title: 'Cosmic Love Meter',
+      subtitle: 'Discover your emotional, communication, and romantic chemistry with a personalized zodiac compatibility score.',
+      partnerOne: 'Partner 1',
+      partnerTwo: 'Partner 2',
+      namePlaceholder: 'Name (optional)',
+      birthDate: 'Birth Date (optional)',
+      zodiacSign: 'Zodiac Sign',
+      selectSign: 'Select a zodiac sign',
+      calculate: 'Measure the Love',
+      calculating: 'Reading the Stars...',
+      overall: 'Overall Compatibility',
+      compatibilityDetails: 'Compatibility Details',
+      emotionalHarmony: 'Emotional Harmony',
+      communicationSynergy: 'Communication Synergy',
+      physicalSpark: 'Physical & Romantic Spark',
+      tryAnother: 'Try Another Pair',
     },
     dosha: {
       badge: 'Manglik & Shani Sade Sati Checker',
@@ -758,6 +818,9 @@ export const translations: Record<Language, TranslationShape> = {
       topUpProceed: 'भुगतान के लिए आगे बढ़ें',
       topUpQuestions: '{count} प्रश्न',
       topUpInvalidAmount: 'कृपया मान्य राशि दर्ज करें।',
+      pillRelationship: '❤️ रिश्ते का भविष्य और विवाह',
+      pillCommunication: '💬 संचार समस्याओं का समाधान',
+      pillPersonality: '✨ साथी का व्यक्तित्व और प्रेम शैली',
     },
     horoscope: {
       title: 'दैनिक राशिफल',
@@ -939,6 +1002,33 @@ export const translations: Record<Language, TranslationShape> = {
       good: 'अच्छा मिलान',
       average: 'औसत मिलान',
       challenging: 'चुनौतीपूर्ण मिलान',
+      knowYourPartner: 'अपने साथी को जानें',
+      affectionVenus: 'वे स्नेह कैसे व्यक्त करते हैं',
+      conflictMars: 'विवाद समाधान के उपाय',
+      invitePartner: 'साथी को आमंत्रित करें',
+      inviteSubtitle: 'अपना मिलान लिंक व्हाट्सएप पर साझा करें',
+      copyLink: 'लिंक कॉपी करें',
+      copied: 'कॉपी हो गया!',
+      shareWhatsApp: 'व्हाट्सएप पर साझा करें',
+    },
+    loveMeter: {
+      badge: 'कॉस्मिक लव मीटर · रिश्तों की संगति',
+      title: 'कॉस्मिक लव मीटर',
+      subtitle: 'व्यक्तिगत राशि अनुकूलता स्कोर के साथ अपनी भावनात्मक, संचार और रोमांटिक केमिस्ट्री खोजें।',
+      partnerOne: 'पहला साथी',
+      partnerTwo: 'दूसरा साथी',
+      namePlaceholder: 'नाम (वैकल्पिक)',
+      birthDate: 'जन्म तिथि (वैकल्पिक)',
+      zodiacSign: 'राशि',
+      selectSign: 'राशि चुनें',
+      calculate: 'प्रेम मापें',
+      calculating: 'सितारे पढ़ रहे हैं...',
+      overall: 'कुल अनुकूलता',
+      compatibilityDetails: 'अनुकूलता विवरण',
+      emotionalHarmony: 'भावनात्मक सामंजस्य',
+      communicationSynergy: 'संचार तालमेल',
+      physicalSpark: 'शारीरिक और रोमांटिक चिंगारी',
+      tryAnother: 'दूसरी जोड़ी आजमाएं',
     },
     dosha: {
       badge: 'मांगलिक और शनि साढ़े साती जांच',
