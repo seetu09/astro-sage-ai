@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, User, Sparkles, RotateCcw } from "lucide-react";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Zodiac Data ────────────────────────────────────────────────────────────
 interface SignInfo {
@@ -119,6 +120,7 @@ export default function LoveMeter() {
       return;
     }
 
+    trackEvent("love_meter_calculated", { language });
     setLoading(true);
     // Simulate calculation delay for UX
     setTimeout(() => {

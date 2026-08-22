@@ -9,6 +9,7 @@ import { useWallet } from '@/app/context/WalletContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { saveChatHistory } from '@/lib/user-history';
+import { trackEvent } from '@/lib/analytics';
 import EmptyState from '@/app/components/EmptyState';
 import { SkeletonChat } from '@/app/components/SkeletonLoader';
 
@@ -44,6 +45,69 @@ function getMockResponse(lang: string): string {
   return responses[Math.floor(Math.random() * responses.length)];
 }
 
+// Create append/set helpers that stream text into a single assistant message
+function makeStreamHelpers(
+  assistantId: string,
+  setMessages: (updater: (prev: Message[]) => Message[]) => void
+) {
+  const appendChunk = (chunk: string) => {
+    setMessages((prev) => {
+      const existing = prev.find((m) => m.id === assistantId);
+      if (existing) return prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m));
+      const created: Message = { id: assistantId, role: 'assistant', content: chunk, timestamp: new Date() };
+      return [...prev, created];
+    });
+  };
+  const setContent = (content: string) => {
+    setMessages((prev) => {
+      const existing = prev.find((m) => m.id === assistantId);
+      if (existing) return prev.map((m) => (m.id === assistantId ? { ...m, content } : m));
+      const created: Message = { id: assistantId, role: 'assistant', content, timestamp: new Date() };
+      return [...prev, created];
+    });
+  };
+  return { appendChunk, setContent };
+}
+
+// Simulate token-by-token streaming of a mock response (DEV_MODE)
+async function streamMockResponse(language: string, onChunk: (chunk: string) => void) {
+  const words = getMockResponse(language).split(' ');
+  for (let i = 0; i < words.length; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    onChunk((i > 0 ? ' ' : '') + words[i]);
+  }
+}
+
+// Read the /api/chat text stream and invoke onChunk for each delta as it arrives
+async function streamAssistantReply(
+  prompt: string,
+  language: string,
+  profile: unknown,
+  onChunk: (chunk: string) => void,
+  onRateLimited: (message: string) => void
+) {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: prompt, language, profile }),
+  });
+
+  if (response.status === 429) {
+    onRateLimited("You're sending messages too quickly. Please wait a minute and try again.");
+    return;
+  }
+  if (!response.ok || !response.body) throw new Error('API Error');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    if (chunk) onChunk(chunk);
+  }
+}
+
 function ChatContent() {
   const { language, t } = useLanguage();
   const { user } = useAuth();
@@ -53,6 +117,7 @@ function ChatContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [hasError, setHasError] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -83,24 +148,34 @@ function ChatContent() {
         const userMessage: Message = { id: Date.now().toString(), role: 'user', content: q, timestamp: new Date() };
         setMessages((prev) => [...prev, userMessage]);
         setIsLoading(true);
-        setTimeout(() => {
-          const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
-          setMessages((prev) => [...prev, assistantMessage]);
+        const assistantId = (Date.now() + 1).toString();
+        const { appendChunk } = makeStreamHelpers(assistantId, setMessages);
+        let firstChunk = true;
+        (async () => {
+          await streamMockResponse(language, (chunk) => {
+            if (firstChunk) { setIsStreaming(true); firstChunk = false; }
+            appendChunk(chunk);
+          });
           setIsLoading(false);
-        }, 1500);
+          setIsStreaming(false);
+        })();
       }, 1200);
       return () => clearTimeout(timer);
     }
   }, [searchParams, language]);
 
-  // Scroll within the messages container only — never scroll the page
+  // Auto-scroll within the messages container only — never scroll the page.
+  // Follows streaming text, but never fights the user when they scroll up.
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container || isInitializing) return;
 
     if (messages.length <= 1 && !isLoading) {
       container.scrollTop = 0;
-    } else {
+      return;
+    }
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom < 120) {
       container.scrollTop = container.scrollHeight;
     }
   }, [messages, isLoading, isInitializing]);
@@ -142,26 +217,32 @@ function ChatContent() {
     setMessages((prev) => [...prev, userMessage]);
     if (!preset) setInput('');
     setIsLoading(true);
+    setIsStreaming(false);
     setHasError(false);
+    trackEvent('chat_message_sent', { language });
+
+    const assistantId = (Date.now() + 1).toString();
+    const { appendChunk, setContent: setAssistantContent } = makeStreamHelpers(assistantId, setMessages);
+    let firstChunk = true;
+    const onChunk = (chunk: string) => {
+      if (firstChunk) { setIsStreaming(true); firstChunk = false; }
+      appendChunk(chunk);
+    };
 
     try {
       const DEV_MODE = true;
       if (DEV_MODE) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
-        setMessages((prev) => [...prev, assistantMessage]);
+        // Simulate token-by-token streaming for local development
+        await streamMockResponse(language, onChunk);
       } else {
-        const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, language, profile }) });
-        if (!response.ok) throw new Error('API Error');
-        const data = await response.json();
-        const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response || t.chat.error, timestamp: new Date() };
-        setMessages((prev) => [...prev, assistantMessage]);
+        await streamAssistantReply(text, language, profile, onChunk, setAssistantContent);
       }
     } catch {
       setHasError(true);
-      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: t.chat.error, timestamp: new Date() }]);
+      setAssistantContent(t.chat.error);
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -182,27 +263,32 @@ function ChatContent() {
     setInput(prompt);
     setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', content: prompt, timestamp: new Date() }]);
     setIsLoading(true);
+    setIsStreaming(false);
     setHasError(false);
 
     const runAssistant = async () => {
+      const assistantId = (Date.now() + 1).toString();
+      const { appendChunk, setContent: setAssistantContent } = makeStreamHelpers(assistantId, setMessages);
+      let firstChunk = true;
+      const onChunk = (chunk: string) => {
+        if (firstChunk) { setIsStreaming(true); firstChunk = false; }
+        appendChunk(chunk);
+      };
+
       try {
         const DEV_MODE = true;
         if (DEV_MODE) {
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: getMockResponse(language), timestamp: new Date() };
-          setMessages((prev) => [...prev, assistantMessage]);
+          // Simulate token-by-token streaming for local development
+          await streamMockResponse(language, onChunk);
         } else {
-          const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: prompt, language, profile }) });
-          if (!response.ok) throw new Error('API Error');
-          const data = await response.json();
-          const assistantMessage: Message = { id: (Date.now() + 1).toString(), role: 'assistant', content: data.response || t.chat.error, timestamp: new Date() };
-          setMessages((prev) => [...prev, assistantMessage]);
+          await streamAssistantReply(prompt, language, profile, onChunk, setAssistantContent);
         }
       } catch {
         setHasError(true);
-        setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: t.chat.error, timestamp: new Date() }]);
+        setAssistantContent(t.chat.error);
       } finally {
         setIsLoading(false);
+        setIsStreaming(false);
         hasPendingPromptRef.current = false;
       }
     };
@@ -329,7 +415,7 @@ function ChatContent() {
             </AnimatePresence>
           )}
 
-          {isLoading && (
+          {isLoading && !isStreaming && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 sm:gap-3">
               <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
                 <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--accent)]" />

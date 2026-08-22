@@ -12,6 +12,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
+import { trackEvent } from '@/lib/analytics';
 
 interface Planet {
   name: string;
@@ -126,6 +127,7 @@ export default function KundaliPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    trackEvent('kundali_generated', { has_birth_time: !timeUnknown });
     const resolvedTime = resolveBirthTime(timeOfBirth, timeUnknown);
     const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth: resolvedTime, placeOfBirth, latitude, longitude, timezone });
     setKundliData(data);

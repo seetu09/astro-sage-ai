@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Cinzel, Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -130,6 +131,24 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className}`}>
+        {/* Pre-launch analytics placeholder — activates only when NEXT_PUBLIC_GA_ID is set.
+            Swap for Plausible/PostHog by replacing this block; funnel events use lib/analytics.ts trackEvent(). */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
         <ThemeProvider>
           <ErrorBoundary>
             <LanguageProvider>
