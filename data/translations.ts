@@ -218,6 +218,13 @@ interface TranslationShape {
     boyDetails: string;
     girlDetails: string;
     namePlaceholder: string;
+    dateOfBirth: string;
+    timeOfBirth: string;
+    timeUnknown: string;
+    placeOfBirth: string;
+    placePlaceholder: string;
+    advancedToggle: string;
+    advancedHide: string;
     moonSign: string;
     nakshatra: string;
     pada: string;
@@ -562,6 +569,13 @@ export const translations: Record<Language, TranslationShape> = {
       boyDetails: "Boy's Details",
       girlDetails: "Girl's Details",
       namePlaceholder: 'Name (optional)',
+      dateOfBirth: 'Date of Birth',
+      timeOfBirth: 'Time of Birth',
+      timeUnknown: 'Time of birth unknown',
+      placeOfBirth: 'Place of Birth / City',
+      placePlaceholder: 'e.g. New Delhi',
+      advancedToggle: 'Advanced: I know my Rashi & Nakshatra',
+      advancedHide: 'Hide Advanced Options',
       moonSign: 'Moon Sign (Rashi)',
       nakshatra: 'Nakshatra',
       pada: 'Pada (Quarter)',
@@ -904,6 +918,13 @@ export const translations: Record<Language, TranslationShape> = {
       boyDetails: "लड़के का विवरण",
       girlDetails: "लड़की का विवरण",
       namePlaceholder: 'नाम (वैकल्पिक)',
+      dateOfBirth: 'जन्म तिथि',
+      timeOfBirth: 'जन्म समय',
+      timeUnknown: 'जन्म समय अज्ञात है',
+      placeOfBirth: 'जन्म स्थान / शहर',
+      placePlaceholder: 'जैसे नई दिल्ली',
+      advancedToggle: 'उन्नत: मुझे अपनी राशि और नक्षत्र पता है',
+      advancedHide: 'उन्नत विकल्प छिपाएं',
       moonSign: 'चंद्र राशि',
       nakshatra: 'नक्षत्र',
       pada: 'चरण (पाद)',

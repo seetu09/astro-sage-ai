@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, User, Sparkles, Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Heart, User, Sparkles, Shield, AlertTriangle, CheckCircle2, Settings2 } from "lucide-react";
 import {
   calculateAshtakoot,
   RASHI_NAMES,
@@ -10,6 +10,8 @@ import {
   type PersonDetails,
   type MatchResult,
 } from "@/lib/ashtakoot";
+import { deriveMoonDetails } from "@/lib/astrology";
+import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -28,18 +30,39 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 interface PersonForm {
   name: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  timeUnknown: boolean;
+  placeOfBirth: string;
+  latitude: number | null;
+  longitude: number | null;
   rashi: number;
   nakshatra: number;
   pada: number;
 }
 
-const emptyPerson: PersonForm = { name: "", rashi: 1, nakshatra: 1, pada: 1 };
+const emptyPerson: PersonForm = {
+  name: "",
+  dateOfBirth: "",
+  timeOfBirth: "",
+  timeUnknown: false,
+  placeOfBirth: "",
+  latitude: null,
+  longitude: null,
+  rashi: 1,
+  nakshatra: 1,
+  pada: 1,
+};
+
+const inputClass =
+  "w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
 export default function MatchmakingPage() {
   const { language, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"form" | "results">("form");
   const [male, setMale] = useState<PersonForm>(emptyPerson);
   const [female, setFemale] = useState<PersonForm>(emptyPerson);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [result, setResult] = useState<MatchResult | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,8 +72,18 @@ export default function MatchmakingPage() {
 
     // Simulate calculation delay for UX
     setTimeout(() => {
-      const maleDetails: PersonDetails = { ...male, name: male.name || (language === 'hi' ? "लड़का" : "Boy") };
-      const femaleDetails: PersonDetails = { ...female, name: female.name || (language === 'hi' ? "लड़की" : "Girl") };
+      const buildDetails = (p: PersonForm): PersonDetails => {
+        const moon = showAdvanced
+          ? { rashi: p.rashi, nakshatra: p.nakshatra, pada: p.pada }
+          : deriveMoonDetails(p.dateOfBirth, p.timeOfBirth, p.timeUnknown);
+        return {
+          name: p.name || (language === "hi" ? "लड़का" : "Boy"),
+          ...moon,
+        };
+      };
+
+      const maleDetails = buildDetails(male);
+      const femaleDetails = buildDetails(female);
       const matchResult = calculateAshtakoot(maleDetails, femaleDetails);
       setResult(matchResult);
       setLoading(false);
@@ -78,54 +111,107 @@ export default function MatchmakingPage() {
         placeholder={t.matchmaking.namePlaceholder}
         value={data.name}
         onChange={(e) => setData({ ...data, name: e.target.value })}
-        className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+        className={inputClass}
       />
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.moonSign}</label>
-        <select
-          value={data.rashi}
-          onChange={(e) => setData({ ...data, rashi: parseInt(e.target.value) })}
-          className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-        >
-          {RASHI_NAMES.map((name, i) => (
-            <option key={i} value={i + 1}>{i + 1}. {name}</option>
-          ))}
-        </select>
+        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.dateOfBirth}</label>
+        <input
+          type="date"
+          value={data.dateOfBirth}
+          onChange={(e) => setData({ ...data, dateOfBirth: e.target.value })}
+          className={`${inputClass} [color-scheme:light] dark:[color-scheme:dark]`}
+          required
+        />
       </div>
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.nakshatra}</label>
-        <select
-          value={data.nakshatra}
-          onChange={(e) => setData({ ...data, nakshatra: parseInt(e.target.value) })}
-          className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-        >
-          {NAKSHATRA_NAMES.map((name, i) => (
-            <option key={i} value={i + 1}>{i + 1}. {name}</option>
-          ))}
-        </select>
+        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.timeOfBirth}</label>
+        <input
+          type="time"
+          value={data.timeOfBirth}
+          onChange={(e) => setData({ ...data, timeOfBirth: e.target.value })}
+          disabled={data.timeUnknown}
+          className={`${inputClass} [color-scheme:light] dark:[color-scheme:dark] disabled:opacity-50`}
+        />
+        <label className="flex items-center gap-2 mt-2 text-sm text-[var(--text-secondary)] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.timeUnknown}
+            onChange={(e) => setData({ ...data, timeUnknown: e.target.checked })}
+            className="w-4 h-4 accent-[var(--accent)]"
+          />
+          {t.matchmaking.timeUnknown}
+        </label>
       </div>
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.pada}</label>
-        <div className="grid grid-cols-4 gap-2">
-          {[1, 2, 3, 4].map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setData({ ...data, pada: p })}
-              className={`py-2 rounded-lg border text-sm font-semibold transition-all ${
-                data.pada === p
-                  ? "bg-[var(--accent)] text-white border-[var(--accent)]"
-                  : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--accent)]"
-              }`}
+        <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.placeOfBirth}</label>
+        <PlaceAutocomplete
+          value={data.placeOfBirth}
+          onChange={(v) => setData({ ...data, placeOfBirth: v })}
+          onSelect={(place) =>
+            setData({ ...data, placeOfBirth: place.placeName, latitude: place.latitude, longitude: place.longitude })
+          }
+          onClear={() => setData({ ...data, latitude: null, longitude: null })}
+          latitude={data.latitude}
+          longitude={data.longitude}
+          onLatitudeChange={(v) => setData({ ...data, latitude: v })}
+          onLongitudeChange={(v) => setData({ ...data, longitude: v })}
+          placeholder={t.matchmaking.placePlaceholder}
+          inputClassName={inputClass}
+        />
+      </div>
+
+      {showAdvanced && (
+        <div className="space-y-4 border-t border-[var(--border-color)] pt-4">
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.moonSign}</label>
+            <select
+              value={data.rashi}
+              onChange={(e) => setData({ ...data, rashi: parseInt(e.target.value) })}
+              className={inputClass}
             >
-              {p}
-            </button>
-          ))}
+              {RASHI_NAMES.map((name, i) => (
+                <option key={i} value={i + 1}>{i + 1}. {name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.nakshatra}</label>
+            <select
+              value={data.nakshatra}
+              onChange={(e) => setData({ ...data, nakshatra: parseInt(e.target.value) })}
+              className={inputClass}
+            >
+              {NAKSHATRA_NAMES.map((name, i) => (
+                <option key={i} value={i + 1}>{i + 1}. {name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.pada}</label>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setData({ ...data, pada: p })}
+                  className={`py-2 rounded-lg border text-sm font-semibold transition-all ${
+                    data.pada === p
+                      ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                      : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--accent)]"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
@@ -177,6 +263,21 @@ export default function MatchmakingPage() {
                     female,
                     setFemale
                   )}
+                </div>
+
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced((v) => !v)}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                      showAdvanced
+                        ? "bg-[var(--accent)]/10 text-[var(--accent)] border-[var(--accent)]/30"
+                        : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-[var(--accent)]"
+                    }`}
+                  >
+                    <Settings2 className="w-4 h-4" />
+                    {showAdvanced ? t.matchmaking.advancedHide : t.matchmaking.advancedToggle}
+                  </button>
                 </div>
 
                 <div className="flex justify-center">
