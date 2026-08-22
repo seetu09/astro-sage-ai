@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DEV_MODE = true;
-
-// --- System prompt with safety guardrails ---
-const SYSTEM_PROMPT = `You are a grounded, compassionate Vedic astrology guide. You offer thoughtful astrological insights rooted in Vedic tradition, staying warm, balanced, and honest about astrology's reflective nature.
+// --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
+const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
 
 SAFETY BOUNDARY — you must refuse to make definitive predictions on:
 - Medical emergencies or critical health diagnoses
@@ -65,52 +63,79 @@ export async function POST(request: NextRequest) {
     }
 
     const { message, language = 'en' } = await request.json();
-    if (!message) return NextResponse.json({ error: 'Message is required' }, { status: 400 });
-
-    if (DEV_MODE) {
-      const mockResponses = {
-        en: ["The stars indicate transformation. Jupiter suggests career growth. Focus on long-term goals.", "Your Moon sign reveals deep emotions. Excellent time for meditation and spiritual practices.", "Venus is favorable for love. New romantic opportunities may arise for singles.", "Saturn emphasizes health routines. Establish better habits for diet and exercise.", "Mercury retrograde affects communication. Be mindful in conversations."],
-        hi: ["सितारे परिवर्तन का संकेत देते हैं। बृहस्पति करियर विकास का संकेत देता है।", "आपका चंद्र राशि गहरी भावनाओं का खुलासा करता है। ध्यान के लिए उत्कृष्ट समय।", "शुक्र प्रेम के लिए अनुकूल है। अकेले लोगों के लिए नए रोमांटिक अवसर।", "शनि स्वास्थ्य दिनचर्या पर जोर देता है। आहार और व्यायाम के लिए बेहतर आदतें बनाएं।", "बुध वक्री संचार को प्रभावित करता है। बातचीत में सचेत रहें।"],
-      };
-      const responses = mockResponses[language as keyof typeof mockResponses] || mockResponses.en;
-      const text = responses[Math.floor(Math.random() * responses.length)];
-
-      // Simulate token-by-token streaming
-      const stream = new ReadableStream<Uint8Array>({
-        async start(controller) {
-          const encoder = new TextEncoder();
-          const words = text.split(' ');
-          for (let i = 0; i < words.length; i++) {
-            controller.enqueue(encoder.encode((i > 0 ? ' ' : '') + words[i]));
-            await new Promise((resolve) => setTimeout(resolve, 30));
-          }
-          controller.close();
-        },
-      });
-      return textStream(stream);
+    if (!message || typeof message !== 'string') {
+      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.MOONSHOT_API_KEY}` },
-      body: JSON.stringify({
-        model: 'moonshot-v1-8k',
-        messages: [
-          { role: 'system', content: `${SYSTEM_PROMPT}\n\nRespond in ${language === 'hi' ? 'Hindi' : 'English'}.` },
-          { role: 'user', content: message },
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-        stream: true,
-      }),
-    });
-
-    if (!response.ok || !response.body) {
-      return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
+    // Friendly guard if the Gemini key isn't configured in this environment
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY is not set');
+      return NextResponse.json(
+        { error: "The astrologer's AI service isn't configured yet. Please add GEMINI_API_KEY to your environment variables." },
+        { status: 500 }
+      );
     }
 
-    // Parse Moonshot SSE and re-emit plain text deltas for the client
-    const upstream = response.body;
+    // Live Gemini Flash call via native fetch (SSE streaming — alt=sse yields incremental data events)
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${apiKey}&alt=sse`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: `${SYSTEM_PROMPT}\n\nRespond in ${language === 'hi' ? 'Hindi' : 'English'}.` }],
+          },
+          contents: [{ role: 'user', parts: [{ text: message }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+            // Disable hidden "thinking" tokens so the full budget goes to visible text
+            // and streaming starts immediately (supported by gemini-2.5-flash)
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      }
+    );
+
+    if (!geminiResponse.ok || !geminiResponse.body) {
+      let upstreamDetail = '';
+      try {
+        upstreamDetail = await geminiResponse.text();
+      } catch {
+        // Ignore unreadable error bodies
+      }
+      console.error(`Gemini API error (${geminiResponse.status}): ${upstreamDetail.slice(0, 500)}`);
+
+      // Upstream rate limit — relay a friendly message and honor Retry-After when present
+      if (geminiResponse.status === 429) {
+        const retryAfter = geminiResponse.headers.get('retry-after');
+        return NextResponse.json(
+          { error: 'The astrologer is receiving too many questions right now. Please wait a moment and try again.' },
+          retryAfter
+            ? { status: 429, headers: { 'Retry-After': retryAfter } }
+            : { status: 429 }
+        );
+      }
+
+      // Invalid key / malformed request — configuration problem on our side
+      if (geminiResponse.status === 400 || geminiResponse.status === 403) {
+        return NextResponse.json(
+          { error: "We couldn't reach the astrologer due to an API configuration issue. Please verify GEMINI_API_KEY is valid." },
+          { status: 500 }
+        );
+      }
+
+      // Any other upstream failure
+      return NextResponse.json(
+        { error: 'The astrologer is unavailable right now. Please try again shortly.' },
+        { status: 502 }
+      );
+    }
+
+    // Parse Gemini SSE and re-emit plain text deltas for the client
+    const upstream = geminiResponse.body;
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         const reader = upstream.getReader();
@@ -128,15 +153,34 @@ export async function POST(request: NextRequest) {
               const trimmed = line.trim();
               if (!trimmed.startsWith('data:')) continue;
               const payload = trimmed.slice(5).trim();
-              if (payload === '[DONE]') continue;
+              if (!payload || payload === '[DONE]') continue;
               try {
                 const json = JSON.parse(payload);
-                const delta: string | undefined = json.choices?.[0]?.delta?.content;
-                if (delta) controller.enqueue(encoder.encode(delta));
+
+                // If Gemini blocked the prompt outright, surface a gentle note
+                const blockReason: string | undefined = json.promptFeedback?.blockReason;
+                if (blockReason && !json.candidates?.length) {
+                  controller.enqueue(encoder.encode("I'm unable to reflect on that question right now. Please try rephrasing it."));
+                  continue;
+                }
+
+                const parts = json.candidates?.[0]?.content?.parts ?? [];
+                for (const part of parts) {
+                  if (typeof part.text === 'string' && part.text) {
+                    controller.enqueue(encoder.encode(part.text));
+                  }
+                }
               } catch {
                 // Skip malformed SSE chunks
               }
             }
+          }
+        } catch (error) {
+          console.error('Error while streaming Gemini response:', error);
+          try {
+            controller.enqueue(encoder.encode('\n\n(The connection was interrupted mid-answer. Please ask again.)'));
+          } catch {
+            // Controller already closed
           }
         } finally {
           controller.close();

@@ -20,31 +20,6 @@ interface Message {
   timestamp: Date;
 }
 
-const mockResponses: Record<string, string[]> = {
-  en: [
-    "The stars indicate a period of transformation for you. Jupiter's influence in your chart suggests growth in your career sector. Focus on long-term goals rather than immediate gratification.",
-    "Your Moon sign reveals deep emotional currents today. It's an excellent time for introspection and spiritual practices. Consider meditation or journaling to process these energies.",
-    "Venus favorably positioned for matters of the heart. If you're single, new romantic opportunities may present themselves. Those in relationships should focus on deepening their emotional connection.",
-    "Saturn's transit through your 6th house emphasizes health and daily routines. This is an ideal time to establish better habits around diet, exercise, and work-life balance.",
-    "Mercury retrograde is affecting your communication sector. Be extra mindful in important conversations and double-check all written communications.",
-    "Your Mars placement suggests high energy and motivation today. Channel this into productive activities rather than conflicts. Physical exercise will help balance this fiery energy constructively.",
-    "The North Node's influence indicates karmic lessons around relationships. Pay attention to recurring patterns and consider how past actions shape your present circumstances.",
-    "A favorable aspect between Jupiter and your Sun sign brings optimism and expansion. This is an excellent time for learning, teaching, or embarking on educational pursuits.",
-  ],
-  hi: [
-    "सितारे आपके लिए परिवर्तन की अवधि का संकेत देते हैं। आपकी कुंडली में बृहस्पति का प्रभाव करियर क्षेत्र में विकास का संकेत देता है। तत्काल संतुष्टि के बजाय दीर्घकालिक लक्ष्यों पर ध्यान केंद्रित करें।",
-    "आपकी चंद्र राशि आज गहरी भावनात्मक धाराओं का खुलासा करती है। आत्मनिरीक्षण और आध्यात्मिक अभ्यास के लिए यह एक उत्कृष्ट समय है। इन ऊर्जाओं को प्रोसेस करने के लिए ध्यान या जर्नलिंग पर विचार करें।",
-    "दिल के मामलों के लिए शुक्र अनुकूल स्थिति में है। यदि आप अकेले हैं, तो नए रोमांटिक अवसर प्रस्तुत हो सकते हैं। रिश्तों में रहने वालों को अपनी भावनात्मक जुड़ाव को गहरा करने पर ध्यान देना चाहिए।",
-    "आपके 6वें भाव से शनि का गोचर स्वास्थ्य और दैनिक दिनचर्या पर जोर देता है। आहार, व्यायाम और कार्य-जीवन संतुलन के लिए बेहतर आदतें विकसित करने का यह आदर्श समय है।",
-    "बुध वक्री आपके संचार क्षेत्र को प्रभावित कर रहा है। महत्वपूर्ण बातचीत में अतिरिक्त सचेत रहें और सभी लिखित संचार की दोबारा जांच करें।",
-  ],
-};
-
-function getMockResponse(lang: string): string {
-  const responses = mockResponses[lang] || mockResponses['en'];
-  return responses[Math.floor(Math.random() * responses.length)];
-}
-
 // Create append/set helpers that stream text into a single assistant message
 function makeStreamHelpers(
   assistantId: string,
@@ -69,22 +44,14 @@ function makeStreamHelpers(
   return { appendChunk, setContent };
 }
 
-// Simulate token-by-token streaming of a mock response (DEV_MODE)
-async function streamMockResponse(language: string, onChunk: (chunk: string) => void) {
-  const words = getMockResponse(language).split(' ');
-  for (let i = 0; i < words.length; i++) {
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    onChunk((i > 0 ? ' ' : '') + words[i]);
-  }
-}
-
-// Read the /api/chat text stream and invoke onChunk for each delta as it arrives
+// Read the /api/chat text stream and invoke onChunk for each delta as it arrives.
+// Failed responses carry friendly JSON messages ({ error }) which are surfaced via onError.
 async function streamAssistantReply(
   prompt: string,
   language: string,
   profile: unknown,
   onChunk: (chunk: string) => void,
-  onRateLimited: (message: string) => void
+  onError: (message: string) => void
 ) {
   const response = await fetch('/api/chat', {
     method: 'POST',
@@ -92,11 +59,18 @@ async function streamAssistantReply(
     body: JSON.stringify({ message: prompt, language, profile }),
   });
 
-  if (response.status === 429) {
-    onRateLimited("You're sending messages too quickly. Please wait a minute and try again.");
+  if (!response.ok || !response.body) {
+    // Surface the server's friendly JSON error message (rate limit, missing key, upstream failure)
+    let serverMessage = "The astrologer couldn't be reached right now. Please try again shortly.";
+    try {
+      const data = await response.json();
+      if (data?.error) serverMessage = data.error;
+    } catch {
+      // Non-JSON error body — keep the default message
+    }
+    onError(serverMessage);
     return;
   }
-  if (!response.ok || !response.body) throw new Error('API Error');
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -149,15 +123,22 @@ function ChatContent() {
         setMessages((prev) => [...prev, userMessage]);
         setIsLoading(true);
         const assistantId = (Date.now() + 1).toString();
-        const { appendChunk } = makeStreamHelpers(assistantId, setMessages);
+        const { appendChunk, setContent: setAssistantContent } = makeStreamHelpers(assistantId, setMessages);
         let firstChunk = true;
+        const onChunk = (chunk: string) => {
+          if (firstChunk) { setIsStreaming(true); firstChunk = false; }
+          appendChunk(chunk);
+        };
         (async () => {
-          await streamMockResponse(language, (chunk) => {
-            if (firstChunk) { setIsStreaming(true); firstChunk = false; }
-            appendChunk(chunk);
-          });
-          setIsLoading(false);
-          setIsStreaming(false);
+          try {
+            await streamAssistantReply(q, language, profile, onChunk, setAssistantContent);
+          } catch {
+            setHasError(true);
+            setAssistantContent(t.chat.error);
+          } finally {
+            setIsLoading(false);
+            setIsStreaming(false);
+          }
         })();
       }, 1200);
       return () => clearTimeout(timer);
@@ -230,13 +211,7 @@ function ChatContent() {
     };
 
     try {
-      const DEV_MODE = true;
-      if (DEV_MODE) {
-        // Simulate token-by-token streaming for local development
-        await streamMockResponse(language, onChunk);
-      } else {
-        await streamAssistantReply(text, language, profile, onChunk, setAssistantContent);
-      }
+      await streamAssistantReply(text, language, profile, onChunk, setAssistantContent);
     } catch {
       setHasError(true);
       setAssistantContent(t.chat.error);
@@ -276,13 +251,7 @@ function ChatContent() {
       };
 
       try {
-        const DEV_MODE = true;
-        if (DEV_MODE) {
-          // Simulate token-by-token streaming for local development
-          await streamMockResponse(language, onChunk);
-        } else {
-          await streamAssistantReply(prompt, language, profile, onChunk, setAssistantContent);
-        }
+        await streamAssistantReply(prompt, language, profile, onChunk, setAssistantContent);
       } catch {
         setHasError(true);
         setAssistantContent(t.chat.error);
