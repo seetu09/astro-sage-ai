@@ -557,7 +557,7 @@ export default function PlaceAutocomplete({
         <ul
           id="place-autocomplete-list"
           role="listbox"
-          className="absolute z-50 mt-1 w-full glass-card rounded-xl overflow-hidden shadow-lg max-h-64 overflow-y-auto scrollbar-thin"
+          className="absolute top-full mt-1 z-20 w-full glass-card rounded-xl overflow-hidden shadow-lg max-h-64 overflow-y-auto scrollbar-thin"
         >
           {isLoading && (
             <li className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
