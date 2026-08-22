@@ -13,7 +13,7 @@ export default function Footer() {
 
   const quickLinks = [
     { label: t.nav?.home || "होम", href: "/" },
-    { label: t.nav?.dailyHoroscope || "दैनिक राशिफल", href: "/horoscope" },
+    { label: t.nav?.dailyHoroscope || "दैनिक राशिफल", href: "/daily-horoscope" },
     { label: t.nav?.chat || "AI चैट", href: "/chat" },
     { label: t.nav?.blog || "ब्लॉग", href: "/blog" },
   ];
@@ -114,7 +114,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-amber-200/60 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-amber-700/60 dark:text-[#6B7280]">
-            © 2025 AstroVeda. {t.footer?.copyright || "सर्वाधिकार सुरक्षित।"}
+            © 2026 AstroVeda. All rights reserved.
           </p>
           <p className="text-xs text-amber-700/60 dark:text-[#6B7280] flex items-center gap-1">
             {t.footer?.madeWith || "के साथ बनाया गया"}{" "}

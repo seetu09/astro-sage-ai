@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, Search, ArrowRight } from "lucide-react";
+import { Sparkles, Search, ArrowRight, Heart } from "lucide-react";
 import BirthDetailsModal from "./BirthDetailsModal";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -92,6 +93,17 @@ export default function HeroSection({ onAskGuru }: HeroSectionProps) {
                   {prompt.emoji} {prompt.label}
                 </button>
               ))}
+            </div>
+
+            {/* Secondary CTA */}
+            <div className="mt-8">
+              <Link
+                href="/matchmaking"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-amber-300/60 dark:border-[#FFD166]/30 rounded-xl text-sm sm:text-base font-semibold text-amber-800 dark:text-[#FFD166] bg-amber-50/50 dark:bg-[#FFD166]/5 hover:bg-amber-100/70 dark:hover:bg-[#FFD166]/10 hover:border-amber-400 dark:hover:border-[#FFD166]/50 hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all min-h-[44px]"
+              >
+                <Heart className="w-4 h-4" />
+                {t.hero.matchmakingCta}
+              </Link>
             </div>
           </motion.div>
         </div>

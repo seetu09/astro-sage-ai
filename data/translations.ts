@@ -29,6 +29,7 @@ interface TranslationShape {
     searchAriaLabel: string;
     ctaPrimary: string;
     ctaSecondary: string;
+    matchmakingCta: string;
     trendingLabel: string;
     trending: { emoji: string; label: string }[];
   };
@@ -367,6 +368,7 @@ export const translations: Record<Language, TranslationShape> = {
       searchAriaLabel: 'Ask the AI Guru',
       ctaPrimary: 'Ask Guru',
       ctaSecondary: 'Talk to AI Guru',
+      matchmakingCta: 'Check Couple Compatibility',
       trendingLabel: 'Trending:',
       trending: [
         { emoji: '💼', label: '2026 Job Switch Timing' },
@@ -708,6 +710,7 @@ export const translations: Record<Language, TranslationShape> = {
       searchAriaLabel: 'AI गुरु से पूछें',
       ctaPrimary: 'गुरु से पूछें',
       ctaSecondary: 'AI गुरु से बात करें',
+      matchmakingCta: 'कुंडली मिलान जांचें',
       trendingLabel: 'ट्रेंडिंग:',
       trending: [
         { emoji: '💼', label: '2026 में नौकरी बदलने का समय' },
