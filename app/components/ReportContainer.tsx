@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Globe, Lock, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Download, Globe, Lock, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
 import PaymentButton from '@/app/components/PaymentButton';
 import { useApp } from '@/app/context/AppContext';
 import {
   getUILabel,
+  getPdfGeneratingLabel,
   LANGUAGE_DISPLAY_NAMES,
   SUPPORTED_LOCALES,
   LocaleCode,
@@ -22,8 +23,10 @@ interface ReportContainerProps {
   userName?: string;
   /** Price in INR for unlocking the full report. */
   price?: number;
-  /** Called when "Download Kundli (PDF)" is clicked (full-report mode only). */
-  onDownload?: () => void;
+  /** Called when "Download Kundli (PDF)" is clicked (full-report mode only). May be async. */
+  onDownload?: () => void | Promise<void>;
+  /** Optional live progress (e.g. "2/5") shown on the download button while generating. */
+  downloadProgress?: { current: number; total: number } | null;
   /** The complete report content — rendered ONLY when isPaid === true. */
   children: React.ReactNode;
 }
@@ -42,12 +45,26 @@ export default function ReportContainer({
   userName = 'User',
   price = 49,
   onDownload,
+  downloadProgress = null,
   children,
 }: ReportContainerProps) {
   const { isPaid, markAsPaid, selectedLanguage, setSelectedLanguage } = useApp();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const kundliReportLabel = getUILabel('kundliReport', selectedLanguage);
   const downloadPdfLabel = getUILabel('downloadPdf', selectedLanguage);
+  const generatingLabel = getPdfGeneratingLabel(selectedLanguage);
+
+  const handleDownload = async () => {
+    if (!onDownload || isGenerating) return;
+    trackEvent('download_pdf_clicked', { lang: selectedLanguage });
+    setIsGenerating(true);
+    try {
+      await onDownload();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="relative">
@@ -158,17 +175,26 @@ export default function ReportContainer({
           <div className="sticky bottom-0 z-40 -mx-4 sm:-mx-4 lg:-mx-6 px-4 sm:px-4 lg:px-6 py-2.5 mt-4 bg-[#F8F7FC]/85 dark:bg-[#080811]/85 backdrop-blur-md border-t border-slate-200/60 dark:border-white/10">
             <div className="max-w-4xl mx-auto flex justify-center">
               <button
-                onClick={() => {
-                  if (onDownload) {
-                    trackEvent('download_pdf_clicked', { lang: selectedLanguage });
-                    onDownload();
-                  }
-                }}
-                disabled={!onDownload}
+                onClick={handleDownload}
+                disabled={!onDownload || isGenerating}
                 className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                {downloadPdfLabel}
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                    {generatingLabel}
+                    {downloadProgress && (
+                      <span className="text-xs opacity-80">
+                        {downloadProgress.current}/{downloadProgress.total}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {downloadPdfLabel}
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Inter, Cinzel, Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
+import {
+  Inter,
+  Cinzel,
+  Cormorant_Garamond,
+  Plus_Jakarta_Sans,
+  Noto_Sans_Devanagari,
+} from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -19,6 +25,14 @@ const inter = Inter({ subsets: ["latin"] });
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"] });
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700", "800"] });
+// Devanagari font for Hindi/Indic text — used by the app UI and the branded PDF template.
+// Ensures conjuncts (क्ष, त्र, ज्ञ), matras and mantras render without glyph corruption.
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto-devanagari",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -131,7 +145,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className}`}>
+      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className} ${notoDevanagari.variable}`}>
         {/* Pre-launch analytics placeholder — activates only when NEXT_PUBLIC_GA_ID is set.
             Swap for Plausible/PostHog by replacing this block; funnel events use lib/analytics.ts trackEvent(). */}
         {process.env.NEXT_PUBLIC_GA_ID && (

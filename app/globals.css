@@ -83,6 +83,39 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Cinzel', 'Cormorant Garamond', 'Playfair Display', serif;
 }
 
+/* ---------------------------------------------------------------------------
+   Branded PDF export (Batch 3)
+   - .pdf-offscreen keeps the template rendered (html2canvas needs layout)
+     but visually hidden off-screen. NOT display:none (breaks capture).
+   - @media print page-break rules prevent charts/tables splitting mid-page.
+--------------------------------------------------------------------------- */
+.pdf-offscreen {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 794px; /* A4 @ 96dpi */
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media print {
+  .pdf-offscreen {
+    position: static;
+    left: 0;
+    width: auto;
+    pointer-events: auto;
+    z-index: auto;
+  }
+  .pdf-offscreen .pdf-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .pdf-offscreen .pdf-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
 @layer components {
   .astro-card {
     background-color: var(--bg-card);
