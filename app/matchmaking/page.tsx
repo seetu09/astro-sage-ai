@@ -194,7 +194,7 @@ export default function MatchmakingPage() {
     icon: React.ReactNode,
     iconColor: string,
     data: PersonForm,
-    setData: (d: PersonForm) => void
+    setData: (d: PersonForm | ((prev: PersonForm) => PersonForm)) => void
   ) => (
     <div className="space-y-4">
       <div className="flex items-center gap-3 mb-4">
@@ -247,15 +247,15 @@ export default function MatchmakingPage() {
         <label className="block text-sm text-[var(--text-muted)] mb-1">{t.matchmaking.placeOfBirth}</label>
         <PlaceAutocomplete
           value={data.placeOfBirth}
-          onChange={(v) => setData({ ...data, placeOfBirth: v })}
+          onChange={(v) => setData((prev) => ({ ...prev, placeOfBirth: v }))}
           onSelect={(place) =>
-            setData({ ...data, placeOfBirth: place.placeName, latitude: place.latitude, longitude: place.longitude })
+            setData((prev) => ({ ...prev, placeOfBirth: place.placeName, latitude: place.latitude, longitude: place.longitude }))
           }
-          onClear={() => setData({ ...data, latitude: null, longitude: null })}
+          onClear={() => setData((prev) => ({ ...prev, latitude: null, longitude: null }))}
           latitude={data.latitude}
           longitude={data.longitude}
-          onLatitudeChange={(v) => setData({ ...data, latitude: v })}
-          onLongitudeChange={(v) => setData({ ...data, longitude: v })}
+          onLatitudeChange={(v) => setData((prev) => ({ ...prev, latitude: v }))}
+          onLongitudeChange={(v) => setData((prev) => ({ ...prev, longitude: v }))}
           placeholder={t.matchmaking.placePlaceholder}
           inputClassName={inputClass}
         />
