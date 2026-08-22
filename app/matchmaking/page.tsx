@@ -12,6 +12,7 @@ import {
 } from "@/lib/ashtakoot";
 import { deriveMoonDetails } from "@/lib/astrology";
 import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
+import ShareCard from "@/app/components/ShareCard";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -133,6 +134,7 @@ export default function MatchmakingPage() {
   const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   // Pre-fill Partner 1 (self) from the saved user profile
   useEffect(() => {
@@ -508,12 +510,38 @@ export default function MatchmakingPage() {
                   <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{getVerdict(result.totalPoints)}</h2>
                   <p className="text-[var(--text-secondary)] max-w-xl mx-auto">{result.compatibilitySummary}</p>
                   <button
-                    onClick={() => setActiveTab("form")}
-                    className="mt-6 px-6 py-2 border border-[var(--border-color)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-colors"
+                    onClick={() => setShowShare(true)}
+                    className="mt-6 flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all"
                   >
-                    {t.matchmaking.checkAnother}
+                    <Share2 className="w-4 h-4" />
+                    {language === "hi" ? "संगतता स्कोर साझा करें" : "Share Compatibility Score"}
                   </button>
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setActiveTab("form")}
+                      className="px-6 py-2 border border-[var(--border-color)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-colors"
+                    >
+                      {t.matchmaking.checkAnother}
+                    </button>
+                  </div>
                 </div>
+
+                {personDetails && (
+                  <ShareCard
+                    open={showShare}
+                    onClose={() => setShowShare(false)}
+                    mode="match"
+                    lang={language}
+                    data={{
+                      partner1: personDetails.male.name,
+                      partner2: personDetails.female.name,
+                      gunas: result.totalPoints,
+                      totalGunas: 36,
+                      percentage: result.percentage,
+                      verdict: getVerdict(result.totalPoints),
+                    }}
+                  />
+                )}
 
                 {/* Koota Breakdown */}
                 <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-6">

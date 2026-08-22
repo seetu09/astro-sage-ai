@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     description: "Generate your free Vedic Kundli, daily horoscope & Kundali matching. AI astrology guidance in Hindi & English.",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "AstroVeda - AI Vedic Astrology Platform",
@@ -70,7 +70,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AstroVeda - AI-Powered Vedic Astrology",
     description: "Free Kundli generator, daily horoscope & Kundali matching with AI guidance.",
-    images: ["/og-image.jpg"],
+    images: ["/opengraph-image"],
     creator: "@astroveda",
   },
   verification: {

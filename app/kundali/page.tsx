@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Info, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Info, Sparkles, Share2 } from 'lucide-react';
 import KundliPDF from '@/app/components/KundliPDF';
+import ShareCard from '@/app/components/ShareCard';
 import KundaliChart from '@/app/components/KundaliChart';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -107,6 +108,7 @@ export default function KundaliPage() {
   const [showResult, setShowResult] = useState(false);
   const [kundliData, setKundliData] = useState<KundliData | null>(null);
   const [showPDF, setShowPDF] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const { profile, saveProfile } = useUserProfile();
 
   // Pre-fill saved profile data on mount
@@ -388,16 +390,39 @@ export default function KundaliPage() {
               </div>
             </div>
 
-            {/* PDF Button */}
-            <div className="flex justify-center pt-2">
+            {/* PDF + Share Buttons */}
+            <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-2">
               <button
                 onClick={() => setShowPDF(true)}
-                className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-medium rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-medium rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
               >
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                 {t.kundali.downloadPDF}
               </button>
+              <button
+                onClick={() => setShowShare(true)}
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-violet-300/60 dark:border-[#FFD166]/30 text-indigo-950 dark:text-[#FFD166] text-sm sm:text-base font-medium rounded-xl hover:bg-violet-50 dark:hover:bg-[#FFD166]/10 hover:shadow-glow-gold transition-all"
+              >
+                <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                {language === 'hi' ? 'मेरी कॉस्मिक प्रोफ़ाइल साझा करें' : 'Share My Cosmic Profile'}
+              </button>
             </div>
+
+            {kundliData && (
+              <ShareCard
+                open={showShare}
+                onClose={() => setShowShare(false)}
+                mode="kundali"
+                lang={language}
+                data={{
+                  name: kundliData.name,
+                  sunSign: kundliData.sunSign,
+                  moonSign: kundliData.moonSign,
+                  ascendant: kundliData.ascendant,
+                  nakshatra: kundliData.nakshatra,
+                }}
+              />
+            )}
 
             {showPDF && kundliData && (
               <KundliPDF
