@@ -7,7 +7,10 @@ import KundliPDF from '@/app/components/KundliPDF';
 import ShareCard from '@/app/components/ShareCard';
 import KundaliChart from '@/app/components/KundaliChart';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
+import ReportContainer from '@/app/components/ReportContainer';
 import { useLanguage } from '@/app/context/LanguageContext';
+import { useApp } from '@/app/context/AppContext';
+import { localizePlanet, localizeSign } from '@/lib/astrologyDictionary';
 import { useAuth } from '@/app/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { resolveBirthTime } from '@/lib/astrology';
@@ -96,6 +99,7 @@ function generateMockKundli(formData: {
 
 export default function KundaliPage() {
   const { language, t } = useLanguage();
+  const { selectedLanguage } = useApp();
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -287,6 +291,11 @@ export default function KundaliPage() {
             </form>
           </motion.div>
         ) : (
+          <ReportContainer
+            userEmail={kundliData?.email || email}
+            userName={kundliData?.name || name}
+            onDownload={() => setShowPDF(true)}
+          >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -325,9 +334,9 @@ export default function KundaliPage() {
                 { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth },
                 { label: t.kundali.coordinates, value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : undefined },
                 { label: t.kundali.timeZone, value: kundliData?.timezone },
-                { label: t.kundali.ascendant, value: kundliData?.ascendant },
-                { label: t.kundali.moonSign, value: kundliData?.moonSign },
-                { label: t.kundali.sunSign, value: kundliData?.sunSign },
+                { label: t.kundali.ascendant, value: kundliData ? localizeSign(kundliData.ascendant, selectedLanguage) : undefined },
+                { label: t.kundali.moonSign, value: kundliData ? localizeSign(kundliData.moonSign, selectedLanguage) : undefined },
+                { label: t.kundali.sunSign, value: kundliData ? localizeSign(kundliData.sunSign, selectedLanguage) : undefined },
                 { label: t.kundali.nakshatra, value: kundliData?.nakshatra },
               ].map((item) => (
                 <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
@@ -344,9 +353,9 @@ export default function KundaliPage() {
                   ascendant={kundliData.ascendant}
                   planets={kundliData.planets.map((p) => ({
                     symbol: PLANET_SYMBOLS[p.name] || p.name.slice(0, 2),
-                    name: p.name,
+                    name: localizePlanet(p.name, selectedLanguage),
                     house: p.house,
-                    rashi: p.sign,
+                    rashi: localizeSign(p.sign, selectedLanguage),
                     degree: p.degree,
                   }))}
                 />
@@ -372,8 +381,8 @@ export default function KundaliPage() {
                   <tbody>
                     {kundliData?.planets.map((planet, i) => (
                       <tr key={i} className="border-b border-slate-200/60 dark:border-white/10 last:border-0 hover:bg-slate-50/50 dark:hover:bg-white/[0.03] transition-colors">
-                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-indigo-950 dark:text-[#F3F4F6]">{planet.name}</td>
-                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{planet.sign}</td>
+                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-indigo-950 dark:text-[#F3F4F6]">{localizePlanet(planet.name, selectedLanguage)}</td>
+                        <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{localizeSign(planet.sign, selectedLanguage)}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{planet.house}</td>
                         <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">{planet.degree.toFixed(1)}°</td>
                         <td className="px-3 sm:px-4 py-2.5 text-xs sm:text-sm">
@@ -444,6 +453,7 @@ export default function KundaliPage() {
               />
             )}
           </motion.div>
+          </ReportContainer>
         )}
       </div>
     </div>

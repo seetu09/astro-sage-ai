@@ -4,6 +4,7 @@ import { Inter, Cinzel, Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/
 import "./globals.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { AppProvider } from "./context/AppContext";
 import { AuthProvider } from "./context/AuthContext";
 import { WalletProvider } from "./context/WalletContext";
 import Navbar from "./components/Navbar";
@@ -152,7 +153,8 @@ export default function RootLayout({
         <ThemeProvider>
           <ErrorBoundary>
             <LanguageProvider>
-              <AuthProvider>
+              <AppProvider>
+                <AuthProvider>
                 <WalletProvider>
                   <CosmicBackground />
                   <WarmGlow />
@@ -161,7 +163,8 @@ export default function RootLayout({
                   <Footer />
                   <TopUpModal />
                 </WalletProvider>
-              </AuthProvider>
+                </AuthProvider>
+              </AppProvider>
             </LanguageProvider>
           </ErrorBoundary>
           <InstallBanner />
