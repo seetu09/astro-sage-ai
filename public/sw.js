@@ -1,4 +1,4 @@
-const CACHE_NAME = 'astroveda-v1';
+const CACHE_NAME = 'astroveda-v2';
 const STATIC_ASSETS = [
   '/',
   '/kundali',
@@ -12,7 +12,7 @@ const STATIC_ASSETS = [
   '/offline.html'
 ];
 
-const DYNAMIC_CACHE = 'astroveda-dynamic-v1';
+const DYNAMIC_CACHE = 'astroveda-dynamic-v2';
 
 // Install: Cache static assets
 self.addEventListener('install', (event) => {
@@ -60,6 +60,24 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Navigations (HTML pages): Network-first so new deploys reach users
+  // immediately instead of being pinned to cache-first HTML. Falls back to
+  // the cached page, then the offline page when fully offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match('/offline.html'))
+        )
     );
     return;
   }

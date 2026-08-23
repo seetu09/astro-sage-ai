@@ -667,10 +667,10 @@ export default function KundaliPage() {
             {kundliData && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {[
-                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSignClean(kundliData.chartData?.lagna || kundliData.chartData?.ascendant, selectedLanguage) || '--' },
-                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSignClean(kundliData.chartData?.rashi || kundliData.chartData?.moonSign, selectedLanguage) || '--' },
-                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSignClean(kundliData.chartData?.sunSign, selectedLanguage) || '--' },
-                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData.chartData?.nakshatra, selectedLanguage) || '--' },
+                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSignClean(kundliData.chartData?.lagna || kundliData.chartData?.ascendant || kundliData.ascendant, selectedLanguage) || '--' },
+                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSignClean(kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign, selectedLanguage) || '--' },
+                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSignClean(kundliData.chartData?.sunSign || kundliData.sunSign, selectedLanguage) || '--' },
+                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData.chartData?.nakshatra || kundliData.nakshatra, selectedLanguage) || '--' },
                 ].map((badge) => (
                   <div key={badge.label} className="glass-card rounded-xl p-3 flex items-center gap-2.5">
                     <span className="inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/15 dark:to-[#E0A96D]/10 text-violet-700 dark:text-[#FFD166]">
@@ -693,10 +693,10 @@ export default function KundaliPage() {
                 { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth || '--' },
                 { label: t.kundali.coordinates, value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : '--' },
                 { label: t.kundali.timeZone, value: kundliData?.chartData?.timezone || 'IST (+05:30)' },
-                { label: t.kundali.ascendant, value: localizeSignClean(kundliData?.chartData?.lagna || kundliData?.chartData?.ascendant, selectedLanguage) || '--' },
-                { label: t.kundali.moonSign, value: localizeSignClean(kundliData?.chartData?.rashi || kundliData?.chartData?.moonSign, selectedLanguage) || '--' },
-                { label: t.kundali.sunSign, value: localizeSignClean(kundliData?.chartData?.sunSign, selectedLanguage) || '--' },
-                { label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData?.chartData?.nakshatra, selectedLanguage) || '--' },
+                { label: t.kundali.ascendant, value: localizeSignClean(kundliData?.chartData?.lagna || kundliData?.chartData?.ascendant || kundliData?.ascendant, selectedLanguage) || '--' },
+                { label: t.kundali.moonSign, value: localizeSignClean(kundliData?.chartData?.rashi || kundliData?.chartData?.moonSign || kundliData?.moonSign, selectedLanguage) || '--' },
+                { label: t.kundali.sunSign, value: localizeSignClean(kundliData?.chartData?.sunSign || kundliData?.sunSign, selectedLanguage) || '--' },
+                { label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData?.chartData?.nakshatra || kundliData?.nakshatra, selectedLanguage) || '--' },
               ].map((item) => (
                 <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
                   <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>

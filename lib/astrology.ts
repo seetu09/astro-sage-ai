@@ -454,6 +454,50 @@ export interface ChartData {
   timezone: string;
   houses: HouseResult[];
   planets: PlanetResult[];
+  /** Engine stamp — bumped whenever calculation logic changes so cached charts invalidate safely */
+  engineVersion?: string;
+}
+
+/** Current chart-engine revision. Cached payloads stamped with an older
+ *  value (or none, e.g. legacy VedAstro-era rows) are treated as misses. */
+export const CHART_ENGINE_VERSION = "lahiri-v2";
+
+/**
+ * Strict runtime validation for cached chart payloads.
+ * Guards the Supabase cache against legacy/stale/corrupt rows: any payload
+ * that doesn't match the current flat structure is treated as a cache miss
+ * so the route recomputes and overwrites the row (self-healing cache).
+ */
+export function isValidChartData(data: unknown): data is ChartData {
+  if (!data || typeof data !== "object") return false;
+  const c = data as Partial<ChartData>;
+  const str = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+
+  // Summary fields must all be present
+  if (!str(c.lagna) || !str(c.rashi) || !str(c.sunSign) || !str(c.nakshatra) || !str(c.timezone)) {
+    return false;
+  }
+  // Engine stamp must match the current revision
+  if (c.engineVersion !== CHART_ENGINE_VERSION) return false;
+
+  // Houses: exactly 12, each with valid house number, sign name and planets array
+  if (!Array.isArray(c.houses) || c.houses.length !== 12) return false;
+  for (const h of c.houses) {
+    if (!h || typeof h.house !== "number" || h.house < 1 || h.house > 12) return false;
+    if (!str(h.sign)) return false;
+    if (!Array.isArray(h.planets)) return false;
+  }
+
+  // Planets: exactly 9, each fully populated
+  if (!Array.isArray(c.planets) || c.planets.length !== 9) return false;
+  const DEGREE_RE = /^\d{1,2}°\d{2}'$/;
+  for (const p of c.planets) {
+    if (!p || !str(p.name) || !str(p.sign) || !str(p.nakshatra)) return false;
+    if (typeof p.house !== "number" || p.house < 1 || p.house > 12) return false;
+    if (typeof p.degree !== "string" || !DEGREE_RE.test(p.degree)) return false;
+    if (typeof p.retrograde !== "boolean") return false;
+  }
+  return true;
 }
 
 const PLANET_ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
@@ -511,6 +555,7 @@ export function computeChart(details: BirthDetails): ChartData {
   }
 
   return {
+    engineVersion: CHART_ENGINE_VERSION,
     lagna: lagnaStr,
     ascendant: signNumberToName(asc.sign),
     rashi: signNameWithHindi(moonSignNum),

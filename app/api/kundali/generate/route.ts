@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
-import { computeChart, BirthDetails, ChartData } from "@/lib/astrology";
+import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
 
 // --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
 const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
@@ -110,7 +110,10 @@ export async function POST(req: NextRequest) {
         .eq("cache_key", cacheKey)
         .maybeSingle();
 
-      if (!error && data?.chart_data) {
+      if (!error && data?.chart_data && isValidChartData(data.chart_data)) {
+        // Only trust rows stamped by the current engine with a valid flat
+        // structure; legacy VedAstro-era / stale / corrupt rows fall through
+        // to recomputation below and overwrite the row via the upsert.
         chartData = data.chart_data as ChartData;
       }
     } catch (cacheError) {
