@@ -204,7 +204,7 @@ async function generateInterpretation(chartData: ChartData): Promise<string> {
   const chartJson = JSON.stringify(chartData, null, 2);
 
   const geminiResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -229,7 +229,6 @@ async function generateInterpretation(chartData: ChartData): Promise<string> {
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: 1024,
-          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     }
@@ -318,13 +317,20 @@ export async function POST(req: NextRequest) {
     }
 
     // --- 3. Generate the written interpretation via Gemini (always fresh) ---
+    const FALLBACK_INTERPRETATION =
+      "Your chart was generated successfully. Astrological reading is temporarily unavailable.";
+
     let interpretation = "";
     try {
       interpretation = await generateInterpretation(chartData);
     } catch (geminiError) {
+      // Gemini failures (404/500/network) must never break the chart response
       console.error("Kundali interpretation failed:", geminiError);
-      interpretation =
-        "Your birth chart has been computed accurately. The detailed AI interpretation is temporarily unavailable — please try again shortly.";
+    }
+
+    // Guarantee interpretation is never undefined, null, or empty
+    if (!interpretation || !interpretation.trim()) {
+      interpretation = FALLBACK_INTERPRETATION;
     }
 
     return NextResponse.json({ chartData, interpretation });

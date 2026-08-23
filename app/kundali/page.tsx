@@ -86,6 +86,10 @@ const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', '
 const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
 const nakshatras = ['Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'];
 
+// Shown when the AI interpretation is unavailable (e.g. Gemini 404/500)
+const INTERPRETATION_FALLBACK =
+  'Your chart was generated successfully. Astrological reading is temporarily unavailable.';
+
 const PLANET_SYMBOLS: Record<string, string> = {
   Sun: 'Su',
   Moon: 'Mo',
@@ -229,7 +233,7 @@ export default function KundaliPage() {
         houses: Array.isArray(chartData.houses)
           ? chartData.houses.map((h: any) => ({ house: h.house, sign: signs.indexOf(h.sign) + 1 }))
           : undefined,
-        interpretation: result.interpretation,
+        interpretation: typeof result.interpretation === 'string' ? result.interpretation : '',
       };
 
       setKundliData(data);
@@ -285,8 +289,8 @@ export default function KundaliPage() {
 
   // Quick "Copy Reading" — copies the full AI interpretation to the clipboard
   const handleCopyReading = async () => {
-    if (!kundliData?.interpretation) return;
-    const text = kundliData.interpretation;
+    if (!kundliData) return;
+    const text = kundliData.interpretation || INTERPRETATION_FALLBACK;
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -641,7 +645,7 @@ export default function KundaliPage() {
             )}
 
             {/* AI Interpretation — structured markdown rendering + quick copy */}
-            {kundliData?.interpretation && (
+            {kundliData && (
               <div className="glass-card rounded-xl p-4 sm:p-6">
                 <div className="flex items-center justify-between gap-3 mb-4">
                   <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 min-w-0">
@@ -670,7 +674,7 @@ export default function KundaliPage() {
                     )}
                   </button>
                 </div>
-                <MarkdownView content={kundliData.interpretation} />
+                <MarkdownView content={kundliData.interpretation || INTERPRETATION_FALLBACK} />
               </div>
             )}
 
