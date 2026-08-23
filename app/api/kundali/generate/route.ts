@@ -78,7 +78,7 @@ async function fetchAllPlanetData(details: BirthDetails): Promise<any> {
       Time: {
         StdTime: buildStdTime(details),
         Location: {
-          Name: details.birthPlace || "Unknown",
+          Name: details.birthPlace || "Location",
           Longitude: details.longitude ?? 0,
           Latitude: details.latitude ?? 0,
         },
@@ -93,11 +93,13 @@ async function fetchAllPlanetData(details: BirthDetails): Promise<any> {
   }
 
   const json = await response.json();
-  return json.Payload?.AllPlanetData ?? null;
+  // Unwrap the response correctly: Payload may be absent in some response shapes
+  const payload = json.Payload || json;
+  return payload.AllPlanetData || payload;
 }
 
-// --- Call VedAstro AllHouseData for a single house (returns HouseBhavaChalitSign) ---
-async function fetchHouseData(details: BirthDetails, houseName: string): Promise<string | null> {
+// --- Call VedAstro AllHouseData (single call returns all 12 houses) ---
+async function fetchAllHouseData(details: BirthDetails): Promise<Record<number, string>> {
   const response = await fetch(`${VEDASTRO_API}/AllHouseData`, {
     method: "POST",
     headers: {
@@ -106,11 +108,10 @@ async function fetchHouseData(details: BirthDetails, houseName: string): Promise
     },
     body: JSON.stringify({
       PlanetName: "All",
-      houseName,
       Time: {
         StdTime: buildStdTime(details),
         Location: {
-          Name: details.birthPlace || "Unknown",
+          Name: details.birthPlace || "Location",
           Longitude: details.longitude ?? 0,
           Latitude: details.latitude ?? 0,
         },
@@ -121,11 +122,29 @@ async function fetchHouseData(details: BirthDetails, houseName: string): Promise
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
-    throw new Error(`VedAstro AllHouseData (${houseName}) failed (${response.status}): ${body.slice(0, 300)}`);
+    throw new Error(`VedAstro AllHouseData failed (${response.status}): ${body.slice(0, 300)}`);
   }
 
   const json = await response.json();
-  return json.Payload?.AllHouseData?.HouseBhavaChalitSign?.Name ?? null;
+  // Unwrap the response correctly: Payload may be absent in some response shapes
+  const payload = json.Payload || json;
+  const allHouseData = payload.AllHouseData || payload;
+
+  // Build a map of house number → sign name
+  const houseMap: Record<number, string> = {};
+  for (let i = 1; i <= 12; i++) {
+    const houseKey = `House${i}`;
+    const houseEntry = allHouseData?.[houseKey];
+    // Try multiple possible field paths for the sign name
+    const signName =
+      houseEntry?.HouseBhavaChalitSign?.Name ||
+      houseEntry?.Name ||
+      houseEntry?.Sign ||
+      houseEntry?.Rasi?.Name ||
+      null;
+    houseMap[i] = signName || "Unknown";
+  }
+  return houseMap;
 }
 
 // --- Normalize VedAstro planet payload into our ChartData shape ---
@@ -136,22 +155,51 @@ function normalizePlanets(allPlanetData: any): PlanetData[] {
     const raw = allPlanetData?.[name];
     if (!raw) continue;
 
-    const sign = raw.PlanetRasiD1Sign?.Name ?? "Unknown";
-    const degree = raw.PlanetRasiD1Sign?.DegreesIn?.TotalDegrees ?? 0;
-    const houseStr = raw.HousePlanetOccupiesBasedOnLongitudes ?? "";
-    const house = parseInt(houseStr.replace("House", ""), 10) || 0;
-    const retrograde = raw.IsPlanetRetrograde === "True";
+    // Sign: try multiple possible field paths
+    const sign =
+      raw.PlanetRasiD1Sign?.Name ||
+      raw.Rasi?.Name ||
+      raw.Sign ||
+      raw.PlanetSign ||
+      "Unknown";
 
-    // PlanetConstellation format: "Makha - 2" (nakshatra name + pada)
+    // Degree: try multiple possible field paths
+    const degree =
+      raw.PlanetRasiD1Sign?.DegreesIn?.TotalDegrees ||
+      raw.DegreesIn?.TotalDegrees ||
+      raw.Degree ||
+      raw.TotalDegrees ||
+      0;
+
+    // House: try multiple possible field paths
+    const houseStr =
+      raw.HousePlanetOccupiesBasedOnLongitudes ||
+      raw.House ||
+      raw.HouseNumber ||
+      "";
+    const house = parseInt(String(houseStr).replace(/[^0-9]/g, ""), 10) || 0;
+
+    // Retrograde: try multiple possible field paths
+    const retrograde =
+      raw.IsPlanetRetrograde === "True" ||
+      raw.IsPlanetRetrograde === true ||
+      raw.Retrograde === true ||
+      false;
+
+    // Nakshatra: PlanetConstellation format is "Makha - 2" (nakshatra name + pada)
     let nakshatra = "Unknown";
     let pada = 1;
-    const constellation = raw.PlanetConstellation ?? "";
-    const match = constellation.match(/^(.+?)\s*-\s*(\d+)$/);
+    const constellation =
+      raw.PlanetConstellation ||
+      raw.Constellation ||
+      raw.Nakshatra ||
+      "";
+    const match = String(constellation).match(/^(.+?)\s*-\s*(\d+)$/);
     if (match) {
       nakshatra = match[1].trim();
       pada = parseInt(match[2], 10) || 1;
     } else if (constellation) {
-      nakshatra = constellation.trim();
+      nakshatra = String(constellation).trim();
     }
 
     planets.push({
@@ -169,11 +217,11 @@ function normalizePlanets(allPlanetData: any): PlanetData[] {
   return planets;
 }
 
-// --- Fetch chart data from VedAstro (planets + all 12 houses) ---
+// --- Fetch chart data from VedAstro (planets + all 12 houses in parallel) ---
 async function fetchChartData(details: BirthDetails): Promise<ChartData> {
-  const [allPlanetData, ...houseSigns] = await Promise.all([
+  const [allPlanetData, houseMap] = await Promise.all([
     fetchAllPlanetData(details),
-    ...Array.from({ length: 12 }, (_, i) => fetchHouseData(details, `House${i + 1}`)),
+    fetchAllHouseData(details),
   ]);
 
   const planets = normalizePlanets(allPlanetData);
@@ -181,7 +229,10 @@ async function fetchChartData(details: BirthDetails): Promise<ChartData> {
   const moon = planets.find((p) => p.name === "Moon");
   const sun = planets.find((p) => p.name === "Sun");
 
-  const houses = houseSigns.map((sign, i) => ({ house: i + 1, sign: sign ?? "Unknown" }));
+  const houses = Array.from({ length: 12 }, (_, i) => ({
+    house: i + 1,
+    sign: houseMap[i + 1] || "Unknown",
+  }));
   const ascendant = houses[0]?.sign ?? "Unknown";
 
   return {
@@ -333,7 +384,11 @@ export async function POST(req: NextRequest) {
       interpretation = FALLBACK_INTERPRETATION;
     }
 
-    return NextResponse.json({ chartData, interpretation });
+    return NextResponse.json({
+      success: true,
+      chartData,
+      interpretation,
+    });
   } catch (error) {
     console.error("Kundali generation failed:", error);
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });
