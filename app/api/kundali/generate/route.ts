@@ -1,186 +1,335 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseClient } from "@/lib/supabase";
 
-function calculateJulianDay(year: number, month: number, day: number, hour: number, minute: number): number {
-  const a = Math.floor((14 - month) / 12);
-  const y = year + 4800 - a;
-  const m = month + 12 * a - 3;
-  let jd = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
-  jd += (hour - 12) / 24 + minute / 1440;
-  return jd;
+// --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
+const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
+
+SAFETY BOUNDARY — you must refuse to make definitive predictions on:
+- Medical emergencies or critical health diagnoses
+- Pregnancy outcomes
+- Active legal disputes
+
+When a user raises these sensitive topics, politely acknowledge their concern, explain that this falls outside responsible astrology, and steer them toward certified professionals: doctors for health matters, psychologists or therapists for mental well-being, and legal professionals for legal matters. Never diagnose, never predict medical outcomes, and never advise on ongoing court cases.`;
+
+const VEDASTRO_API = "https://api.vedastro.org/api/Calculate";
+const VEDASTRO_API_KEY = "FreeAPIUser";
+
+const PLANET_ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
+
+interface BirthDetails {
+  birthDate: string; // YYYY-MM-DD
+  birthTime: string; // HH:MM
+  birthPlace: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezoneOffset: string; // e.g. "+05:30"
 }
 
-function calculateAyanamsa(jd: number): number {
-  const t = (jd - 2451545.0) / 36525;
-  return 23.85 + 0.0137 * t;
+interface PlanetData {
+  name: string;
+  sign: string;
+  house: number;
+  degree: number;
+  status: string;
+  nakshatra: string;
+  pada: number;
+  retrograde: boolean;
 }
 
-function getSunLongitude(jd: number): number {
-  const t = (jd - 2451545.0) / 36525;
-  const meanLongitude = 280.46646 + 36000.76983 * t + 0.0003032 * t * t;
-  const meanAnomaly = 357.52911 + 35999.05029 * t - 0.0001537 * t * t;
-  const equation = (1.914602 - 0.004817 * t - 0.000014 * t * t) * Math.sin(meanAnomaly * Math.PI / 180)
-    + (0.019993 - 0.000101 * t) * Math.sin(2 * meanAnomaly * Math.PI / 180)
-    + 0.000289 * Math.sin(3 * meanAnomaly * Math.PI / 180);
-  let longitude = meanLongitude + equation;
-  longitude = ((longitude % 360) + 360) % 360;
-  return longitude;
+interface ChartData {
+  ascendant: string;
+  moonSign: string;
+  sunSign: string;
+  nakshatra: string;
+  planets: PlanetData[];
+  houses: { house: number; sign: string }[];
 }
 
-function getMoonLongitude(jd: number): number {
-  const t = (jd - 2451545.0) / 36525;
-  const meanLongitude = 218.3164477 + 481267.88123421 * t - 0.0015786 * t * t;
-  let longitude = meanLongitude + 6.289 * Math.sin((134.963 + 477198.867 * t) * Math.PI / 180);
-  longitude = ((longitude % 360) + 360) % 360;
-  return longitude;
+// --- Build the deterministic cache key from birth details ---
+function buildCacheKey(details: BirthDetails): string {
+  return [
+    details.birthDate,
+    details.birthTime,
+    details.birthPlace || "unknown",
+    details.latitude ?? "null",
+    details.longitude ?? "null",
+    details.timezoneOffset || "null",
+  ].join("|");
 }
 
-function getPlanetLongitude(jd: number, planet: string): number {
-  const t = (jd - 2451545.0) / 36525;
-  const baseLongitudes: Record<string, number> = {
-    "Mars": 19.373 + 19139.858 * t,
-    "Mercury": 252.251 + 149472.675 * t,
-    "Jupiter": 20.02 + 3034.906 * t,
-    "Venus": 181.979 + 58517.815 * t,
-    "Saturn": 317.02 + 1222.114 * t,
-  };
-  let longitude = baseLongitudes[planet] || 0;
-  longitude = ((longitude % 360) + 360) % 360;
-  return longitude;
+// --- Convert YYYY-MM-DD + HH:MM + offset into VedAstro StdTime "HH:MM DD/MM/YYYY +05:30" ---
+function buildStdTime(details: BirthDetails): string {
+  const [year, month, day] = details.birthDate.split("-");
+  const time = details.birthTime || "12:00";
+  const offset = details.timezoneOffset || "+05:30";
+  return `${time} ${day}/${month}/${year} ${offset}`;
 }
 
-function longitudeToSign(longitude: number): string {
-  const signs = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
-  return signs[Math.floor(longitude / 30)];
-}
+// --- Call VedAstro AllPlanetData (single call returns all 9 planets) ---
+async function fetchAllPlanetData(details: BirthDetails): Promise<any> {
+  const response = await fetch(`${VEDASTRO_API}/AllPlanetData`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": VEDASTRO_API_KEY,
+    },
+    body: JSON.stringify({
+      PlanetName: "All",
+      Time: {
+        StdTime: buildStdTime(details),
+        Location: {
+          Name: details.birthPlace || "Unknown",
+          Longitude: details.longitude ?? 0,
+          Latitude: details.latitude ?? 0,
+        },
+      },
+      Ayanamsa: "LAHIRI",
+    }),
+  });
 
-function longitudeToHouse(longitude: number, ascendant: number): number {
-  let house = Math.floor((longitude - ascendant) / 30) + 1;
-  house = ((house % 12) + 12) % 12;
-  if (house === 0) house = 12;
-  return house;
-}
-
-function getNakshatra(longitude: number): { name: string; pada: number } {
-  const nakshatras = [
-    "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra", "Punarvasu",
-    "Pushya", "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta",
-    "Chitra", "Swati", "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha",
-    "Uttara Ashadha", "Shravana", "Dhanishta", "Shatabhisha", "Purva Bhadrapada",
-    "Uttara Bhadrapada", "Revati"
-  ];
-  const nakshatraIndex = Math.floor(longitude / (360 / 27));
-  const pada = Math.floor((longitude % (360 / 27)) / (360 / 108)) + 1;
-  return { name: nakshatras[nakshatraIndex] || "Revati", pada };
-}
-
-function calculateDasha(moonLongitude: number): { planet: string; startDate: string; endDate: string }[] {
-  const dashaLords = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"];
-  const dashaYears = [7, 20, 6, 10, 7, 18, 16, 19, 17];
-  const nakshatraIndex = Math.floor(moonLongitude / (360 / 27));
-  const startLordIndex = nakshatraIndex % 9;
-
-  const dasha: { planet: string; startDate: string; endDate: string }[] = [];
-  let currentDate = new Date();
-
-  for (let i = 0; i < 9; i++) {
-    const lordIndex = (startLordIndex + i) % 9;
-    const years = dashaYears[lordIndex];
-    const start = new Date(currentDate);
-    const end = new Date(currentDate);
-    end.setFullYear(end.getFullYear() + years);
-
-    dasha.push({
-      planet: dashaLords[lordIndex],
-      startDate: start.toISOString().split("T")[0],
-      endDate: end.toISOString().split("T")[0],
-    });
-    currentDate = end;
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`VedAstro AllPlanetData failed (${response.status}): ${body.slice(0, 300)}`);
   }
 
-  return dasha;
+  const json = await response.json();
+  return json.Payload?.AllPlanetData ?? null;
 }
 
-function detectYogas(planets: { planet: string; sign: string; house: number }[], ascendant: string): { name: string; description: string; strength: string }[] {
-  const yogas: { name: string; description: string; strength: string }[] = [];
+// --- Call VedAstro AllHouseData for a single house (returns HouseBhavaChalitSign) ---
+async function fetchHouseData(details: BirthDetails, houseName: string): Promise<string | null> {
+  const response = await fetch(`${VEDASTRO_API}/AllHouseData`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": VEDASTRO_API_KEY,
+    },
+    body: JSON.stringify({
+      PlanetName: "All",
+      houseName,
+      Time: {
+        StdTime: buildStdTime(details),
+        Location: {
+          Name: details.birthPlace || "Unknown",
+          Longitude: details.longitude ?? 0,
+          Latitude: details.latitude ?? 0,
+        },
+      },
+      Ayanamsa: "LAHIRI",
+    }),
+  });
 
-  const moon = planets.find(p => p.planet === "Moon");
-  const jupiter = planets.find(p => p.planet === "Jupiter");
-  if (moon && jupiter) {
-    const moonKendra = [1, 4, 7, 10].includes(moon.house);
-    const jupiterKendra = [1, 4, 7, 10].includes(jupiter.house);
-    if (moonKendra && jupiterKendra) {
-      yogas.push({ name: "Gaja Kesari Yoga", description: "Moon and Jupiter in mutual kendras - brings wisdom, wealth, and fame.", strength: "Strong" });
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`VedAstro AllHouseData (${houseName}) failed (${response.status}): ${body.slice(0, 300)}`);
+  }
+
+  const json = await response.json();
+  return json.Payload?.AllHouseData?.HouseBhavaChalitSign?.Name ?? null;
+}
+
+// --- Normalize VedAstro planet payload into our ChartData shape ---
+function normalizePlanets(allPlanetData: any): PlanetData[] {
+  const planets: PlanetData[] = [];
+
+  for (const name of PLANET_ORDER) {
+    const raw = allPlanetData?.[name];
+    if (!raw) continue;
+
+    const sign = raw.PlanetRasiD1Sign?.Name ?? "Unknown";
+    const degree = raw.PlanetRasiD1Sign?.DegreesIn?.TotalDegrees ?? 0;
+    const houseStr = raw.HousePlanetOccupiesBasedOnLongitudes ?? "";
+    const house = parseInt(houseStr.replace("House", ""), 10) || 0;
+    const retrograde = raw.IsPlanetRetrograde === "True";
+
+    // PlanetConstellation format: "Makha - 2" (nakshatra name + pada)
+    let nakshatra = "Unknown";
+    let pada = 1;
+    const constellation = raw.PlanetConstellation ?? "";
+    const match = constellation.match(/^(.+?)\s*-\s*(\d+)$/);
+    if (match) {
+      nakshatra = match[1].trim();
+      pada = parseInt(match[2], 10) || 1;
+    } else if (constellation) {
+      nakshatra = constellation.trim();
     }
+
+    planets.push({
+      name,
+      sign,
+      house,
+      degree,
+      status: retrograde ? "Retrograde" : "Direct",
+      nakshatra,
+      pada,
+      retrograde,
+    });
   }
 
-  const sun = planets.find(p => p.planet === "Sun");
-  const mercury = planets.find(p => p.planet === "Mercury");
-  if (sun && mercury && sun.sign === mercury.sign) {
-    yogas.push({ name: "Budha-Aditya Yoga", description: "Sun and Mercury conjunction in same house - indicates intelligence and communication skills.", strength: "Moderate" });
+  return planets;
+}
+
+// --- Fetch chart data from VedAstro (planets + all 12 houses) ---
+async function fetchChartData(details: BirthDetails): Promise<ChartData> {
+  const [allPlanetData, ...houseSigns] = await Promise.all([
+    fetchAllPlanetData(details),
+    ...Array.from({ length: 12 }, (_, i) => fetchHouseData(details, `House${i + 1}`)),
+  ]);
+
+  const planets = normalizePlanets(allPlanetData);
+
+  const moon = planets.find((p) => p.name === "Moon");
+  const sun = planets.find((p) => p.name === "Sun");
+
+  const houses = houseSigns.map((sign, i) => ({ house: i + 1, sign: sign ?? "Unknown" }));
+  const ascendant = houses[0]?.sign ?? "Unknown";
+
+  return {
+    ascendant,
+    moonSign: moon?.sign ?? "Unknown",
+    sunSign: sun?.sign ?? "Unknown",
+    nakshatra: moon?.nakshatra ?? "Unknown",
+    planets,
+    houses,
+  };
+}
+
+// --- Generate the written interpretation via Gemini (temperature 0.2, chart-data-only) ---
+async function generateInterpretation(chartData: ChartData): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set");
   }
 
-  const dusthanaLords = planets.filter(p => [6, 8, 12].includes(p.house));
-  if (dusthanaLords.length >= 2) {
-    yogas.push({ name: "Viparita Raja Yoga", description: "Lord of 6th, 8th, or 12th house placed in another dusthana house - obstacles turn into success.", strength: "Strong" });
+  const chartJson = JSON.stringify(chartData, null, 2);
+
+  const geminiResponse = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            {
+              text: `${SYSTEM_PROMPT}\n\nYou are given the exact, deterministic Vedic chart data (Lahiri Ayanamsa) computed by the VedAstro engine. Interpret ONLY the provided planetary and house data. Do not recalculate, modify, or guess any astronomical positions. Base every statement strictly on the JSON chart data supplied.`,
+            },
+          ],
+        },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `Here is the birth chart data (JSON):\n\n${chartJson}\n\nPlease provide a warm, insightful Vedic astrology interpretation covering: the Ascendant/Lagna and its significance, the Moon sign and nakshatra, the Sun sign, key planetary placements (house + sign + retrograde status), notable yogas, and practical guidance. Keep it structured and readable.`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 1024,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
+    }
+  );
+
+  if (!geminiResponse.ok) {
+    const body = await geminiResponse.text().catch(() => "");
+    throw new Error(`Gemini API error (${geminiResponse.status}): ${body.slice(0, 300)}`);
   }
 
-  return yogas;
+  const json = await geminiResponse.json();
+  const text = json?.candidates?.[0]?.content?.parts
+    ?.map((part: any) => part.text ?? "")
+    .join("")
+    .trim();
+
+  if (!text) {
+    throw new Error("Gemini returned an empty interpretation");
+  }
+
+  return text;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { birthDate, birthTime, birthPlace } = await req.json();
+    const body = await req.json();
+    const details: BirthDetails = {
+      birthDate: body.birthDate,
+      birthTime: body.birthTime,
+      birthPlace: body.birthPlace,
+      latitude: body.latitude ?? null,
+      longitude: body.longitude ?? null,
+      timezoneOffset: body.timezoneOffset ?? "+05:30",
+    };
 
-    if (!birthDate || !birthTime) {
+    if (!details.birthDate || !details.birthTime) {
       return NextResponse.json({ message: "Birth date and time are required" }, { status: 400 });
     }
 
-    // Coordinates are no longer geocoded via Google Maps; set to null for response consistency
-    const coordinates = null;
+    const cacheKey = buildCacheKey(details);
 
-    const [year, month, day] = birthDate.split("-").map(Number);
-    const [hour, minute] = birthTime.split(":").map(Number);
+    // --- 1. Try Supabase cache first ---
+    let chartData: ChartData | null = null;
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("kundali_charts")
+        .select("chart_data")
+        .eq("cache_key", cacheKey)
+        .maybeSingle();
 
-    const jd = calculateJulianDay(year, month, day, hour, minute);
-    const ayanamsa = calculateAyanamsa(jd);
+      if (!error && data?.chart_data) {
+        chartData = data.chart_data as ChartData;
+      }
+    } catch (cacheError) {
+      // Cache failures must never block the response
+      console.error("Kundali cache read failed:", cacheError);
+    }
 
-    const sunLong = getSunLongitude(jd);
-    const moonLong = getMoonLongitude(jd);
-    const ascendantLong = (sunLong + 30) % 360;
+    // --- 2. If not cached, fetch from VedAstro and store ---
+    if (!chartData) {
+      chartData = await fetchChartData(details);
 
-    const ascendant = longitudeToSign(ascendantLong);
-    const moonSign = longitudeToSign(moonLong);
-    const sunSign = longitudeToSign(sunLong);
+      try {
+        const supabase = getSupabaseClient();
+        await supabase.from("kundali_charts").upsert(
+          {
+            cache_key: cacheKey,
+            birth_details: {
+              birthDate: details.birthDate,
+              birthTime: details.birthTime,
+              birthPlace: details.birthPlace,
+              latitude: details.latitude,
+              longitude: details.longitude,
+              timezoneOffset: details.timezoneOffset,
+            },
+            chart_data: chartData,
+            created_at: new Date().toISOString(),
+          },
+          { onConflict: "cache_key" }
+        );
+      } catch (cacheError) {
+        // Cache write failures must never block the response
+        console.error("Kundali cache write failed:", cacheError);
+      }
+    }
 
-    const planets = [
-      { planet: "Sun", longitude: sunLong },
-      { planet: "Moon", longitude: moonLong },
-      { planet: "Mars", longitude: getPlanetLongitude(jd, "Mars") },
-      { planet: "Mercury", longitude: getPlanetLongitude(jd, "Mercury") },
-      { planet: "Jupiter", longitude: getPlanetLongitude(jd, "Jupiter") },
-      { planet: "Venus", longitude: getPlanetLongitude(jd, "Venus") },
-      { planet: "Saturn", longitude: getPlanetLongitude(jd, "Saturn") },
-      { planet: "Rahu", longitude: ((moonLong + 180) % 360) },
-      { planet: "Ketu", longitude: moonLong },
-    ].map(p => {
-      const siderealLong = (p.longitude - ayanamsa + 360) % 360;
-      const nakshatra = getNakshatra(siderealLong);
-      return {
-        planet: p.planet,
-        sign: longitudeToSign(siderealLong),
-        house: longitudeToHouse(siderealLong, ascendantLong),
-        degree: siderealLong % 30,
-        nakshatra: nakshatra.name,
-        pada: nakshatra.pada,
-        retrograde: Math.random() > 0.7,
-      };
-    });
+    // --- 3. Generate the written interpretation via Gemini (always fresh) ---
+    let interpretation = "";
+    try {
+      interpretation = await generateInterpretation(chartData);
+    } catch (geminiError) {
+      console.error("Kundali interpretation failed:", geminiError);
+      interpretation =
+        "Your birth chart has been computed accurately. The detailed AI interpretation is temporarily unavailable — please try again shortly.";
+    }
 
-    const dasha = calculateDasha(moonLong);
-    const yogas = detectYogas(planets, ascendant);
-
-    return NextResponse.json({ ascendant, moonSign, sunSign, planets, dasha, yogas, coordinates });
+    return NextResponse.json({ chartData, interpretation });
   } catch (error) {
+    console.error("Kundali generation failed:", error);
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });
   }
 }

@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X } from 'lucide-react';
 import {
   LocaleCode,
   ChartType,
   getChartTypeLabel,
   getRetrogradeMarker,
   localizePlanetAbbr,
+  localizePlanet,
   localizeSign,
+  getTableLabel,
   getDivisionalSign,
   getDivisionalAscendant,
   getDivisionalHouse,
@@ -22,12 +26,21 @@ export interface ChartPlanet {
   sign: number; // 1-12
   degree: number; // 0-30
   retrograde?: boolean;
+  nakshatra?: string;
+  pada?: number;
+}
+
+export interface ChartHouse {
+  house: number; // 1-12
+  sign: number; // 1-12 (Bhava Chalit sign for this house)
 }
 
 export interface ChartData {
   ascendantSign: number; // 1-12
   ascendantDegree?: number; // 0-30
   planets: ChartPlanet[];
+  /** Optional deterministic house→sign mapping from the backend (D1). */
+  houses?: ChartHouse[];
 }
 
 export interface NorthIndianChartProps {
@@ -47,7 +60,6 @@ const CHART_SIZE = 400;
 const CENTER = CHART_SIZE / 2;
 const OUTER = 180; // distance from center to outer corners
 const MID = 120; // distance to mid-edge points
-const INNER = 60; // distance to inner diamond corners
 
 // 12 house center positions in North Indian layout
 // Houses 1-12 arranged clockwise starting from top-center
@@ -89,6 +101,13 @@ const SIGN_NAMES_EN = [
   'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
 ];
 
+/** Format a DMS-style degree string like "12°34'". */
+function formatDegree(degree: number): string {
+  const d = Math.floor(degree);
+  const m = Math.round((degree - d) * 60);
+  return `${d}°${String(m % 60).padStart(2, '0')}'`;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -100,6 +119,7 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
   className = '',
 }) => {
   const retroMarker = getRetrogradeMarker(selectedLanguage);
+  const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
 
   // Compute divisional ascendant and planet positions
   const { divAscSign, planetPositions } = useMemo(() => {
@@ -113,7 +133,10 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
         planet: p.planet,
         sign: divSign,
         house,
+        degree: p.degree,
         retrograde: p.retrograde,
+        nakshatra: p.nakshatra,
+        pada: p.pada,
       };
     });
 
@@ -122,18 +145,31 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
 
   // Group planets by house
   const planetsByHouse = useMemo(() => {
-    const map: Record<number, ChartPlanet[]> = {};
+    const map: Record<number, typeof planetPositions> = {};
     planetPositions.forEach((p) => {
       if (!map[p.house]) map[p.house] = [];
-      map[p.house].push({
-        planet: p.planet,
-        sign: p.sign,
-        degree: 0,
-        retrograde: p.retrograde,
-      });
+      map[p.house].push(p);
     });
     return map;
   }, [planetPositions]);
+
+  // Resolve each house's sign:
+  // - D1 + backend houses provided → use the deterministic Bhava Chalit mapping
+  // - otherwise → fall back to the classic whole-sign rotation from the ascendant
+  const houseSigns = useMemo(() => {
+    if (type === 'D1' && chartData.houses && chartData.houses.length === 12) {
+      const map: Record<number, number> = {};
+      chartData.houses.forEach((h) => {
+        map[h.house] = h.sign;
+      });
+      return map;
+    }
+    const map: Record<number, number> = {};
+    for (let i = 1; i <= 12; i++) {
+      map[i] = ((chartData.ascendantSign + i - 2) % 12) + 1;
+    }
+    return map;
+  }, [chartData.houses, chartData.ascendantSign, type]);
 
   // Get sign name for a sign number
   const getSignName = (signNum: number): string => {
@@ -146,6 +182,11 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
     const symbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
     return symbols[signNum - 1] ?? '♈';
   };
+
+  // Full details of the currently selected planet (for the detail card)
+  const selectedDetails = selectedPlanet
+    ? planetPositions.find((p) => p.planet === selectedPlanet) ?? null
+    : null;
 
   return (
     <div className={`relative w-full max-w-md mx-auto ${className}`}>
@@ -167,6 +208,8 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
           viewBox="0 0 400 400"
           className="w-full h-auto block"
           preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label={`${getChartTypeLabel(type, selectedLanguage)} — ${getSignName(divAscSign)}`}
         >
           {/* Background */}
           <rect x="0" y="0" width="400" height="400" rx="12" className="fill-slate-50 dark:fill-[#121026]" />
@@ -193,6 +236,7 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
             const pos = HOUSE_POSITIONS[h];
             const housePlanets = planetsByHouse[h] || [];
             const isAscendant = h === 1;
+            const houseSign = houseSigns[h] ?? ((chartData.ascendantSign + h - 2) % 12) + 1;
 
             return (
               <g key={h}>
@@ -202,7 +246,9 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                   className={`stroke-slate-200/60 dark:stroke-white/10 fill-slate-50/30 dark:fill-[#121026]/30 ${
                     isAscendant ? 'dark:fill-[#FFD166]/5' : ''
                   }`}
-                />
+                >
+                  <title>{`House ${h} — ${getSignName(houseSign)}`}</title>
+                </polygon>
 
                 {/* House number */}
                 <text
@@ -214,45 +260,54 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                   {h}
                 </text>
 
-                {/* Sign symbol */}
-                {isAscendant ? (
-                  <text
-                    x={pos[0] + 4}
-                    y={pos[1] - 8}
-                    className="text-[8px] sm:text-[9px] fill-indigo-400 dark:fill-[#4CC9F0]/70"
-                    fontWeight="normal"
-                  >
-                    {getSignSymbol(divAscSign)}
-                  </text>
-                ) : (
-                  <text
-                    x={pos[0] + 4}
-                    y={pos[1] - 8}
-                    className="text-[8px] sm:text-[9px] fill-indigo-400 dark:fill-[#4CC9F0]/70"
-                    fontWeight="normal"
-                  >
-                    {getSignSymbol(h)}
-                  </text>
-                )}
+                {/* Sign symbol — bound to the actual house sign */}
+                <text
+                  x={pos[0] + 4}
+                  y={pos[1] - 8}
+                  className={`text-[8px] sm:text-[9px] ${
+                    isAscendant
+                      ? 'fill-indigo-500 dark:fill-[#4CC9F0]'
+                      : 'fill-indigo-400 dark:fill-[#4CC9F0]/70'
+                  }`}
+                  fontWeight="normal"
+                >
+                  {getSignSymbol(houseSign)}
+                </text>
 
                 {/* Planets in this house */}
                 {housePlanets.map((planet, idx) => {
                   const abbr = localizePlanetAbbr(planet.planet, selectedLanguage);
                   const isRetro = planet.retrograde;
+                  const isSelected = selectedPlanet === planet.planet;
                   const yOffset = 12 + idx * 14;
 
                   return (
-                    <g key={`${planet.planet}-${idx}`}>
+                    <g
+                      key={`${planet.planet}-${idx}`}
+                      onClick={() => setSelectedPlanet(isSelected ? null : planet.planet)}
+                      className="cursor-pointer"
+                      role="button"
+                      aria-label={localizePlanet(planet.planet, selectedLanguage)}
+                    >
+                      {/* Native hover tooltip */}
+                      <title>
+                        {`${localizePlanet(planet.planet, selectedLanguage)} • ${getSignName(planet.sign)} ${formatDegree(planet.degree)}${isRetro ? ` ${retroMarker}` : ''}`}
+                      </title>
                       <circle
                         cx={pos[0]}
                         cy={pos[1] + yOffset}
-                        r="8"
-                        className="fill-indigo-50 dark:fill-gradient-to-br dark:from-[#FFD166]/20 dark:to-[#E0A96D]/10 stroke-indigo-200 dark:stroke-[#FFD166]/30 stroke-1"
+                        r={isSelected ? 10 : 8}
+                        className={`transition-all ${
+                          isSelected
+                            ? 'fill-violet-100 dark:fill-[#FFD166]/25 stroke-violet-500 dark:stroke-[#FFD166] stroke-2'
+                            : 'fill-indigo-50 dark:fill-[#FFD166]/10 stroke-indigo-200 dark:stroke-[#FFD166]/30 stroke-1 hover:fill-violet-50 dark:hover:fill-[#FFD166]/20'
+                        }`}
                       />
                       <text
                         x={pos[0]}
                         y={pos[1] + yOffset + 3}
                         textAnchor="middle"
+                        pointerEvents="none"
                         className="text-[7px] sm:text-[8px] font-semibold fill-indigo-900 dark:fill-[#FFD166]"
                       >
                         {abbr}
@@ -262,6 +317,7 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                           x={pos[0]}
                           y={pos[1] + yOffset + 14}
                           textAnchor="middle"
+                          pointerEvents="none"
                           className="text-[5px] sm:text-[6px] fill-red-500 dark:fill-red-400"
                         >
                           {retroMarker}
@@ -280,7 +336,7 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
             y={CENTER - 10}
             className="text-[7px] sm:text-[8px] fill-slate-400 dark:fill-[#6B7280]"
           >
-            {selectedLanguage === 'en' ? 'Lagna' : 'लग्न'}
+            {selectedLanguage === 'hi' ? 'लग्न' : 'Lagna'}
           </text>
           <text
             x={CENTER - 10}
@@ -292,18 +348,100 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
           </text>
         </svg>
 
-        {/* Legend */}
+        {/* Selected Planet Detail Card */}
+        <AnimatePresence>
+          {selectedDetails && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="mt-3 relative rounded-xl border border-violet-200/60 dark:border-[#FFD166]/25 bg-gradient-to-br from-violet-50/80 to-indigo-50/60 dark:from-[#FFD166]/[0.07] dark:to-[#E0A96D]/[0.04] backdrop-blur-sm p-3"
+            >
+              <button
+                onClick={() => setSelectedPlanet(null)}
+                aria-label="Close"
+                className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-white/70 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-900 dark:hover:text-[#F3F4F6] transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-2 pr-6">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-[10px] font-bold">
+                  {localizePlanetAbbr(selectedDetails.planet, selectedLanguage)}
+                </span>
+                <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6]">
+                  {localizePlanet(selectedDetails.planet, selectedLanguage)}
+                </p>
+                {selectedDetails.retrograde && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/10 text-red-500">
+                    {retroMarker} {selectedLanguage === 'hi' ? 'वक्री' : 'Retrograde'}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('sign', selectedLanguage)}</span>
+                  <span className="font-medium text-indigo-950 dark:text-[#F3F4F6]">
+                    {getSignSymbol(selectedDetails.sign)} {getSignName(selectedDetails.sign)}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('degree', selectedLanguage)}</span>
+                  <span className="font-medium text-indigo-950 dark:text-[#F3F4F6]">{formatDegree(selectedDetails.degree)}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('nakshatra', selectedLanguage)}</span>
+                  <span className="font-medium text-indigo-950 dark:text-[#F3F4F6] truncate max-w-[110px]">
+                    {selectedDetails.nakshatra ?? '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 dark:text-[#6B7280]">Pada</span>
+                  <span className="font-medium text-indigo-950 dark:text-[#F3F4F6]">{selectedDetails.pada ?? '—'}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('house', selectedLanguage)}</span>
+                  <span className="font-medium text-indigo-950 dark:text-[#F3F4F6]">{selectedDetails.house}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('status', selectedLanguage)}</span>
+                  <span className={`font-medium ${selectedDetails.retrograde ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {selectedDetails.retrograde
+                      ? `${retroMarker} ${selectedLanguage === 'hi' ? 'वक्री' : 'Retrograde'}`
+                      : selectedLanguage === 'hi' ? 'सीधा' : 'Direct'}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Legend — clickable to select a planet too */}
         <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
           {chartData.planets.map((p) => (
-            <span
+            <button
               key={p.planet}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/10 text-[9px] text-slate-500 dark:text-[#9CA3AF]"
+              onClick={() => setSelectedPlanet(selectedPlanet === p.planet ? null : p.planet)}
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[9px] transition-colors cursor-pointer ${
+                selectedPlanet === p.planet
+                  ? 'bg-violet-100 dark:bg-[#FFD166]/15 border-violet-300 dark:border-[#FFD166]/40 text-indigo-950 dark:text-[#FFD166]'
+                  : 'bg-slate-50 dark:bg-white/[0.03] border-slate-200/60 dark:border-white/10 text-slate-500 dark:text-[#9CA3AF] hover:border-violet-300 dark:hover:border-[#FFD166]/30'
+              }`}
             >
               <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-[#FFD166] dark:to-[#E0A96D]" />
               {localizePlanetAbbr(p.planet, selectedLanguage)}
-            </span>
+            </button>
           ))}
         </div>
+
+        {/* Interaction hint */}
+        <p className="mt-2 text-center text-[10px] text-slate-400 dark:text-[#6B7280]">
+          {selectedLanguage === 'hi'
+            ? 'विवरण देखने के लिए किसी ग्रह पर टैप करें'
+            : 'Tap any planet to view its full details'}
+        </p>
       </div>
     </div>
   );

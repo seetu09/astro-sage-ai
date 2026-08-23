@@ -2,7 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Download, Info, Sparkles, Share2, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Download,
+  Info,
+  Sparkles,
+  Share2,
+  Loader2,
+  Copy,
+  CheckCircle2,
+  AlertTriangle,
+  MapPin,
+  Sun,
+  Moon,
+  Star,
+  ArrowUp,
+} from 'lucide-react';
 import ShareCard from '@/app/components/ShareCard';
 import PdfTemplate from '@/app/components/PdfTemplate';
 import { generateKundliPdf } from '@/lib/pdfService';
@@ -18,6 +33,8 @@ import ReportContent from '@/app/components/ReportContent';
 import Remedies from '@/app/components/Remedies';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import ReportContainer from '@/app/components/ReportContainer';
+import MarkdownView from '@/app/components/MarkdownView';
+import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
 import {
@@ -38,6 +55,13 @@ interface Planet {
   house: number;
   degree: number;
   status: string;
+  nakshatra?: string;
+  pada?: number;
+}
+
+interface HouseSign {
+  house: number;
+  sign: number; // 1-12
 }
 
 interface KundliData {
@@ -54,6 +78,8 @@ interface KundliData {
   sunSign: string;
   nakshatra: string;
   planets: Planet[];
+  houses?: HouseSign[];
+  interpretation?: string;
 }
 
 const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
@@ -102,46 +128,6 @@ function generateMockDasha(moonSign: string): DashaEntry[] {
   return dasha;
 }
 
-function generateMockKundli(formData: {
-  name: string;
-  email: string;
-  dateOfBirth: string;
-  timeOfBirth: string;
-  placeOfBirth: string;
-  latitude: number | null;
-  longitude: number | null;
-  timezone: string;
-}): KundliData {
-  const ascendant = signs[Math.floor(Math.random() * signs.length)];
-  const moonSign = signs[Math.floor(Math.random() * signs.length)];
-  const sunSign = signs[Math.floor(Math.random() * signs.length)];
-  const nakshatra = nakshatras[Math.floor(Math.random() * nakshatras.length)];
-
-  const planetData: Planet[] = planets.map((name) => ({
-    name,
-    sign: signs[Math.floor(Math.random() * signs.length)],
-    house: Math.floor(Math.random() * 12) + 1,
-    degree: Math.random() * 30,
-    status: Math.random() > 0.7 ? 'Retrograde' : 'Direct',
-  }));
-
-  return {
-    name: formData.name,
-    email: formData.email,
-    dateOfBirth: formData.dateOfBirth,
-    timeOfBirth: formData.timeOfBirth,
-    placeOfBirth: formData.placeOfBirth,
-    latitude: formData.latitude,
-    longitude: formData.longitude,
-    timezone: formData.timezone,
-    ascendant,
-    moonSign,
-    sunSign,
-    nakshatra,
-    planets: planetData,
-  };
-}
-
 export default function KundaliPage() {
   const { language, t } = useLanguage();
   const { selectedLanguage } = useApp();
@@ -157,6 +143,10 @@ export default function KundaliPage() {
   const [timezone, setTimezone] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [kundliData, setKundliData] = useState<KundliData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [errorKind, setErrorKind] = useState<'geocode' | 'network' | 'generic'>('generic');
+  const [copied, setCopied] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [activeChartType, setActiveChartType] = useState<ChartType>('D1');
   const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
@@ -176,42 +166,143 @@ export default function KundaliPage() {
     }
   }, [profile]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     trackEvent('kundali_generated', { has_birth_time: !timeUnknown });
+    // Graceful guard: geocoded coordinates are required for accurate computation
+    if (latitude == null || longitude == null) {
+      setErrorKind('geocode');
+      setError(
+        language === 'hi'
+          ? 'कृपया सुझावों में से अपना जन्म स्थान चुनें ताकि सही निर्देशांक मिल सकें।'
+          : 'Please pick your birth place from the suggestions so we get accurate coordinates.'
+      );
+      return;
+    }
+
     const resolvedTime = resolveBirthTime(timeOfBirth, timeUnknown);
-    const data = generateMockKundli({ name, email, dateOfBirth, timeOfBirth: resolvedTime, placeOfBirth, latitude, longitude, timezone });
-    setKundliData(data);
-    setShowResult(true);
-    // Persist birth details for reuse across Kundali, Matchmaking & Chat
-    saveProfile({
-      name,
-      dob: dateOfBirth,
-      tob: resolvedTime,
-      city: placeOfBirth,
-      lat: latitude,
-      lon: longitude,
-      timeUnknown,
-    });
-    if (user) {
-      saveKundaliHistory({
-        id: `kundali-${Date.now()}`,
-        userId: user.id,
-        createdAt: new Date().toISOString(),
-        name: data.name,
-        dateOfBirth: data.dateOfBirth,
-        timeOfBirth: data.timeOfBirth,
-        placeOfBirth: data.placeOfBirth,
-        ascendant: data.ascendant,
-        moonSign: data.moonSign,
-        sunSign: data.sunSign,
-        nakshatra: data.nakshatra,
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/kundali/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          birthDate: dateOfBirth,
+          birthTime: resolvedTime,
+          birthPlace: placeOfBirth,
+          latitude,
+          longitude,
+          timezoneOffset: timezone || '+05:30',
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate kundali');
+      }
+
+      const result = await response.json();
+      const chartData = result.chartData;
+
+      const data: KundliData = {
+        name,
+        email,
+        dateOfBirth,
+        timeOfBirth: resolvedTime,
+        placeOfBirth,
+        latitude,
+        longitude,
+        timezone,
+        ascendant: chartData.ascendant,
+        moonSign: chartData.moonSign,
+        sunSign: chartData.sunSign,
+        nakshatra: chartData.nakshatra,
+        planets: chartData.planets.map((p: any) => ({
+          name: p.name,
+          sign: p.sign,
+          house: p.house,
+          degree: p.degree,
+          status: p.status,
+          nakshatra: p.nakshatra,
+          pada: p.pada,
+        })),
+        houses: Array.isArray(chartData.houses)
+          ? chartData.houses.map((h: any) => ({ house: h.house, sign: signs.indexOf(h.sign) + 1 }))
+          : undefined,
+        interpretation: result.interpretation,
+      };
+
+      setKundliData(data);
+      setShowResult(true);
+
+      // Persist birth details for reuse across Kundali, Matchmaking & Chat
+      saveProfile({
+        name,
+        dob: dateOfBirth,
+        tob: resolvedTime,
+        city: placeOfBirth,
+        lat: latitude,
+        lon: longitude,
+        timeUnknown,
+      });
+      if (user) {
+        saveKundaliHistory({
+          id: `kundali-${Date.now()}`,
+          userId: user.id,
+          createdAt: new Date().toISOString(),
+          name: data.name,
+          dateOfBirth: data.dateOfBirth,
+          timeOfBirth: data.timeOfBirth,
+          placeOfBirth: data.placeOfBirth,
+          ascendant: data.ascendant,
+          moonSign: data.moonSign,
+          sunSign: data.sunSign,
+          nakshatra: data.nakshatra,
+        });
+      }
+    } catch (err) {
+      console.error('Kundali generation error:', err);
+      // Network failures surface as TypeError from fetch — show a friendlier banner
+      const isNetworkError = err instanceof TypeError;
+      setErrorKind(isNetworkError ? 'network' : 'generic');
+      setError(
+        isNetworkError
+          ? language === 'hi'
+            ? 'नेटवर्क कनेक्शन उपलब्ध नहीं है। कृपया अपना इंटरनेट जांचें और पुनः प्रयास करें।'
+            : 'Network request failed. Please check your connection and try again.'
+          : language === 'hi'
+            ? 'कुंडली बनाने में त्रुटि हुई। कृपया पुनः प्रयास करें।'
+            : 'Failed to generate kundali. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleBack = () => {
     setShowResult(false);
+  };
+
+  // Quick "Copy Reading" — copies the full AI interpretation to the clipboard
+  const handleCopyReading = async () => {
+    if (!kundliData?.interpretation) return;
+    const text = kundliData.interpretation;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard API unavailable (e.g. insecure context) — legacy fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    trackEvent('kundali_reading_copied');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   // Branded multilingual PDF export (Batch 3)
@@ -236,7 +327,12 @@ export default function KundaliPage() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-[#F8F7FC] dark:bg-[#080811]">
       <div className="max-w-4xl mx-auto px-4 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
-        {!showResult ? (
+        {isLoading ? (
+          /* Animated skeleton while POST /api/kundali/generate is fetching */
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <KundaliLoadingSkeleton />
+          </motion.div>
+        ) : !showResult ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -347,11 +443,39 @@ export default function KundaliPage() {
                 </div>
               </div>
 
+              {error && (
+                <div
+                  role="alert"
+                  className={`flex items-start gap-2 text-xs sm:text-sm rounded-lg px-3 py-2.5 border ${
+                    errorKind === 'geocode'
+                      ? 'text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/25'
+                      : errorKind === 'network'
+                        ? 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/25'
+                        : 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20'
+                  }`}
+                >
+                  {errorKind === 'geocode' ? (
+                    <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  )}
+                  <span>{error}</span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all mt-2"
+                disabled={isLoading}
+                className="w-full py-3 sm:py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {t.kundali.generateButton}
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                    {language === 'hi' ? 'कुंडली बनाई जा रही है...' : 'Generating your kundali...'}
+                  </span>
+                ) : (
+                  t.kundali.generateButton
+                )}
               </button>
             </form>
           </motion.div>
@@ -391,6 +515,28 @@ export default function KundaliPage() {
                 </p>
               )}
             </div>
+
+            {/* Summary Badge Bar — Lagna / Rashi / Sun Sign / Birth Nakshatra */}
+            {kundliData && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                {[
+                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSign(kundliData.ascendant, selectedLanguage) },
+                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSign(kundliData.moonSign, selectedLanguage) },
+                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSign(kundliData.sunSign, selectedLanguage) },
+                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: kundliData.nakshatra },
+                ].map((badge) => (
+                  <div key={badge.label} className="glass-card rounded-xl p-3 flex items-center gap-2.5">
+                    <span className="inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/15 dark:to-[#E0A96D]/10 text-violet-700 dark:text-[#FFD166]">
+                      {badge.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide truncate">{badge.label}</p>
+                      <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate">{badge.value ?? '—'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Info Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
@@ -440,7 +586,10 @@ export default function KundaliPage() {
                       sign: signs.indexOf(p.sign) + 1,
                       degree: p.degree,
                       retrograde: p.status === 'Retrograde',
+                      nakshatra: p.nakshatra,
+                      pada: p.pada,
                     })),
+                    houses: kundliData.houses,
                   }}
                   type={activeChartType}
                   selectedLanguage={selectedLanguage}
@@ -457,6 +606,7 @@ export default function KundaliPage() {
                   degree: p.degree,
                   house: p.house,
                   retrograde: p.status === 'Retrograde',
+                  nakshatra: p.nakshatra,
                 }))}
                 ascendantSign={signs.indexOf(kundliData.ascendant) + 1}
                 ascendantDegree={15}
@@ -473,6 +623,7 @@ export default function KundaliPage() {
                   degree: p.degree,
                   house: p.house,
                   retrograde: p.status === 'Retrograde',
+                  nakshatra: p.nakshatra,
                 }))}
                 ascendantSign={signs.indexOf(kundliData.ascendant) + 1}
                 ascendantDegree={15}
@@ -487,6 +638,40 @@ export default function KundaliPage() {
                 dasha={generateMockDasha(kundliData.moonSign)}
                 selectedLanguage={selectedLanguage}
               />
+            )}
+
+            {/* AI Interpretation — structured markdown rendering + quick copy */}
+            {kundliData?.interpretation && (
+              <div className="glass-card rounded-xl p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 min-w-0">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                    <span className="truncate">{language === 'hi' ? 'आपकी कुंडली का विश्लेषण' : 'Your Kundali Analysis'}</span>
+                  </h2>
+                  <button
+                    onClick={handleCopyReading}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all shrink-0 ${
+                      copied
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                        : 'border-slate-200/60 dark:border-white/10 text-slate-500 dark:text-[#9CA3AF] hover:border-violet-300 dark:hover:border-[#FFD166]/30 hover:text-indigo-900 dark:hover:text-[#F3F4F6]'
+                    }`}
+                    aria-live="polite"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {language === 'hi' ? 'कॉपी हो गया!' : 'Copied!'}
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        {language === 'hi' ? 'रीडिंग कॉपी करें' : 'Copy Reading'}
+                      </>
+                    )}
+                  </button>
+                </div>
+                <MarkdownView content={kundliData.interpretation} />
+              </div>
             )}
 
             {/* Report Content (Narratives, Yogas, Dosha Badges) */}
