@@ -34,6 +34,7 @@ import ReportContent from '@/app/components/ReportContent';
 import Remedies from '@/app/components/Remedies';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import ReportContainer from '@/app/components/ReportContainer';
+import KundaliView from '@/app/components/KundaliView';
 import MarkdownView from '@/app/components/MarkdownView';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -50,6 +51,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 import { trackEvent } from '@/lib/analytics';
+import { FreeTierData, PaidTierData } from '@/types/kundali';
 
 interface Planet {
   name: string;
@@ -101,7 +103,36 @@ interface KundliData {
       retrograde: boolean;
     }[];
   };
+  /** Structured free tier (core personality, top careers, wealth type, running dasha). */
+  freeTier?: FreeTierData;
+  /** Structured paid tier (gated: full breakdown, timings, remedies, yogas, doshas). */
+  paidTier?: PaidTierData;
 }
+
+const EMPTY_FREE_TIER: FreeTierData = {
+  corePersonality: { ascendant: '', moonSign: '', sunSign: '', nakshatra: '', summary: '' },
+  topCareers: [],
+  wealthType: '',
+  runningDashaName: '',
+};
+
+const EMPTY_PAID_TIER: PaidTierData = {
+  careerTimings: { overview: '', favorable: [], challenging: [] },
+  marriageDynamics: { overview: '', strengths: [], challenges: [], favorable: [] },
+  wealthAllocation: { overview: '', allocation: [] },
+  dashaRoadmap: [],
+  yogas: [],
+  doshas: [],
+  remedies: [],
+  fullBreakdown: [],
+  timings: [],
+  lifeDomains: {
+    career: { overview: '', strengths: [], challenges: [], recommendations: [] },
+    wealth: { overview: '', strengths: [], challenges: [], recommendations: [] },
+    marriage: { overview: '', strengths: [], challenges: [], recommendations: [] },
+    health: { overview: '', strengths: [], challenges: [], recommendations: [] },
+  },
+};
 
 const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
@@ -219,7 +250,7 @@ function parseDegree(degree: string | number | undefined | null): number {
 
 export default function KundaliPage() {
   const { language, t } = useLanguage();
-  const { selectedLanguage } = useApp();
+  const { selectedLanguage, isPaid } = useApp();
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -335,6 +366,8 @@ export default function KundaliPage() {
           ? chartData.houses.map((h: any) => ({ house: h?.house ?? 0, sign: signToIndex(h?.sign) }))
           : undefined,
         interpretation: typeof result.interpretation === 'string' ? result.interpretation : '',
+        freeTier: (result.freeTier as FreeTierData) ?? EMPTY_FREE_TIER,
+        paidTier: (result.paidTier as PaidTierData) ?? EMPTY_PAID_TIER,
         // Store the raw flat chartData for direct binding in summary cards + SVG chart
         chartData: {
           lagna: chartData?.lagna,
@@ -626,6 +659,15 @@ export default function KundaliPage() {
             </form>
           </motion.div>
         ) : (
+          <>
+          <KundaliView
+            freeTier={kundliData?.freeTier ?? EMPTY_FREE_TIER}
+            paidTier={kundliData?.paidTier ?? EMPTY_PAID_TIER}
+            userEmail={kundliData?.email || email}
+            userName={kundliData?.name || name}
+            onDownload={handleDownloadPdf}
+          />
+          {isPaid && (
           <ReportContainer
             userEmail={kundliData?.email || email}
             userName={kundliData?.name || name}
@@ -932,6 +974,8 @@ export default function KundaliPage() {
             )}
           </motion.div>
           </ReportContainer>
+          )}
+          </>
         )}
       </div>
     </div>

@@ -26,6 +26,7 @@ import {
   fillTemplate,
   ChartType,
 } from '@/lib/astrologyDictionary';
+import { getReportDictionary, fillReportTemplate } from '@/lib/reportDictionary';
 import { computeAshtakvarga } from '@/lib/ashtakvarga';
 import { detectYogas } from '@/app/components/ReportContent';
 
@@ -166,12 +167,14 @@ function PdfNorthChart({
   planets,
   type,
   locale,
+  lagnaLabel,
 }: {
   ascendantSign: number;
   ascendantDegree: number;
   planets: { planet: string; sign: number; degree: number; retrograde?: boolean }[];
   type: ChartType;
   locale: LocaleCode;
+  lagnaLabel: string;
 }) {
   const divAsc = getDivisionalAscendant(ascendantSign, ascendantDegree, type);
   const positions = planets.map((p) => ({
@@ -248,7 +251,7 @@ function PdfNorthChart({
             </g>
           );
         })}
-        <text x={180} y={190} fontSize="8" fill="#9CA3AF">{locale === 'hi' ? 'लग्न' : 'Lagna'}</text>
+              <text x={180} y={190} fontSize="8" fill="#9CA3AF">{lagnaLabel}</text>
         <text x={190} y={208} textAnchor="middle" fontSize="11" fontWeight="700" fill="#4F46E5">
           {getSignSymbol(divAsc)}
         </text>
@@ -261,7 +264,7 @@ function PdfNorthChart({
 // Page chrome (header + footer)
 // ---------------------------------------------------------------------------
 
-function PdfHeader({ title, dateLabel, date }: { title: string; dateLabel: string; date: string }) {
+function PdfHeader({ title, dateLabel, date, subtitle }: { title: string; dateLabel: string; date: string; subtitle: string }) {
   return (
     <div style={{ borderBottom: `2px solid ${C.gold}`, paddingBottom: 10, marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -281,7 +284,7 @@ function PdfHeader({ title, dateLabel, date }: { title: string; dateLabel: strin
               AstroSage <span style={{ color: C.gold }}>AI</span>
             </div>
             <div style={{ fontSize: 8.5, color: C.faint, letterSpacing: 1, textTransform: 'uppercase' }}>
-              Vedic Kundli Report
+              {subtitle}
             </div>
           </div>
         </div>
@@ -296,9 +299,10 @@ function PdfHeader({ title, dateLabel, date }: { title: string; dateLabel: strin
   );
 }
 
-function PdfFooter({ page, total, watermark, copyright, disclaimer }: {
-  page: number; total: number; watermark: string; copyright: string; disclaimer: string;
+function PdfFooter({ page, total, watermark, copyright, disclaimer, locale }: {
+  page: number; total: number; watermark: string; copyright: string; disclaimer: string; locale: LocaleCode;
 }) {
+  const dict = getReportDictionary(locale);
   return (
     <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, textAlign: 'center' }}>
       <div style={{ fontSize: 9, color: C.faint, letterSpacing: 2, textTransform: 'uppercase', opacity: 0.5, marginBottom: 4 }}>
@@ -308,7 +312,7 @@ function PdfFooter({ page, total, watermark, copyright, disclaimer }: {
         <span style={{ fontSize: 8, color: C.faint }}>{copyright}</span>
         <span style={{ fontSize: 8, color: C.faint }}>{disclaimer}</span>
         <span style={{ fontSize: 9, fontWeight: 700, color: C.sub }}>
-          {fillTemplate(getUILabel('pageOf', 'en'), { x: page, y: total })}
+          {fillReportTemplate(dict.footer.pageOf, { x: page, y: total })}
         </span>
       </div>
     </div>
@@ -346,13 +350,14 @@ function PdfCard({ children, style }: { children: React.ReactNode; style?: React
 
 export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplateProps) {
   const locale = selectedLanguage;
+  const dict = getReportDictionary(locale);
   const total = 5;
   const genDate = formatLocalizedDate(new Date().toISOString(), locale);
   const reportTitle = getUILabel('kundliReport', locale);
   const generatedOnLabel = getUILabel('generatedOn', locale);
   const copyright = getUILabel('pdfCopyright', locale);
   const watermark = getUILabel('pdfWatermark', locale);
-  const disclaimer = getUILabel('pdfDisclaimer', locale);
+  const disclaimer = dict.footer.disclaimer;
 
   // Defensive defaults — a partial/undefined payload must never crash html2canvas.
   const safeName = kundliData.name || '—';
@@ -431,7 +436,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
     <div style={{ background: '#fff' }}>
       {/* ================= PAGE 1 — Birth & Panchang ================= */}
       <div className="pdf-page" style={pageStyle}>
-        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
+        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} subtitle={dict.messages.headerSubtitle} />
 
         <PdfSectionTitle>{getUILabel('pdfPage1Title', locale)}</PdfSectionTitle>
 
@@ -442,10 +447,10 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
-              { l: locale === 'hi' ? 'नाम' : 'Name', v: safeName },
-              { l: locale === 'hi' ? 'जन्म तिथि' : 'Date of Birth', v: safeDateOfBirth },
-              { l: locale === 'hi' ? 'जन्म समय' : 'Time of Birth', v: safeTimeOfBirth },
-              { l: locale === 'hi' ? 'जन्म स्थान' : 'Place of Birth', v: safePlaceOfBirth },
+              { l: dict.metadata.name, v: safeName },
+              { l: dict.metadata.dob, v: safeDateOfBirth },
+              { l: dict.metadata.tob, v: safeTimeOfBirth },
+              { l: dict.metadata.pob, v: safePlaceOfBirth },
             ].map((it) => (
               <div key={it.l} style={{ background: '#fff', border: `1px solid ${C.line}`, borderRadius: 8, padding: '8px 10px' }}>
                 <div style={{ fontSize: 8.5, color: C.faint, textTransform: 'uppercase', letterSpacing: 0.5 }}>{it.l}</div>
@@ -458,9 +463,9 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
         {/* Key positions */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
           {[
-            { l: locale === 'hi' ? 'लग्न' : 'Ascendant', v: getSignName(asc, locale), s: getSignSymbol(asc) },
-            { l: locale === 'hi' ? 'चंद्र राशि' : 'Moon Sign', v: getSignName(moon, locale), s: getSignSymbol(moon) },
-            { l: locale === 'hi' ? 'सूर्य राशि' : 'Sun Sign', v: getSignName(sun, locale), s: getSignSymbol(sun) },
+            { l: dict.messages.ascendant, v: getSignName(asc, locale), s: getSignSymbol(asc) },
+            { l: dict.messages.moonSign, v: getSignName(moon, locale), s: getSignSymbol(moon) },
+            { l: dict.messages.sunSign, v: getSignName(sun, locale), s: getSignSymbol(sun) },
           ].map((it) => (
             <PdfCard key={it.l} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 20 }}>{it.s}</div>
@@ -485,21 +490,21 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </div>
         </PdfCard>
 
-        <PdfFooter page={1} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} />
+        <PdfFooter page={1} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} locale={locale} />
       </div>
 
       {/* ================= PAGE 2 — D1, D9 & Planet Table ================= */}
       <div className="pdf-page" style={pageStyle}>
-        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
+        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} subtitle={dict.messages.headerSubtitle} />
 
         <PdfSectionTitle>{getUILabel('pdfPage2Title', locale)}</PdfSectionTitle>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           <PdfCard>
-            <PdfNorthChart ascendantSign={asc} ascendantDegree={15} planets={planets} type="D1" locale={locale} />
+            <PdfNorthChart ascendantSign={asc} ascendantDegree={15} planets={planets} type="D1" locale={locale} lagnaLabel={dict.metadata.lagna} />
           </PdfCard>
           <PdfCard>
-            <PdfNorthChart ascendantSign={asc} ascendantDegree={15} planets={planets} type="D9" locale={locale} />
+            <PdfNorthChart ascendantSign={asc} ascendantDegree={15} planets={planets} type="D9" locale={locale} lagnaLabel={dict.metadata.lagna} />
           </PdfCard>
         </div>
 
@@ -541,12 +546,12 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </table>
         </PdfCard>
 
-        <PdfFooter page={2} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} />
+        <PdfFooter page={2} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} locale={locale} />
       </div>
 
       {/* ================= PAGE 3 — KP & Dasha ================= */}
       <div className="pdf-page" style={pageStyle}>
-        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
+        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} subtitle={dict.messages.headerSubtitle} />
 
         <PdfSectionTitle>{getUILabel('pdfPage3Title', locale)}</PdfSectionTitle>
 
@@ -615,19 +620,19 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </div>
         </PdfCard>
 
-        <PdfFooter page={3} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} />
+        <PdfFooter page={3} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} locale={locale} />
       </div>
 
       {/* ================= PAGE 4 — Divisional Charts & Ashtakvarga ================= */}
       <div className="pdf-page" style={pageStyle}>
-        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
+        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} subtitle={dict.messages.headerSubtitle} />
 
         <PdfSectionTitle>{getUILabel('pdfPage4Title', locale)}</PdfSectionTitle>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
           {(['D3', 'D4', 'D7', 'D10'] as ChartType[]).map((ct) => (
             <PdfCard key={ct}>
-              <PdfNorthChart ascendantSign={asc} ascendantDegree={15} planets={planets} type={ct} locale={locale} />
+              <PdfNorthChart ascendantSign={asc} ascendantDegree={15} planets={planets} type={ct} locale={locale} lagnaLabel={dict.metadata.lagna} />
             </PdfCard>
           ))}
         </div>
@@ -644,7 +649,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
                 {Array.from({ length: 12 }, (_, i) => (
                   <th key={i} style={{ padding: '4px 2px', textAlign: 'center' }}>{i + 1}</th>
                 ))}
-                <th style={{ padding: '4px 6px', textAlign: 'center' }}>{locale === 'hi' ? 'योग' : 'Total'}</th>
+                <th style={{ padding: '4px 6px', textAlign: 'center' }}>{dict.tableHeaders.total}</th>
               </tr>
             </thead>
             <tbody>
@@ -676,12 +681,12 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </table>
         </PdfCard>
 
-        <PdfFooter page={4} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} />
+        <PdfFooter page={4} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} locale={locale} />
       </div>
 
       {/* ================= PAGE 5 — Yogas, Doshas & Remedies ================= */}
       <div className="pdf-page" style={lastPageStyle}>
-        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} />
+        <PdfHeader title={reportTitle} dateLabel={generatedOnLabel} date={genDate} subtitle={dict.messages.headerSubtitle} />
 
         <PdfSectionTitle>{getUILabel('pdfPage5Title', locale)}</PdfSectionTitle>
 
@@ -691,7 +696,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
             {getRemedyLabel('activeYogas', locale)}
           </div>
           {yogas.length === 0 ? (
-            <div style={{ fontSize: 10, color: C.sub }}>{locale === 'hi' ? 'कोई सक्रिय योग नहीं मिला।' : 'No active yogas detected.'}</div>
+            <div style={{ fontSize: 10, color: C.sub }}>{dict.messages.noActiveYogas}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {yogas.map((y) => (
@@ -766,7 +771,7 @@ export default function PdfTemplate({ kundliData, selectedLanguage }: PdfTemplat
           </PdfCard>
         )}
 
-        <PdfFooter page={5} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} />
+        <PdfFooter page={5} total={total} watermark={watermark} copyright={copyright} disclaimer={disclaimer} locale={locale} />
       </div>
     </div>
   );
