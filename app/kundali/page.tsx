@@ -82,11 +82,31 @@ interface KundliData {
   planets: Planet[];
   houses?: HouseSign[];
   interpretation?: string;
+  /** Raw flat chart data returned by the API (binds summary cards + SVG chart) */
+  chartData?: {
+    lagna?: string;
+    ascendant?: string;
+    rashi?: string;
+    moonSign?: string;
+    sunSign?: string;
+    nakshatra?: string;
+    timezone?: string;
+    houses?: { house: number; sign: string; planets: string[] }[];
+    planets?: {
+      name: string;
+      sign: string;
+      house: number;
+      degree: string;
+      nakshatra: string;
+      retrograde: boolean;
+    }[];
+  };
 }
 
 const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
 const nakshatras = ['Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'];
+
 
 // Shown when the AI interpretation is unavailable (e.g. Gemini 404/500)
 const INTERPRETATION_FALLBACK =
@@ -151,18 +171,29 @@ function cleanAstroValue(value: string | undefined | null): string {
   return value;
 }
 
-// --- Helper: localize a sign and clean up "Unknown" ---
-function localizeSignClean(sign: string | undefined | null, locale: 'en' | 'hi'): string {
-  const cleaned = cleanAstroValue(sign);
+// --- Helper: extract the English part from a bilingual value like "Aquarius (कुंभ)" ---
+function extractEnglishPart(value: string | undefined | null): string {
+  const cleaned = cleanAstroValue(value);
   if (!cleaned) return '';
-  return localizeSign(cleaned, locale);
+  // Strip the "(...)" Hindi suffix if present
+  const match = cleaned.match(/^([^(]+?)(?:\s*\([^)]*\))?$/);
+  return match ? match[1].trim() : cleaned;
+}
+
+// --- Helper: localize a sign and clean up "Unknown" ---
+// Handles bilingual values like "Aquarius (कुंभ)" by extracting the English part first
+function localizeSignClean(sign: string | undefined | null, locale: 'en' | 'hi'): string {
+  const english = extractEnglishPart(sign);
+  if (!english) return '';
+  return localizeSign(english, locale);
 }
 
 // --- Helper: localize a nakshatra and clean up "Unknown" ---
+// Handles bilingual values like "Shravana (श्रवण)" by extracting the English part first
 function localizeNakshatraClean(nakshatra: string | undefined | null, locale: 'en' | 'hi'): string {
-  const cleaned = cleanAstroValue(nakshatra);
-  if (!cleaned) return '';
-  return localizeNakshatra(cleaned, locale);
+  const english = extractEnglishPart(nakshatra);
+  if (!english) return '';
+  return localizeNakshatra(english, locale);
 }
 
 // --- Helper: safely convert a sign name to a 1-12 index (0 if unknown) ---
@@ -172,6 +203,19 @@ function signToIndex(sign: string | undefined | null): number {
   const idx = signs.indexOf(cleaned);
   return idx === -1 ? 0 : idx + 1;
 }
+
+// --- Helper: parse a degree value that may be a number or "DD°MM'" string ---
+function parseDegree(degree: string | number | undefined | null): number {
+  if (typeof degree === 'number') return degree;
+  if (typeof degree === 'string') {
+    const match = degree.match(/^(\d+)°/);
+    if (match) return parseFloat(match[1]);
+    const parsed = parseFloat(degree);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
 
 export default function KundaliPage() {
   const { language, t } = useLanguage();
@@ -265,16 +309,25 @@ export default function KundaliPage() {
         latitude,
         longitude,
         timezone,
-        ascendant: cleanAstroValue(chartData?.ascendant) || '',
-        moonSign: cleanAstroValue(chartData?.moonSign) || '',
-        sunSign: cleanAstroValue(chartData?.sunSign) || '',
-        nakshatra: cleanAstroValue(chartData?.nakshatra) || '',
+        // Bind to both English and Hindi keys from the flat chartData.
+        // extractEnglishPart strips the "(कुंभ)" suffix so signToIndex works,
+        // while the raw bilingual string is preserved in data.chartData for display.
+        ascendant:
+          extractEnglishPart(chartData?.lagna) ||
+          extractEnglishPart(chartData?.ascendant) ||
+          '',
+        moonSign:
+          extractEnglishPart(chartData?.rashi) ||
+          extractEnglishPart(chartData?.moonSign) ||
+          '',
+        sunSign: extractEnglishPart(chartData?.sunSign) || '',
+        nakshatra: extractEnglishPart(chartData?.nakshatra) || '',
         planets: (chartData?.planets ?? []).map((p: any) => ({
           name: p?.name || '',
           sign: cleanAstroValue(p?.sign) || '',
           house: p?.house ?? 0,
-          degree: p?.degree ?? 0,
-          status: p?.status || '',
+          degree: typeof p?.degree === 'string' ? parseFloat(p.degree) || 0 : p?.degree ?? 0,
+          status: p?.retrograde ? 'Retrograde' : 'Direct',
           nakshatra: cleanAstroValue(p?.nakshatra) || undefined,
           pada: p?.pada,
         })),
@@ -282,7 +335,35 @@ export default function KundaliPage() {
           ? chartData.houses.map((h: any) => ({ house: h?.house ?? 0, sign: signToIndex(h?.sign) }))
           : undefined,
         interpretation: typeof result.interpretation === 'string' ? result.interpretation : '',
+        // Store the raw flat chartData for direct binding in summary cards + SVG chart
+        chartData: {
+          lagna: chartData?.lagna,
+          ascendant: chartData?.ascendant,
+          rashi: chartData?.rashi,
+          moonSign: chartData?.moonSign,
+          sunSign: chartData?.sunSign,
+          nakshatra: chartData?.nakshatra,
+          timezone: chartData?.timezone,
+          houses: Array.isArray(chartData?.houses)
+            ? chartData.houses.map((h: any) => ({
+                house: h?.house ?? 0,
+                sign: h?.sign ?? '',
+                planets: Array.isArray(h?.planets) ? h.planets : [],
+              }))
+            : undefined,
+          planets: Array.isArray(chartData?.planets)
+            ? chartData.planets.map((p: any) => ({
+                name: p?.name || '',
+                sign: p?.sign || '',
+                house: p?.house ?? 0,
+                degree: p?.degree ?? '',
+                nakshatra: p?.nakshatra || '',
+                retrograde: p?.retrograde ?? false,
+              }))
+            : undefined,
+        },
       };
+
 
       setKundliData(data);
       setShowResult(true);
@@ -582,13 +663,14 @@ export default function KundaliPage() {
             </div>
 
             {/* Summary Badge Bar — Lagna / Rashi / Sun Sign / Birth Nakshatra */}
+            {/* Bound directly to the flat chartData keys (English + Hindi fallbacks) */}
             {kundliData && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {[
-                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSignClean(kundliData.ascendant, selectedLanguage) || '--' },
-                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSignClean(kundliData.moonSign, selectedLanguage) || '--' },
-                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSignClean(kundliData.sunSign, selectedLanguage) || '--' },
-                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData.nakshatra, selectedLanguage) || '--' },
+                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSignClean(kundliData.chartData?.lagna || kundliData.chartData?.ascendant, selectedLanguage) || '--' },
+                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSignClean(kundliData.chartData?.rashi || kundliData.chartData?.moonSign, selectedLanguage) || '--' },
+                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSignClean(kundliData.chartData?.sunSign, selectedLanguage) || '--' },
+                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData.chartData?.nakshatra, selectedLanguage) || '--' },
                 ].map((badge) => (
                   <div key={badge.label} className="glass-card rounded-xl p-3 flex items-center gap-2.5">
                     <span className="inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/15 dark:to-[#E0A96D]/10 text-violet-700 dark:text-[#FFD166]">
@@ -610,11 +692,11 @@ export default function KundaliPage() {
                 { label: t.kundali.timeOfBirth, value: kundliData?.timeOfBirth || '--' },
                 { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth || '--' },
                 { label: t.kundali.coordinates, value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : '--' },
-                { label: t.kundali.timeZone, value: kundliData?.timezone || '--' },
-                { label: t.kundali.ascendant, value: localizeSignClean(kundliData?.ascendant, selectedLanguage) || '--' },
-                { label: t.kundali.moonSign, value: localizeSignClean(kundliData?.moonSign, selectedLanguage) || '--' },
-                { label: t.kundali.sunSign, value: localizeSignClean(kundliData?.sunSign, selectedLanguage) || '--' },
-                { label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData?.nakshatra, selectedLanguage) || '--' },
+                { label: t.kundali.timeZone, value: kundliData?.chartData?.timezone || 'IST (+05:30)' },
+                { label: t.kundali.ascendant, value: localizeSignClean(kundliData?.chartData?.lagna || kundliData?.chartData?.ascendant, selectedLanguage) || '--' },
+                { label: t.kundali.moonSign, value: localizeSignClean(kundliData?.chartData?.rashi || kundliData?.chartData?.moonSign, selectedLanguage) || '--' },
+                { label: t.kundali.sunSign, value: localizeSignClean(kundliData?.chartData?.sunSign, selectedLanguage) || '--' },
+                { label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData?.chartData?.nakshatra, selectedLanguage) || '--' },
               ].map((item) => (
                 <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
                   <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>
@@ -646,15 +728,19 @@ export default function KundaliPage() {
                   chartData={{
                     ascendantSign: signToIndex(kundliData?.ascendant),
                     ascendantDegree: 15,
-                    planets: (kundliData?.planets ?? []).map((p) => ({
+                    // Bound directly to chartData.planets (degree "DD°MM'" → number)
+                    planets: (kundliData?.chartData?.planets ?? []).map((p) => ({
                       planet: p.name,
                       sign: signToIndex(p.sign),
-                      degree: p.degree,
-                      retrograde: p.status === 'Retrograde',
-                      nakshatra: p.nakshatra,
-                      pada: p.pada,
+                      degree: parseDegree(p.degree),
+                      retrograde: p.retrograde,
+                      nakshatra: cleanAstroValue(p.nakshatra) || undefined,
                     })),
-                    houses: kundliData?.houses,
+                    // Bound directly to chartData.houses (sign name → 1-12 index)
+                    houses: (kundliData?.chartData?.houses ?? []).map((h) => ({
+                      house: h.house,
+                      sign: signToIndex(h.sign),
+                    })),
                   }}
                   type={activeChartType}
                   selectedLanguage={selectedLanguage}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
+import { computeChart, BirthDetails, ChartData } from "@/lib/astrology";
 
 // --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
 const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
@@ -11,40 +12,6 @@ SAFETY BOUNDARY — you must refuse to make definitive predictions on:
 
 When a user raises these sensitive topics, politely acknowledge their concern, explain that this falls outside responsible astrology, and steer them toward certified professionals: doctors for health matters, psychologists or therapists for mental well-being, and legal professionals for legal matters. Never diagnose, never predict medical outcomes, and never advise on ongoing court cases.`;
 
-const VEDASTRO_API = "https://api.vedastro.org/api/Calculate";
-const VEDASTRO_API_KEY = "FreeAPIUser";
-
-const PLANET_ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"];
-
-interface BirthDetails {
-  birthDate: string; // YYYY-MM-DD
-  birthTime: string; // HH:MM
-  birthPlace: string;
-  latitude: number | null;
-  longitude: number | null;
-  timezoneOffset: string; // e.g. "+05:30"
-}
-
-interface PlanetData {
-  name: string;
-  sign: string;
-  house: number;
-  degree: number;
-  status: string;
-  nakshatra: string;
-  pada: number;
-  retrograde: boolean;
-}
-
-interface ChartData {
-  ascendant: string;
-  moonSign: string;
-  sunSign: string;
-  nakshatra: string;
-  planets: PlanetData[];
-  houses: { house: number; sign: string }[];
-}
-
 // --- Build the deterministic cache key from birth details ---
 function buildCacheKey(details: BirthDetails): string {
   return [
@@ -55,194 +22,6 @@ function buildCacheKey(details: BirthDetails): string {
     details.longitude ?? "null",
     details.timezoneOffset || "null",
   ].join("|");
-}
-
-// --- Convert YYYY-MM-DD + HH:MM + offset into VedAstro StdTime "HH:MM DD/MM/YYYY +05:30" ---
-function buildStdTime(details: BirthDetails): string {
-  const [year, month, day] = details.birthDate.split("-");
-  const time = details.birthTime || "12:00";
-  const offset = details.timezoneOffset || "+05:30";
-  return `${time} ${day}/${month}/${year} ${offset}`;
-}
-
-// --- Call VedAstro AllPlanetData (single call returns all 9 planets) ---
-async function fetchAllPlanetData(details: BirthDetails): Promise<any> {
-  const response = await fetch(`${VEDASTRO_API}/AllPlanetData`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": VEDASTRO_API_KEY,
-    },
-    body: JSON.stringify({
-      PlanetName: "All",
-      Time: {
-        StdTime: buildStdTime(details),
-        Location: {
-          Name: details.birthPlace || "Location",
-          Longitude: details.longitude ?? 0,
-          Latitude: details.latitude ?? 0,
-        },
-      },
-      Ayanamsa: "LAHIRI",
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`VedAstro AllPlanetData failed (${response.status}): ${body.slice(0, 300)}`);
-  }
-
-  const json = await response.json();
-  // Unwrap the response correctly: Payload may be absent in some response shapes
-  const payload = json.Payload || json;
-  return payload.AllPlanetData || payload;
-}
-
-// --- Call VedAstro AllHouseData (single call returns all 12 houses) ---
-async function fetchAllHouseData(details: BirthDetails): Promise<Record<number, string>> {
-  const response = await fetch(`${VEDASTRO_API}/AllHouseData`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": VEDASTRO_API_KEY,
-    },
-    body: JSON.stringify({
-      PlanetName: "All",
-      Time: {
-        StdTime: buildStdTime(details),
-        Location: {
-          Name: details.birthPlace || "Location",
-          Longitude: details.longitude ?? 0,
-          Latitude: details.latitude ?? 0,
-        },
-      },
-      Ayanamsa: "LAHIRI",
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(`VedAstro AllHouseData failed (${response.status}): ${body.slice(0, 300)}`);
-  }
-
-  const json = await response.json();
-  // Unwrap the response correctly: Payload may be absent in some response shapes
-  const payload = json.Payload || json;
-  const allHouseData = payload.AllHouseData || payload;
-
-  // Build a map of house number → sign name
-  const houseMap: Record<number, string> = {};
-  for (let i = 1; i <= 12; i++) {
-    const houseKey = `House${i}`;
-    const houseEntry = allHouseData?.[houseKey];
-    // Try multiple possible field paths for the sign name
-    const signName =
-      houseEntry?.HouseBhavaChalitSign?.Name ||
-      houseEntry?.Name ||
-      houseEntry?.Sign ||
-      houseEntry?.Rasi?.Name ||
-      null;
-    houseMap[i] = signName || "Unknown";
-  }
-  return houseMap;
-}
-
-// --- Normalize VedAstro planet payload into our ChartData shape ---
-function normalizePlanets(allPlanetData: any): PlanetData[] {
-  const planets: PlanetData[] = [];
-
-  for (const name of PLANET_ORDER) {
-    const raw = allPlanetData?.[name];
-    if (!raw) continue;
-
-    // Sign: try multiple possible field paths
-    const sign =
-      raw.PlanetRasiD1Sign?.Name ||
-      raw.Rasi?.Name ||
-      raw.Sign ||
-      raw.PlanetSign ||
-      "Unknown";
-
-    // Degree: try multiple possible field paths
-    const degree =
-      raw.PlanetRasiD1Sign?.DegreesIn?.TotalDegrees ||
-      raw.DegreesIn?.TotalDegrees ||
-      raw.Degree ||
-      raw.TotalDegrees ||
-      0;
-
-    // House: try multiple possible field paths
-    const houseStr =
-      raw.HousePlanetOccupiesBasedOnLongitudes ||
-      raw.House ||
-      raw.HouseNumber ||
-      "";
-    const house = parseInt(String(houseStr).replace(/[^0-9]/g, ""), 10) || 0;
-
-    // Retrograde: try multiple possible field paths
-    const retrograde =
-      raw.IsPlanetRetrograde === "True" ||
-      raw.IsPlanetRetrograde === true ||
-      raw.Retrograde === true ||
-      false;
-
-    // Nakshatra: PlanetConstellation format is "Makha - 2" (nakshatra name + pada)
-    let nakshatra = "Unknown";
-    let pada = 1;
-    const constellation =
-      raw.PlanetConstellation ||
-      raw.Constellation ||
-      raw.Nakshatra ||
-      "";
-    const match = String(constellation).match(/^(.+?)\s*-\s*(\d+)$/);
-    if (match) {
-      nakshatra = match[1].trim();
-      pada = parseInt(match[2], 10) || 1;
-    } else if (constellation) {
-      nakshatra = String(constellation).trim();
-    }
-
-    planets.push({
-      name,
-      sign,
-      house,
-      degree,
-      status: retrograde ? "Retrograde" : "Direct",
-      nakshatra,
-      pada,
-      retrograde,
-    });
-  }
-
-  return planets;
-}
-
-// --- Fetch chart data from VedAstro (planets + all 12 houses in parallel) ---
-async function fetchChartData(details: BirthDetails): Promise<ChartData> {
-  const [allPlanetData, houseMap] = await Promise.all([
-    fetchAllPlanetData(details),
-    fetchAllHouseData(details),
-  ]);
-
-  const planets = normalizePlanets(allPlanetData);
-
-  const moon = planets.find((p) => p.name === "Moon");
-  const sun = planets.find((p) => p.name === "Sun");
-
-  const houses = Array.from({ length: 12 }, (_, i) => ({
-    house: i + 1,
-    sign: houseMap[i + 1] || "Unknown",
-  }));
-  const ascendant = houses[0]?.sign ?? "Unknown";
-
-  return {
-    ascendant,
-    moonSign: moon?.sign ?? "Unknown",
-    sunSign: sun?.sign ?? "Unknown",
-    nakshatra: moon?.nakshatra ?? "Unknown",
-    planets,
-    houses,
-  };
 }
 
 // --- Generate the written interpretation via Gemini (temperature 0.2, chart-data-only) ---
@@ -263,7 +42,7 @@ async function generateInterpretation(chartData: ChartData): Promise<string> {
         systemInstruction: {
           parts: [
             {
-              text: `${SYSTEM_PROMPT}\n\nYou are given the exact, deterministic Vedic chart data (Lahiri Ayanamsa) computed by the VedAstro engine. Interpret ONLY the provided planetary and house data. Do not recalculate, modify, or guess any astronomical positions. Base every statement strictly on the JSON chart data supplied.`,
+              text: `${SYSTEM_PROMPT}\n\nYou are given the exact, deterministic Vedic chart data (Lahiri Ayanamsa) computed by the local calculation engine. Interpret ONLY the provided planetary and house data. Do not recalculate, modify, or guess any astronomical positions. Base every statement strictly on the JSON chart data supplied.`,
             },
           ],
         },
@@ -339,9 +118,9 @@ export async function POST(req: NextRequest) {
       console.error("Kundali cache read failed:", cacheError);
     }
 
-    // --- 2. If not cached, fetch from VedAstro and store ---
+    // --- 2. If not cached, compute deterministically and store ---
     if (!chartData) {
-      chartData = await fetchChartData(details);
+      chartData = computeChart(details);
 
       try {
         const supabase = getSupabaseClient();
