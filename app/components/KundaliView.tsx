@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import {
   Sparkles,
   Lock,
-  Download,
   Briefcase,
   Heart,
   Coins,
@@ -18,6 +17,8 @@ import {
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
+import DownloadReportButton from '@/app/components/DownloadReportButton';
+import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
 import {
   FreeTierData,
   PaidTierData,
@@ -32,6 +33,16 @@ interface KundaliViewProps {
   paidTier: PaidTierData;
   userEmail: string;
   userName?: string;
+  birthDetails?: {
+    date: string;
+    time: string;
+    latitude: string;
+    longitude: string;
+    timezone: string;
+  };
+  planets?: { body: string; sign: string; degree: string; house: string; retro?: boolean }[];
+  houseCusps?: { house: number; sign: string; degree: string }[];
+  chartType?: string;
   /** Called when the user clicks "Download PDF" after unlocking. */
   onDownload?: () => void | Promise<void>;
 }
@@ -50,10 +61,14 @@ export default function KundaliView({
   paidTier,
   userEmail,
   userName = 'User',
+  birthDetails = { date: '', time: '', latitude: '', longitude: '', timezone: '' },
+  planets = [],
+  houseCusps = [],
+  chartType = 'north-indian',
   onDownload,
 }: KundaliViewProps) {
   const { language } = useLanguage();
-  const { isPaid, markAsPaid } = useApp();
+  const { isPaid, markAsPaid, selectedLanguage } = useApp();
   const [activeTab, setActiveTab] = useState<TabKey>('career');
 
   const ctaLabel =
@@ -62,8 +77,43 @@ export default function KundaliView({
       : 'Unlock Full 20-Page Report & Download PDF';
 
   const unlockPrice = 49;
-
   const { corePersonality: cp, topCareers, wealthType, runningDashaName } = freeTier;
+
+  const reportData: ReportData = {
+    clientName: userName,
+    chartType: language === 'hi'
+      ? chartType === 'north-indian' ? 'उत्तर भारतीय' : 'दक्षिण भारतीय'
+      : chartType === 'north-indian' ? 'North Indian' : 'South Indian',
+    birthDetails,
+    planetaryPositions: planets,
+    houseCusps,
+    dashaPeriods: (paidTier.dashaRoadmap || []).map((d) => ({
+      mahaDasha: d.lord,
+      startYear: d.startDate.split('-')[0],
+      endYear: d.endDate.split('-')[0],
+      subPeriod: d.theme,
+    })),
+    yogas: (paidTier.yogas || []).map((y) => ({
+      name: y.name,
+      description: y.description,
+    })),
+    remedies: (paidTier.remedies || []).map((r) => ({
+      category: r.type,
+      description: r.description,
+    })),
+    domainInsights: [
+      { domain: 'career', prediction: paidTier.careerTimings?.overview || '', analysis: '' },
+      { domain: 'marriage', prediction: paidTier.marriageDynamics?.overview || '', analysis: '' },
+      { domain: 'wealth', prediction: paidTier.wealthAllocation?.overview || '', analysis: '' },
+      { domain: 'health', prediction: '', analysis: '' },
+      { domain: 'finance', prediction: '', analysis: '' },
+      { domain: 'education', prediction: '', analysis: '' },
+    ],
+    northIndianChartSvg: '',
+    kalpurushaPhalDeepikaRefs: [],
+    scorecard: [],
+    isPaidTier: isPaid,
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -195,13 +245,7 @@ export default function KundaliView({
         {/* Download button (only when paid) */}
         {isPaid && (
           <div className="mt-5 flex justify-center">
-            <button
-              onClick={() => onDownload?.()}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all"
-            >
-              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-              {language === 'hi' ? 'पूरी रिपोर्ट PDF डाउनलोड करें' : 'Download Full Report (PDF)'}
-            </button>
+            <DownloadReportButton reportData={reportData} userName={userName} />
           </div>
         )}
       </div>

@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
-  Download,
   Info,
   Sparkles,
   Share2,
@@ -20,9 +19,6 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import ShareCard from '@/app/components/ShareCard';
-import PdfTemplate from '@/app/components/PdfTemplate';
-import { generateKundliPdf } from '@/lib/pdfService';
-import { getUILabel } from '@/lib/astrologyDictionary';
 import NorthIndianChart from '@/app/components/NorthIndianChart';
 import {
   PlanetaryPositionsTable,
@@ -52,6 +48,7 @@ import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 import { trackEvent } from '@/lib/analytics';
 import { FreeTierData, PaidTierData } from '@/types/kundali';
+import { ReportData } from '@/lib/pdfHtmlTemplate';
 
 interface Planet {
   name: string;
@@ -269,8 +266,6 @@ export default function KundaliPage() {
   const [copied, setCopied] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [activeChartType, setActiveChartType] = useState<ChartType>('D1');
-  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
-  const pdfTemplateRef = useRef<HTMLDivElement>(null);
   const { profile, saveProfile } = useUserProfile();
 
   // Pre-fill saved profile data on mount
@@ -476,24 +471,56 @@ export default function KundaliPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Branded multilingual PDF export (Batch 3)
-  const handleDownloadPdf = async () => {
-    if (!kundliData || !pdfTemplateRef.current) return;
-    setDownloadProgress({ current: 0, total: 5 });
-    try {
-      await generateKundliPdf({
-        root: pdfTemplateRef.current,
-        userName: kundliData.name,
-        language: selectedLanguage,
-        onProgress: (p) => setDownloadProgress(p),
-      });
-    } catch (err) {
-      console.error("PDF Export Detailed Error:", err);
-      alert(getUILabel('pdfError', selectedLanguage));
-    } finally {
-      setDownloadProgress(null);
-    }
-  };
+  // Build ReportData for the client-side iframe print-to-PDF
+  const reportData: ReportData | null = kundliData ? {
+    clientName: kundliData?.name || name,
+    chartType: selectedLanguage === 'hi' ? 'उत्तर भारतीय' : 'North Indian',
+    birthDetails: {
+      date: kundliData?.dateOfBirth || '',
+      time: kundliData?.timeOfBirth || '',
+      latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(4) : '',
+      longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(4) : '',
+      timezone: kundliData?.chartData?.timezone || kundliData?.timezone || '',
+    },
+    planetaryPositions: (kundliData?.planets ?? []).map((p) => ({
+      body: p.name || '',
+      sign: p.sign || '',
+      degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
+      house: String(p.house || ''),
+      retro: p.status === 'Retrograde',
+    })),
+    houseCusps: (kundliData?.houses ?? []).map((h) => ({
+      house: h?.house ?? 0,
+      sign: String(h?.sign ?? ''),
+      degree: '',
+    })),
+    dashaPeriods: (kundliData?.paidTier?.dashaRoadmap ?? []).map((d) => ({
+      mahaDasha: d.lord,
+      startYear: d.startDate.split('-')[0],
+      endYear: d.endDate.split('-')[0],
+      subPeriod: d.theme,
+    })),
+    yogas: (kundliData?.paidTier?.yogas ?? []).map((y) => ({
+      name: y.name,
+      description: y.description,
+    })),
+    remedies: (kundliData?.paidTier?.remedies ?? []).map((r) => ({
+      category: r.type,
+      description: r.description,
+    })),
+    domainInsights: Object.entries(kundliData?.paidTier?.lifeDomains ?? {})
+      .filter(([domain]) => ['career', 'marriage', 'wealth', 'health', 'finance', 'education'].includes(domain))
+      .map(([domain, insight]) => ({
+        domain: domain as 'career' | 'marriage' | 'wealth' | 'health' | 'finance' | 'education',
+        prediction: insight.overview || '',
+        analysis: insight.recommendations?.join('. ') || '',
+        timeframe: undefined,
+      })),
+    northIndianChartSvg: '',
+    kalpurushaPhalDeepikaRefs: [],
+    scorecard: [],
+    isPaidTier: isPaid,
+  } : null;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-[#F8F7FC] dark:bg-[#080811]">
@@ -665,15 +692,32 @@ export default function KundaliPage() {
             paidTier={kundliData?.paidTier ?? EMPTY_PAID_TIER}
             userEmail={kundliData?.email || email}
             userName={kundliData?.name || name}
-            onDownload={handleDownloadPdf}
+            birthDetails={{
+              date: kundliData?.dateOfBirth || '',
+              time: kundliData?.timeOfBirth || '',
+              latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(2) : '',
+              longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(2) : '',
+              timezone: kundliData?.chartData?.timezone || 'IST (+05:30)',
+            }}
+            planets={kundliData?.planets?.map((p) => ({
+              body: p.name || '',
+              sign: p.sign || '',
+              degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
+              house: String(p.house || ''),
+              retro: p.status === 'Retrograde',
+            })) || []}
+            houseCusps={kundliData?.houses?.map((h) => ({
+              house: h.house || 0,
+              sign: String(h.sign || ''),
+              degree: '',
+            })) || []}
           />
           {isPaid && (
-          <ReportContainer
-            userEmail={kundliData?.email || email}
-            userName={kundliData?.name || name}
-            onDownload={handleDownloadPdf}
-            downloadProgress={downloadProgress}
-          >
+            <ReportContainer
+              userEmail={kundliData?.email || email}
+              userName={kundliData?.name || name}
+              reportData={reportData ?? undefined}
+            >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -912,23 +956,6 @@ export default function KundaliPage() {
             {/* PDF + Share Buttons */}
             <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-2">
               <button
-                onClick={handleDownloadPdf}
-                disabled={!!downloadProgress}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-medium rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {downloadProgress ? (
-                  <>
-                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                    {getUILabel('generatingPdf', selectedLanguage).replace('{lang}', selectedLanguage === 'hi' ? 'हिन्दी' : 'English')}
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                    {t.kundali.downloadPDF}
-                  </>
-                )}
-              </button>
-              <button
                 onClick={() => setShowShare(true)}
                 className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-violet-300/60 dark:border-[#FFD166]/30 text-indigo-950 dark:text-[#FFD166] text-sm sm:text-base font-medium rounded-xl hover:bg-violet-50 dark:hover:bg-[#FFD166]/10 hover:shadow-glow-gold transition-all"
               >
@@ -953,25 +980,6 @@ export default function KundaliPage() {
               />
             )}
 
-            {/* Hidden off-screen PDF template — captured by pdfService */}
-            {hasPlanets && (
-              <div ref={pdfTemplateRef} className="pdf-offscreen" aria-hidden="true">
-                <PdfTemplate
-                  kundliData={{
-                    name: kundliData.name,
-                    dateOfBirth: kundliData.dateOfBirth,
-                    timeOfBirth: kundliData.timeOfBirth,
-                    placeOfBirth: kundliData.placeOfBirth,
-                    ascendant: kundliData.ascendant,
-                    moonSign: kundliData.moonSign,
-                    sunSign: kundliData.sunSign,
-                    nakshatra: kundliData.nakshatra,
-                    planets: kundliData?.planets ?? [],
-                  }}
-                  selectedLanguage={selectedLanguage}
-                />
-              </div>
-            )}
           </motion.div>
           </ReportContainer>
           )}
