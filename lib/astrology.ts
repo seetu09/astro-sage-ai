@@ -386,6 +386,46 @@ export function isPlanetRetrograde(jd: number, body: string): boolean {
   return delta < 0;
 }
 
+/**
+ * Sign number (1-12) reached by counting `steps` signs ahead of `baseSign`.
+ * Negative `steps` walk backward; the arithmetic is modulo-12 with 1-based
+ * output, so `signFrom(1, -1)` === 12.
+ */
+export function signFrom(baseSign: number, steps: number): number {
+  return (((baseSign - 1 + steps) % 12 + 12) % 12) + 1;
+}
+
+/**
+ * Mean (monotonic) sidereal longitude of Saturn in degrees.
+ *
+ * Uses the J2000 mean longitude + secular rate from the orbital-element table
+ * with the Lahiri Ayanamsa removed. Mean motion is deliberately monotonic
+ * (no retrograde wobble), which makes it the correct choice for transit-timing
+ * work such as Sade Sati boundary detection, where the 2.5-year-per-sign
+ * sign changes would otherwise produce spurious crossings near the limits.
+ */
+export function getSaturnMeanSiderealLongitude(jd: number): number {
+  const t = (jd - 2451545.0) / 36525;
+  const meanTropical = norm360(ORBITS.Saturn.L + ORBITS.Saturn.dL * t);
+  return norm360(meanTropical - calculateAyanamsa(jd));
+}
+
+/**
+ * Current sign (1-12) of Saturn's *mean* sidereal position at a UTC date.
+ * Used for deterministic Sade Sati / Dhaiya transit evaluation.
+ */
+export function getSaturnMeanSign(date: Date): number {
+  const jdUT = calculateJulianDay(
+    date.getUTCFullYear(),
+    date.getUTCMonth() + 1,
+    date.getUTCDate(),
+    0,
+    0,
+    0
+  );
+  return longitudeToSign(getSaturnMeanSiderealLongitude(jdUT));
+}
+
 // ─── MoonDetails (legacy interface, kept for backward compatibility) ───────
 
 export interface MoonDetails {
@@ -436,6 +476,7 @@ export interface PlanetResult {
   degree: string; // "DD°MM'"
   nakshatra: string;
   retrograde: boolean;
+  longitude: number; // exact sidereal longitude in degrees (0-360)
 }
 
 export interface HouseResult {
@@ -447,6 +488,9 @@ export interface HouseResult {
 export interface ChartData {
   lagna: string;
   ascendant: string;
+  /** Sidereal Ascendant longitude (0-360), decimal degrees — exact value used for
+   *  divisional chart derivation. Added in lahiri-v3. */
+  ascendantLongitude: number;
   rashi: string;
   moonSign: string;
   sunSign: string;
@@ -460,7 +504,7 @@ export interface ChartData {
 
 /** Current chart-engine revision. Cached payloads stamped with an older
  *  value (or none, e.g. legacy VedAstro-era rows) are treated as misses. */
-export const CHART_ENGINE_VERSION = "lahiri-v2";
+export const CHART_ENGINE_VERSION = "lahiri-v3";
 
 /**
  * Strict runtime validation for cached chart payloads.
@@ -475,6 +519,10 @@ export function isValidChartData(data: unknown): data is ChartData {
 
   // Summary fields must all be present
   if (!str(c.lagna) || !str(c.rashi) || !str(c.sunSign) || !str(c.nakshatra) || !str(c.timezone)) {
+    return false;
+  }
+  // Ascendant longitude is required from lahiri-v3 onward (divisional charts)
+  if (typeof c.ascendantLongitude !== "number" || c.ascendantLongitude < 0 || c.ascendantLongitude >= 360) {
     return false;
   }
   // Engine stamp must match the current revision
@@ -496,6 +544,7 @@ export function isValidChartData(data: unknown): data is ChartData {
     if (typeof p.house !== "number" || p.house < 1 || p.house > 12) return false;
     if (typeof p.degree !== "string" || !DEGREE_RE.test(p.degree)) return false;
     if (typeof p.retrograde !== "boolean") return false;
+    if (typeof p.longitude !== "number" || p.longitude < 0 || p.longitude >= 360) return false;
   }
   return true;
 }
@@ -535,6 +584,7 @@ export function computeChart(details: BirthDetails): ChartData {
       degree: formatDegreeDMS(degreeInSign),
       nakshatra: getNakshatraName(sidLong),
       retrograde: isPlanetRetrograde(jdUT, name),
+      longitude: sidLong,
     };
   });
 
@@ -558,6 +608,7 @@ export function computeChart(details: BirthDetails): ChartData {
     engineVersion: CHART_ENGINE_VERSION,
     lagna: lagnaStr,
     ascendant: signNumberToName(asc.sign),
+    ascendantLongitude: asc.longitude,
     rashi: signNameWithHindi(moonSignNum),
     moonSign: moon.sign,
     sunSign: signNameWithHindi(sunSignNum),

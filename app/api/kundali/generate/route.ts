@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
+import { computeKundliCalculations } from "@/lib/kundli-report";
 import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
 import {
   FreeTierData,
@@ -14,6 +15,7 @@ import {
   RemedyItem,
   ReportPage,
   KeyTiming,
+  type FullKundliReportData,
 } from "@/types/kundali";
 
 // --- Language-aware system prompt builder ---
@@ -612,13 +614,17 @@ export async function POST(req: NextRequest) {
     const freeTier = buildFreeTier(chartData, birthDateKey, structured);
     const paidTier = buildPaidTier(chartData, birthDateKey, interpretation, structured, lang);
 
+    // --- 5. Deterministic calculations layer (pure TypeScript, cache-friendly) ---
+    const calculations = computeKundliCalculations(chartData, details.birthDate, new Date());
+
     return NextResponse.json({
       success: true,
       chartData,
       interpretation,
       freeTier,
       paidTier,
-    });
+      calculations,
+    } as FullKundliReportData);
   } catch (error) {
     console.error("Kundali generation failed:", error);
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });

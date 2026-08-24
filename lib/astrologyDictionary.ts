@@ -358,18 +358,18 @@ export const TABLE_LABELS: Record<LocaleCode, Record<TableLabelKey, string>> = {
 // ---------------------------------------------------------------------------
 // CHART TYPE LABELS
 // ---------------------------------------------------------------------------
-export type ChartType = 'D1' | 'D9' | 'BhavChalit' | 'D3' | 'D4' | 'D7' | 'D10';
+export type ChartType = 'D1' | 'D9' | 'BhavChalit' | 'D3' | 'D4' | 'D7' | 'D10' | 'D12';
 
 export const CHART_TYPE_LABELS: Record<LocaleCode, Record<ChartType, string>> = {
   en: {
     D1: 'Lagna (D1)', D9: 'Navamsa (D9)', BhavChalit: 'Bhav Chalit',
     D3: 'Drekkana (D3)', D4: 'Chaturthamsa (D4)', D7: 'Saptamsa (D7)',
-    D10: 'Dasamsa (D10)',
+    D10: 'Dasamsa (D10)', D12: 'Dwadashamsa (D12)',
   },
   hi: {
     D1: 'लग्न (D1)', D9: 'नवमांश (D9)', BhavChalit: 'भाव चलित',
     D3: 'द्रेष्काण (D3)', D4: 'चतुर्थांश (D4)', D7: 'सप्तमांश (D7)',
-    D10: 'दशमांश (D10)',
+    D10: 'दशमांश (D10)', D12: 'द्वादशांश (D12)',
   },
 };
 
@@ -944,10 +944,11 @@ export function getDivisionalSign(
       return sign;
     case 'D9': {
       // Navamsa: each sign divided into 9 parts of 3°20'
-      const part = Math.floor(totalDeg / (30 / 9));
-      const navamsaSigns = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-      // D9 mapping: odd signs start from Aries, even from Libra
-      const base = sign % 2 === 1 ? 1 : 7;
+      const part = Math.floor(degree / (30 / 9));
+      // Movable signs begin from themselves, fixed signs from the 9th sign,
+      // and dual signs from the 5th sign.
+      const modality = (sign - 1) % 3;
+      const base = modality === 0 ? sign : modality === 1 ? ((sign + 8 - 1) % 12) + 1 : ((sign + 4 - 1) % 12) + 1;
       return ((base + part - 1) % 12) + 1;
     }
     case 'D3': {
@@ -963,16 +964,22 @@ export function getDivisionalSign(
       return ((sign + part - 1) % 12) + 1;
     }
     case 'D7': {
-      // Saptamsa: odd signs divided from Aries, even from Libra
-      const part = Math.floor(totalDeg / (30 / 7));
-      const base = sign % 2 === 1 ? 1 : 7;
+      // Saptamsa: odd signs count from themselves; even signs from the 7th.
+      const part = Math.floor(degree / (30 / 7));
+      const base = sign % 2 === 1 ? sign : ((sign + 6 - 1) % 12) + 1;
       return ((base + part - 1) % 12) + 1;
     }
     case 'D10': {
-      // Dasamsa: odd signs from Aries, even from Libra
-      const part = Math.floor(totalDeg / 3);
-      const base = sign % 2 === 1 ? 1 : 7;
+      // Dasamsa: odd signs count from themselves; even signs from the 9th.
+      const part = Math.floor(degree / 3);
+      const base = sign % 2 === 1 ? sign : ((sign + 8 - 1) % 12) + 1;
       return ((base + part - 1) % 12) + 1;
+    }
+    case 'D12': {
+      // Dwadashamsa: each sign divided into 12 parts of 2°30'.
+      // Counting begins from the natal sign for both odd and even signs.
+      const part = Math.floor(degree / (30 / 12));
+      return ((sign + part - 1) % 12) + 1;
     }
     case 'BhavChalit':
       return sign;
@@ -1148,4 +1155,3 @@ export const SUPPORTED_LOCALES: LocaleCode[] = ['en', 'hi'];
 export function isLocale(value: unknown): value is LocaleCode {
   return typeof value === 'string' && (SUPPORTED_LOCALES as string[]).includes(value);
 }
-
