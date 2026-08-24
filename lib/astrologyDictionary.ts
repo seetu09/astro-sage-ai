@@ -63,6 +63,27 @@ export const PLANET_ABBREVIATIONS: Record<LocaleCode, Record<string, string>> = 
   },
 };
 
+/**
+ * Sanskrit planetary nomenclature → canonical Western key.
+ * Lets callers pass either 'Surya' or 'Sun' and get the same localized output.
+ */
+export const PLANET_SANJNA_MAP: Record<string, string> = {
+  Surya: 'Sun', सूर्य: 'Sun',
+  Chandra: 'Moon', चंद्र: 'Moon', चन्द्र: 'Moon', सोम: 'Moon',
+  Mangal: 'Mars', मंगल: 'Mars', मंग: 'Mars', कुज: 'Mars',
+  Budha: 'Mercury', बुध: 'Mercury', सोम्य: 'Mercury',
+  Guru: 'Jupiter', गुरु: 'Jupiter', बृहस्पति: 'Jupiter',
+  Shukra: 'Venus', शुक्र: 'Venus',
+  Shani: 'Saturn', शनि: 'Saturn',
+  Rahu: 'Rahu', राहु: 'Rahu',
+  Ketu: 'Ketu', केतु: 'Ketu',
+};
+
+/** Canonicalize a planet identifier to its Western key (or pass through). */
+export function canonicalPlanet(planet: string): string {
+  return PLANET_SANJNA_MAP[planet] ?? planet;
+}
+
 // ---------------------------------------------------------------------------
 // ZODIAC SIGNS — Aries/मेष → Pisces/मीन
 // ---------------------------------------------------------------------------
@@ -94,6 +115,112 @@ export const ZODIAC_SIGNS: Record<LocaleCode, Record<string, string>> = {
     Capricorn: 'मकर',
     Aquarius: 'कुंभ',
     Pisces: 'मीन',
+  },
+};
+
+// ---------------------------------------------------------------------------
+// RASHIS — Vedic (Sanskrit) sign names: Mesha/मेष → Meena/मीन
+// ---------------------------------------------------------------------------
+// RASHI_NAMES is the standard Jyotish operand list used when describing a
+// birth chart in Sanskrit-derived terminology (as opposed to the Western
+// ZODIAC_SIGNS above). Index 0 = Mesha … 11 = Meena.
+export const RASHI_NAMES: Record<LocaleCode, string[]> = {
+  en: [
+    'Mesha', 'Vrishabha', 'Mithuna', 'Karka',
+    'Simha', 'Kanya', 'Tula', 'Vrishchika',
+    'Dhanu', 'Makara', 'Kumbha', 'Meena',
+  ],
+  hi: [
+    'मेष', 'वृषभ', 'मिथुन', 'कर्क',
+    'सिंह', 'कन्या', 'तुला', 'वृश्चिक',
+    'धनु', 'मकर', 'कुंभ', 'मीन',
+  ],
+};
+
+// A map from both Sanskrit and Western sign spellings to their index (1-12).
+// This lets callers resolve "Mesha", "Aries", "Karka", "Cancer" etc.
+const RASHI_INDEX_BY_NAME: Record<string, number> = {
+  Mesha: 1, Aries: 1, मेष: 1,
+  Vrishabha: 2, Taurus: 2, वृषभ: 2, वृष: 2,
+  Mithuna: 3, Gemini: 3, मिथुन: 3,
+  Karka: 4, Cancer: 4, कर्क: 4,
+  Simha: 5, Leo: 5, सिंह: 5,
+  Kanya: 6, Virgo: 6, कन्या: 6,
+  Tula: 7, Libra: 7, तुला: 7,
+  Vrishchika: 8, Scorpio: 8, वृश्चिक: 8,
+  Dhanu: 9, Sagittarius: 9, धनु: 9,
+  Makara: 10, Capricorn: 10, मकर: 10,
+  Kumbha: 11, Aquarius: 11, कुंभ: 11,
+  Meena: 12, Pisces: 12, मीन: 12,
+};
+
+/** Localized chart-specific glyph for each sign (U+2648 ZODIAC symbols). */
+export const RASHI_GLYPHS: string[] = [
+  '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
+];
+
+// ---------------------------------------------------------------------------
+// HOUSES — 1st … 12th, both Sanskrit (Bhava) and English ordinal names
+// ---------------------------------------------------------------------------
+export const HOUSE_NAMES: Record<LocaleCode, Record<number, string>> = {
+  en: {
+    1: '1st House', 2: '2nd House', 3: '3rd House', 4: '4th House',
+    5: '5th House', 6: '6th House', 7: '7th House', 8: '8th House',
+    9: '9th House', 10: '10th House', 11: '11th House', 12: '12th House',
+  },
+  hi: {
+    1: 'प्रथम भाव', 2: 'द्वितीय भाव', 3: 'तृतीय भाव', 4: 'चतुर्थ भाव',
+    5: 'पंचम भाव', 6: 'षष्ठ भाव', 7: 'सप्तम भाव', 8: 'अष्टम भाव',
+    9: 'नवम भाव', 10: 'दशम भाव', 11: 'एकादश भाव', 12: 'द्वादश भाव',
+  },
+};
+
+// ---------------------------------------------------------------------------
+// REPORT METRICS — localized titles used for scorecard / summary metrics
+// ---------------------------------------------------------------------------
+export type MetricKey =
+  | 'overallStrength' | 'planetaryStrength' | 'ascendantStrength'
+  | 'risingStrength' | 'moonStrength' | 'sunStrength' | 'marsStrength'
+  | 'jupiterStrength' | 'saturnStrength' | 'mercuryStrength'
+  | 'careerImpact' | 'loveHarmony' | 'financialOutlook'
+  | 'healthVitality' | 'educationGrowth' | 'spiritualEvolution';
+
+export const METRIC_TITLES: Record<LocaleCode, Record<MetricKey, string>> = {
+  en: {
+    overallStrength: 'Overall Chart Strength',
+    planetaryStrength: 'Planetary Strength',
+    ascendantStrength: 'Ascendant Strength',
+    risingStrength: 'Rising Sign Strength',
+    moonStrength: 'Moon Strength',
+    sunStrength: 'Sun Strength',
+    marsStrength: 'Mars Strength',
+    jupiterStrength: 'Jupiter Strength',
+    saturnStrength: 'Saturn Strength',
+    mercuryStrength: 'Mercury Strength',
+    careerImpact: 'Career Impact',
+    loveHarmony: 'Love & Relationship Harmony',
+    financialOutlook: 'Financial Outlook',
+    healthVitality: 'Health & Vitality',
+    educationGrowth: 'Education & Growth',
+    spiritualEvolution: 'Spiritual Evolution',
+  },
+  hi: {
+    overallStrength: 'संपूर्ण चार्ट शक्ति',
+    planetaryStrength: 'ग्रह शक्ति',
+    ascendantStrength: 'लग्न शक्ति',
+    risingStrength: 'उदय राशि शक्ति',
+    moonStrength: 'चंद्र शक्ति',
+    sunStrength: 'सूर्य शक्ति',
+    marsStrength: 'मंगल शक्ति',
+    jupiterStrength: 'गुरु शक्ति',
+    saturnStrength: 'शनि शक्ति',
+    mercuryStrength: 'बुध शक्ति',
+    careerImpact: 'करियर प्रभाव',
+    loveHarmony: 'प्रेम एवं संबंध सामंजस्य',
+    financialOutlook: 'आर्थिक दृष्टिकोण',
+    healthVitality: 'स्वास्थ्य एवं जीवनशक्ति',
+    educationGrowth: 'शिक्षा एवं विकास',
+    spiritualEvolution: 'आध्यात्मिक विकास',
   },
 };
 
@@ -260,23 +387,62 @@ export const LANGUAGE_DISPLAY_NAMES: Record<LocaleCode, string> = {
 // HELPERS — graceful fallbacks so missing keys never crash the UI
 // ---------------------------------------------------------------------------
 
-/** Localize a planet's full name (e.g., 'Sun' → 'सूर्य'). Falls back to input. */
+/** Localize a planet's full name (e.g., 'Sun'/'Surya' → 'सूर्य'). Falls back to input. */
 export function localizePlanet(planet: string, locale: LocaleCode): string {
-  return PLANET_NAMES[locale]?.[planet] ?? planet;
+  const canonical = canonicalPlanet(planet);
+  return PLANET_NAMES[locale]?.[canonical] ?? planet;
 }
 
-/** Localize a planet's chart abbreviation (e.g., 'Sun' → 'सू'). Falls back to English abbr or input. */
+/** Localize a planet's chart abbreviation (e.g., 'Sun'/'Surya' → 'सू'). */
 export function localizePlanetAbbr(planet: string, locale: LocaleCode): string {
+  const canonical = canonicalPlanet(planet);
   return (
-    PLANET_ABBREVIATIONS[locale]?.[planet] ??
-    PLANET_ABBREVIATIONS.en[planet] ??
-    planet.slice(0, 2)
+    PLANET_ABBREVIATIONS[locale]?.[canonical] ??
+    PLANET_ABBREVIATIONS.en[canonical] ??
+    canonical.slice(0, 2)
   );
 }
 
 /** Localize a zodiac sign (e.g., 'Aries' → 'मेष'). Falls back to input. */
 export function localizeSign(sign: string, locale: LocaleCode): string {
   return ZODIAC_SIGNS[locale]?.[sign] ?? sign;
+}
+
+/**
+ * Resolve a sign descriptor to a 1-12 index.
+ * Accepts Western ('Aries'), Sanskrit ('Mesha'), or Hindi ('मेष') spellings.
+ * Returns the zero-based array index + 1 (i.e. 1-12), or 0 if unknown.
+ */
+export function getSignIndex(sign: string | number | undefined | null): number {
+  if (typeof sign === 'number') {
+    return Number.isFinite(sign) && sign >= 1 && sign <= 12 ? Math.round(sign) : 0;
+  }
+  if (!sign) return 0;
+  const cleaned = String(sign).trim();
+  return RASHI_INDEX_BY_NAME[cleaned] ?? 0;
+}
+
+/** Localize a Rashi (Sanskrit sign name) by 1-12 index: 'Mesha' → 'मेष'. */
+export function localizeRashi(signIndex: number, locale: LocaleCode): string {
+  const idx = (signIndex - 1 + 12) % 12;
+  return RASHI_NAMES[locale]?.[idx] ?? RASHI_NAMES.en[idx] ?? '';
+}
+
+/** Localize a house number (1-12): '1st House' → 'प्रथम भाव'. */
+export function localizeHouse(houseNum: number, locale: LocaleCode): string {
+  const normalized = ((houseNum - 1) % 12) + 1;
+  return HOUSE_NAMES[locale]?.[normalized] ?? HOUSE_NAMES.en[normalized] ?? String(houseNum);
+}
+
+/** Get the localized chart-type glyph for a sign index (1-12). */
+export function getRashiGlyph(signIndex: number): string {
+  const idx = ((signIndex - 1) % 12 + 12) % 12;
+  return RASHI_GLYPHS[idx] ?? '♈';
+}
+
+/** Get a localized report-metric title by key. Falls back to English. */
+export function getMetricTitle(key: MetricKey, locale: LocaleCode): string {
+  return METRIC_TITLES[locale]?.[key] ?? METRIC_TITLES.en[key] ?? key;
 }
 
 /** Localize a Panchang/Avakhada key (e.g., 'Nakshatra' → 'नक्षत्र'). Falls back to input. */

@@ -1,3 +1,10 @@
+import {
+  renderKundliChartSvg,
+  ChartPlanetInput,
+  ChartHouseInput,
+} from "@/lib/kundliChart";
+import { getSignIndex } from "@/lib/astrologyDictionary";
+
 export interface ReportData {
   clientName: string;
   chartType: string;
@@ -125,47 +132,60 @@ const PAGE_FOOTER = (pageNumber: number, lang: "hi" | "en"): string => `
 </div>
 </div>`;
 
-const renderChartSvg = (data: ReportData): string => {
-  if (/^<svg/.test(data.northIndianChartSvg || "")) {
-    return data.northIndianChartSvg;
-  }
-  const signs = ["Mesh", "Vrishabha", "Mithuna", "Karka", "Simha", "Kanya", "Tula", "Vrishchika", "Dhanus", "Makara", "Kumbha", "Meena"];
-  const r1 = 80;
-  const cx = 150;
-  const cy = 150;
-  const labels = LABELS_HI;
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 330" width="300" height="330"><rect width="300" height="330" fill="#fff"/><g transform="translate(${cx},${cy})">`;
-  svg += `<circle r="${r1}" fill="#fff" stroke="#333" stroke-width="1"/>`;
-  for (let i = 0; i < 12; i++) {
-    const a = (i * 30 - 90) * Math.PI / 180;
-    const a2 = ((i + 1) * 30 - 90) * Math.PI / 180;
-    const x1 = r1 * Math.cos(a);
-    const y1 = r1 * Math.sin(a);
-    const x2 = r1 * Math.cos(a2);
-    const y2 = r1 * Math.sin(a2);
-    svg += `<path d="M0,0 L${x1},${y1} L${x2},${y2} Z" fill="none" stroke="#999" stroke-width="0.5"/>`;
-    const rLbl = r1 + 12;
-    svg += `<text x="${rLbl * Math.cos((a + a2) / 2)}" y="${rLbl * Math.sin((a + a2) / 2)}" font-size="8" text-anchor="middle" dominant-baseline="middle" font-family="'Noto Sans Devanagari' sans-serif">${i < 12 ? (labels[i] || signs[i]) : ""}</text>`;
-  }
-  svg += `<circle r="${r1 / 2}" fill="#f9f9f9" stroke="#333" stroke-width="1"/>`;
-  const midSigns = [signs[0], signs[3], signs[6], signs[9]];
-  for (let i = 0; i < 4; i++) {
-    const a = (i * 90 - 90) * Math.PI / 180;
-    const x = (r1 / 2) * Math.cos(a);
-    const y = (r1 / 2) * Math.sin(a);
-    svg += `<text x="${x}" y="${y}" font-size="7" text-anchor="middle" dominant-baseline="middle" font-family="'Inter' sans-serif">${midSigns[i]}</text>`;
-  }
-  svg += "</g></svg>";
-  return svg;
+/**
+ * Map ReportData into the pure-SSR Kundli chart renderer input.
+ * Planetary `body`/`sign` are normalized through the localization dictionary so
+ * that English, Sanskrit and Hindi spellings all resolve to the same glyphs.
+ */
+const buildChartInput = (
+  data: ReportData
+): { planets: ChartPlanetInput[]; houses: ChartHouseInput[]; ascendantSign: number } => {
+  // Lagna = house-1 cusp sign when available (falls back to Mesha/Aries).
+  const ascendantSign =
+    (data.houseCusps && data.houseCusps.length
+      ? getSignIndex(data.houseCusps[0].sign)
+      : 0) || 1;
+
+  const planets: ChartPlanetInput[] = (data.planetaryPositions || []).map((p) => ({
+    planet: p.body,
+    sign: getSignIndex(p.sign) || 1,
+    house: parseInt(String(p.house), 10) || 1,
+    retrograde: !!p.retro,
+  }));
+
+  const houses: ChartHouseInput[] = (data.houseCusps || []).map((h) => ({
+    house: h.house,
+    sign: getSignIndex(h.sign) || 1,
+  }));
+
+  return { planets, houses, ascendantSign };
 };
 
-const LABELS_HI = ["मेष", "वृशाभ", "मिथुन", "कर्क", "सिंह", "कन्या", "तुला", "वृश्चिक", "धनु", "मकर", "कुंभ", "मीन"];
+/**
+ * Render a pure inline-SVG Kundli chart (North or South Indian) for the PDF.
+ * Falls back to the pre-rendered `northIndianChartSvg` when a caller has
+ * already supplied one (preserving existing behaviour).
+ */
+const renderChartSvg = (data: ReportData, lang: "hi" | "en", style: "north" | "south"): string => {
+  if (style === "north" && /^<svg/.test(data.northIndianChartSvg || "")) {
+    return data.northIndianChartSvg;
+  }
+  const { planets, houses, ascendantSign } = buildChartInput(data);
+  return renderKundliChartSvg({
+    style,
+    language: lang,
+    ascendantSign,
+    planets,
+    houses,
+    showTitle: true,
+  });
+};
 
 const buildCoverPage = (data: ReportData, lang: "hi" | "en"): string => `
 ${PAGE_CHROME(L("title", lang), lang, 1, data)}
 <div class="logo-placeholder">ASTROLOGICAL REPORT PORTAL</div>
 <div class="chart-container">
-${renderChartSvg(data)}
+${renderChartSvg(data, lang, "north")}
 </div>
 <h2 class="${lang === 'en' ? 'en' : ''}" style="text-align:center; font-size:18pt; margin:0.5cm 0;">${escapeHTML(data.clientName)}</h2>
 <p class="p en" style="text-align:center; font-size:10pt; margin-top:0.3cm;">${L("northIndian", lang)} ${data.chartType === "north-indian" ? L("northIndian", lang) : L("southIndian", lang)} — ${data.isPaidTier ? L("paid", lang) : L("basic", lang)}</p>
@@ -254,16 +274,14 @@ ${PAGE_FOOTER(13, lang)}
 const buildNorthIndianChartPage = (data: ReportData, lang: "hi" | "en"): string => `
 ${PAGE_CHROME(L("northIndian", lang), lang, 14, data)}
 <h1 class="${lang === 'en' ? 'en' : ''}">${L("northIndian", lang)} ${L("planetaryPositions", lang)}</h1>
-<div class="chart-container">${renderChartSvg(data)}</div>
+<div class="chart-container">${renderChartSvg(data, lang, "north")}</div>
 ${PAGE_FOOTER(14, lang)}
 `;
 
 const buildSouthIndianChartPage = (data: ReportData, lang: "hi" | "en"): string => `
 ${PAGE_CHROME(L("southIndian", lang), lang, 15, data)}
 <h1 class="${lang === 'en' ? 'en' : ''}">${L("southIndian", lang)} ${L("planetaryPositions", lang)}</h1>
-<div class="chart-container">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240"><rect width="240" height="240" fill="#fff"/><text x="120" y="120" font-size="10" text-anchor="middle" dominant-baseline="middle" fill="#777">South Indian Chart Placeholder</text></svg>
-</div>
+<div class="chart-container">${renderChartSvg(data, lang, "south")}</div>
 ${PAGE_FOOTER(15, lang)}
 `;
 
