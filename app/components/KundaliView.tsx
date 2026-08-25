@@ -13,11 +13,14 @@ import {
   Moon,
   Sun,
   Star,
+  FileText,
+  LayoutGrid,
 } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
 import DownloadReportButton from '@/app/components/DownloadReportButton';
+import ReportRenderer from '@/app/components/report/ReportRenderer';
 import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
 import {
   FreeTierData,
@@ -26,6 +29,7 @@ import {
   MarriageDynamics,
   WealthAllocation,
   DashaRoadmapEntry,
+  KundliCalculations,
 } from '@/types/kundali';
 
 interface KundaliViewProps {
@@ -43,6 +47,8 @@ interface KundaliViewProps {
   planets?: { body: string; sign: string; degree: string; house: string; retro?: boolean }[];
   houseCusps?: { house: number; sign: string; degree: string }[];
   chartType?: string;
+  /** Optional deterministic calculations layer consumed by the A4 report. */
+  calculations?: KundliCalculations;
   /** Called when the user clicks "Download PDF" after unlocking. */
   onDownload?: () => void | Promise<void>;
 }
@@ -65,11 +71,14 @@ export default function KundaliView({
   planets = [],
   houseCusps = [],
   chartType = 'north-indian',
+  calculations,
   onDownload,
 }: KundaliViewProps) {
   const { language } = useLanguage();
   const { isPaid, markAsPaid, selectedLanguage } = useApp();
   const [activeTab, setActiveTab] = useState<TabKey>('career');
+  // 'tabs' = existing tabbed preview (default); 'report' = strict-A4 modular report.
+  const [viewMode, setViewMode] = useState<'tabs' | 'report'>('tabs');
 
   const ctaLabel =
     language === 'hi'
@@ -188,8 +197,48 @@ export default function KundaliView({
         </div>
       </motion.div>
 
+      {/* ─────────────── VIEW MODE TOGGLE ─────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <span className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-[#6B7280] font-medium">
+          {language === 'hi' ? 'दृश्य मोड' : 'View Mode'}
+        </span>
+        <div className="flex gap-1 p-1 rounded-xl bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
+          <button
+            onClick={() => setViewMode('tabs')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              viewMode === 'tabs'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] shadow-sunlit-soft'
+                : 'text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-950 dark:hover:text-[#F3F4F6]'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            {language === 'hi' ? 'टैब दृश्य' : 'Tabbed View'}
+          </button>
+          <button
+            onClick={() => setViewMode('report')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              viewMode === 'report'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] shadow-sunlit-soft'
+                : 'text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-950 dark:hover:text-[#F3F4F6]'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            {language === 'hi' ? 'पूर्ण A4 रिपोर्ट' : 'Full A4 Report'}
+          </button>
+        </div>
+      </div>
+
       {/* ─────────────── GATED TABBED PREVIEW CARDS ─────────────── */}
       <div className="glass-card rounded-xl p-4 sm:p-6">
+        {viewMode === 'report' ? (
+          /* Strict-A4 modular 24-page report renderer */
+          <ReportRenderer
+            reportData={reportData}
+            calculations={calculations}
+            language={language}
+          />
+        ) : (
+        <>
         <div className="flex flex-wrap gap-1.5 mb-4 overflow-x-auto">
           {TABS.map((tab) => {
             const Icon = tab.icon;
@@ -242,11 +291,13 @@ export default function KundaliView({
           )}
         </div>
 
-        {/* Download button (only when paid) */}
+                {/* Download button (only when paid) */}
         {isPaid && (
           <div className="mt-5 flex justify-center">
             <DownloadReportButton reportData={reportData} userName={userName} />
           </div>
+        )}
+        </>
         )}
       </div>
     </div>

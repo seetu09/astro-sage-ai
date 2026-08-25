@@ -5,6 +5,7 @@ import {
   Cinzel,
   Cormorant_Garamond,
   Plus_Jakarta_Sans,
+  Noto_Sans,
   Noto_Sans_Devanagari,
 } from "next/font/google";
 import "./globals.css";
@@ -31,6 +32,15 @@ const notoDevanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari", "latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-noto-devanagari",
+  display: "swap",
+});
+// Latin (Noto Sans) font — pairs with the Devanagari stack for a seamless
+// English + Hindi multilingual body typeface. Exposed as a CSS variable so the
+// report print layer can reference the same font family.
+const notoSans = Noto_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto-sans",
   display: "swap",
 });
 
@@ -145,7 +155,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className} ${notoDevanagari.variable}`}>
+      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className} ${notoDevanagari.variable} ${notoSans.variable} font-sans`}>
         {/* Pre-launch analytics placeholder — activates only when NEXT_PUBLIC_GA_ID is set.
             Swap for Plausible/PostHog by replacing this block; funnel events use lib/analytics.ts trackEvent(). */}
         {process.env.NEXT_PUBLIC_GA_ID && (

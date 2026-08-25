@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/admin/blogs":{},"/api/health":{},"/opengraph-image":{},"/blog/[slug]":{},"/blog":{}}}
+{"version":1,"functions":{"/api/admin/blogs":{},"/api/health":{},"/blog":{},"/blog/[slug]":{},"/opengraph-image":{}}}
