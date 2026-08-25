@@ -13,16 +13,16 @@ import {
   Moon,
   Sun,
   Star,
-  FileText,
   LayoutGrid,
 } from 'lucide-react';
+
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
 import DownloadReportButton from '@/app/components/DownloadReportButton';
 import KundliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
-import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
+import { ReportData } from '@/lib/pdfHtmlTemplate';
 import {
   FreeTierData,
   PaidTierData,
@@ -32,6 +32,7 @@ import {
   DashaRoadmapEntry,
   KundliCalculations,
 } from '@/types/kundali';
+import type { LifePillarConfig } from '@/lib/pillarNarratives';
 
 interface KundaliViewProps {
   freeTier: FreeTierData;
@@ -50,6 +51,8 @@ interface KundaliViewProps {
   chartType?: string;
   /** Optional deterministic calculations layer consumed by the A4 report. */
   calculations?: KundliCalculations;
+  /** Six AI-generated Life Pillar narratives (single-shot report generation). */
+  pillars?: LifePillarConfig[];
   /** Called when the user clicks "Download PDF" after unlocking. */
   onDownload?: () => void | Promise<void>;
 }
@@ -73,6 +76,7 @@ export default function KundaliView({
   houseCusps = [],
   chartType = 'north-indian',
   calculations,
+  pillars,
   onDownload,
 }: KundaliViewProps) {
   const { language } = useLanguage();
@@ -80,6 +84,7 @@ export default function KundaliView({
   const [activeTab, setActiveTab] = useState<TabKey>('career');
   // 'tabs' = existing tabbed preview (default); 'report' = strict-A4 modular report.
   const [viewMode, setViewMode] = useState<'tabs' | 'report'>('tabs');
+  const [reportLockHint, setReportLockHint] = useState(false);
 
   const ctaLabel =
     language === 'hi'
@@ -216,14 +221,21 @@ export default function KundaliView({
             {language === 'hi' ? 'टैब दृश्य' : 'Tabbed View'}
           </button>
           <button
-            onClick={() => setViewMode('report')}
+            onClick={() => {
+              if (isPaid) {
+                setViewMode('report');
+                setReportLockHint(false);
+              } else {
+                setReportLockHint(true);
+              }
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-              viewMode === 'report'
+              viewMode === 'report' && isPaid
                 ? 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] shadow-sunlit-soft'
                 : 'text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-950 dark:hover:text-[#F3F4F6]'
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
+            <Lock className="w-3.5 h-3.5" />
             {language === 'hi' ? 'पूर्ण A4 रिपोर्ट' : 'Full A4 Report'}
           </button>
         </div>
@@ -231,11 +243,22 @@ export default function KundaliView({
 
       {/* ─────────────── GATED TABBED PREVIEW CARDS ─────────────── */}
       <div className="glass-card rounded-xl p-4 sm:p-6">
-        {viewMode === 'report' ? (
-          /* Strict-A4 modular 24-page report renderer */
+        {reportLockHint && !isPaid && (
+          <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-300/60 dark:border-[#FFD166]/30 bg-amber-50 dark:bg-[#FFD166]/10 px-3 py-2.5 text-xs sm:text-sm text-amber-800 dark:text-[#FFD166]">
+            <Lock className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>
+              {language === 'hi'
+                ? 'पूर्ण A4 रिपोर्ट केवल भुगतान के बाद अनलॉक होती है।'
+                : 'The full A4 report unlocks after payment.'}
+            </span>
+          </div>
+        )}
+        {viewMode === 'report' && isPaid ? (
+          /* Strict-A4 modular report renderer — paid users only. */
           <ReportRenderer
             reportData={reportData}
             calculations={calculations}
+            pillars={pillars}
             language={language}
           />
         ) : (

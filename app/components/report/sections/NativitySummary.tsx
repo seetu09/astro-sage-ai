@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import {
   SectionHeading,
   Hr,
@@ -12,22 +11,16 @@ import type { ReportModel } from '../reportModel';
 import { localizeSign, localizePlanet, signLordName } from '../reportModel';
 
 /* ==================================================================== */
-/* PAGE 1 — Nativity Summary                                            */
+/* NATIVITY SUMMARY — bare section (composed onto Page 1)               */
 /* ==================================================================== */
 
-export function NativitySummaryPage({ model }: { model: ReportModel }) {
+export function NativitySummarySection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const bd = model.birthDetails;
   const calc = model.calculations?.lagna;
 
   return (
-    <PageShell
-      title={t('Nativity Summary', 'जन्म विश्लेषण सारांश')}
-      chapter="01"
-      subject={model.clientName}
-      page={1}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Birth Snapshot', 'जन्म सार के क्षण')}
         subtitle={t('Key placement + personality overview', 'प्रमुख स्थिति एवं व्यक्तित्व अवलोकन')}
@@ -89,7 +82,7 @@ export function NativitySummaryPage({ model }: { model: ReportModel }) {
           <Badge label={t('Tier', 'स्तर')} value={model.isPaidTier ? 'Premium' : 'Basic'} tone="gold" />
         </div>
       )}
-    </PageShell>
+    </>
   );
 }
 

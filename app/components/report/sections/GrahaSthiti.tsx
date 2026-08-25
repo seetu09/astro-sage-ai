@@ -1,28 +1,21 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import { localizePlanet, localizeSign, signLordName } from '../reportModel';
 
 /**
- * PAGE 3 — Graha Sthiti (Planetary Positions).
+ * GRAHA STHITI — bare section (composed onto the Planetary Positions page).
  * A full table of the nine planets with sign, sign-lord, degree, house and
  * retrograde state. Data comes from `model.planetaryPositions` and is
  * enhanced with the deterministic chart when available.
  */
-export function GrahaSthitiPage({ model }: { model: ReportModel }) {
+export function GrahaSthitiSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const positions = model.planetaryPositions;
 
   return (
-    <PageShell
-      title={t('Graha Sthiti', 'ग्रह स्थिति')}
-      chapter="03"
-      subject={model.clientName}
-      page={3}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Planetary Positions', 'ग्रहों की स्थिति')}
         subtitle={t('Sign, sign-lord, degree, house & motion', 'राशि, राशि स्वामी, अंश, भाव एवं गति')}
@@ -76,7 +69,7 @@ export function GrahaSthitiPage({ model }: { model: ReportModel }) {
           'भाव की गणना लग्न से सम्पूर्ण-राशि पद्धति (उत्तर भारतीय) से की गई है।'
         )}
       </p>
-    </PageShell>
+    </>
   );
 }
 

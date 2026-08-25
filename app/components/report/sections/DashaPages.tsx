@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, Badge, MilestoneTable, Hr } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import { localizePlanet } from '../reportModel';
@@ -12,24 +11,18 @@ function yearOf(iso?: string): string {
 }
 
 /**
- * PAGE 20 — Dasha Overview.
+ * DASHA OVERVIEW — bare section.
  * The 9 Vimshottari Mahadashas with their lord, start/end years and the
  * currently-running dasha highlighted.
  */
-export function DashaOverviewPage({ model }: { model: ReportModel }) {
+export function DashaOverviewSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const vma = model.calculations?.vimshottari;
   const cur: CurrentDashaInfo | undefined = vma?.currentDasha;
   const mahadashas: MahadashaNode[] = vma?.mahadashas ?? [];
 
   return (
-    <PageShell
-      title={t('Vimshottari Dasha Overview', 'विंशोत्तरी दशा सारांश')}
-      chapter="20"
-      subject={model.clientName}
-      page={20}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('The 120-Year Cycle', '120 वर्ष का चक्र')}
         subtitle={t('Mahadasha sequence from birth', 'जन्म से दशा क्रम')}
@@ -87,15 +80,15 @@ export function DashaOverviewPage({ model }: { model: ReportModel }) {
           `चक्र जन्म नक्षत्र द्वारा निर्धारित ${vma?.birthMahadasha ? localizePlanet(model.language, vma.birthMahadasha) : '—'} महादशा से शुरू होता है।`
         )}
             </p>
-    </PageShell>
+    </>
   );
 }
 
 /**
- * PAGE 21 — Current Mahadasha Detail.
+ * CURRENT MAHADASHA — bare section.
  * Expands the running Mahadasha into its 9 Antardashas with their date ranges.
  */
-export function MahadashaDetailPage({ model }: { model: ReportModel }) {
+export function MahadashaDetailSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const vma = model.calculations?.vimshottari;
   const cur = vma?.currentDasha;
@@ -105,13 +98,7 @@ export function MahadashaDetailPage({ model }: { model: ReportModel }) {
   const lordName = cur ? localizePlanet(model.language, cur.mahadasha) : '—';
 
   return (
-    <PageShell
-      title={t('Current Mahadasha', 'चल रही महादशा')}
-      chapter="21"
-      subject={model.clientName}
-      page={21}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t(`${lordName} Mahadasha`, `${lordName} महादशा`)}
         subtitle={t('The major period now operating', 'जो महादशा अभी सक्रिय है')}
@@ -158,15 +145,15 @@ export function MahadashaDetailPage({ model }: { model: ReportModel }) {
           )}
         </tbody>
       </table>
-    </PageShell>
+    </>
   );
 }
 
 /**
- * PAGE 22 — Dasha Forecast.
+ * DASHA FORECAST — bare section.
  * Narrative milestones mapped onto the Mahadasha windows for the coming years.
  */
-export function DashaForecastPage({ model }: { model: ReportModel }) {
+export function DashaForecastSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const vma = model.calculations?.vimshottari;
   const mahadashas: MahadashaNode[] = vma?.mahadashas ?? [];
@@ -179,13 +166,7 @@ export function DashaForecastPage({ model }: { model: ReportModel }) {
   }));
 
   return (
-    <PageShell
-      title={t('Dasha Forecast', 'दशा पूर्वानुमान')}
-      chapter="22"
-      subject={model.clientName}
-      page={22}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Decade-by-Decade Outlook', 'दशक-दर-दशक दृष्टि')}
         subtitle={t('Mahadasha windows and their life themes', 'महादशा खिड़कियाँ एवं उनके जीवन-स्वरूप')}
@@ -200,6 +181,6 @@ export function DashaForecastPage({ model }: { model: ReportModel }) {
           'प्रत्येक महादशा एक ६–२० वर्ष का अध्याय है जो उसके स्वामी द्वारा शासित है। चल रही अवधि प्रभावशाली जीवन-थीम तय करती है; अंतरदशा उसके भीतर अनुभव को रंगती है।'
         )}
       </p>
-    </PageShell>
+    </>
   );
 }

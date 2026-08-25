@@ -1,16 +1,15 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, NarrativeCard, MilestoneTable } from '../primitives';
 import type { ReportModel } from '../reportModel';
 
 /**
- * PAGE 23 — Remedies (Upay).
+ * REMEDIES (UPAY) — bare section.
  * Consolidates the recommended remedies (gemstone, mantra, ritual, charity)
  * from the model and maps the calculation-layer's remedy list onto the
  * milestone table so each remedy has an action + timing note.
  */
-export function RemediesPage({ model }: { model: ReportModel }) {
+export function RemediesSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const remedies = model.remedies || [];
 
@@ -23,13 +22,7 @@ export function RemediesPage({ model }: { model: ReportModel }) {
   }
 
   return (
-    <PageShell
-      title={t('Remedies (Upay)', 'उपाय')}
-      chapter="23"
-      subject={model.clientName}
-      page={23}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Vedic Remedial Measures', 'वैदिक उपाय')}
         subtitle={t('Mantra, ritual, gemstone and charitable actions', 'मंत्र, अनुष्ठान, रत्न और दान की क्रियाएँ')}
@@ -75,6 +68,6 @@ export function RemediesPage({ model }: { model: ReportModel }) {
           outcome: 'positive' as const,
         }))}
       />
-    </PageShell>
+    </>
   );
 }

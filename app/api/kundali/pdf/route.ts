@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
 import { generateReportHtml } from "@/lib/pdfHtmlTemplate";
+import { verifyUnlockToken } from "@/lib/paymentUnlock";
 
 /**
  * POST /api/kundali/pdf — Vercel serverless "Download Full 25-Page Kundli".
@@ -24,8 +25,15 @@ import { generateReportHtml } from "@/lib/pdfHtmlTemplate";
  *     "reportData": ReportData,          // required — localized report payload
  *     "language":   "en" | "hi",         // defaults to "en"
  *     "pillars":    ReportNarrative[],   // optional AI Life-Pillar narratives
+ *     "paymentToken": string,            // REQUIRED — signed unlock token from /api/payment/verify
  *     "fileName":   string              // optional download filename stem
  *   }
+ *
+ * Monetization: this route is a paid endpoint. It refuses requests without a
+ * valid signed `paymentToken` (see `lib/paymentUnlock`) or without
+ * `reportData.isPaidTier === true`, returning 402. Only server-verified
+ * Razorpay payments can mint such a token, so spoofing localStorage flags
+ * does not unlock the PDF.
  *
  * Response: application/pdf (Content-Disposition: attachment)
  */
@@ -161,7 +169,7 @@ function normalizeReportData(input: Partial<ReportData> | undefined): ReportData
       src.kalpurushaPhalDeepikaRefs
     ),
     scorecard: arr<ReportData["scorecard"][number]>(src.scorecard),
-    isPaidTier: src.isPaidTier !== false,
+    isPaidTier: src.isPaidTier === true,
   };
 }
 
@@ -186,6 +194,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "A valid reportData payload is required to render the kundli PDF" },
         { status: 400 }
+      );
+    }
+
+    // ── Strict monetization guard ────────────────────────────────────────────
+    // Free users must never receive the full report: we require BOTH an
+    // explicit paid-tier flag AND a server-verified signed payment token.
+    if (incoming.isPaidTier !== true) {
+      return NextResponse.json(
+        { error: "This report is locked. Complete payment to unlock the full PDF." },
+        { status: 402 }
+      );
+    }
+    if (!verifyUnlockToken(body.paymentToken)) {
+      return NextResponse.json(
+        { error: "Payment verification required to download the full report." },
+        { status: 402 }
       );
     }
 

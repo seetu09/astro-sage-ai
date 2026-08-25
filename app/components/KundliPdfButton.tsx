@@ -5,6 +5,7 @@ import { Download, Loader2 } from 'lucide-react';
 import LanguageSelectModal, { type PdfLanguage } from './LanguageSelectModal';
 import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
 import type { KundaliHistoryEntry } from '@/types/user';
+import { useApp } from '@/app/context/AppContext';
 import { trackEvent } from '@/lib/analytics';
 
 interface KundliPdfButtonProps {
@@ -68,22 +69,28 @@ async function resolvePayload(
   if (!generateRes.ok) throw new Error('GENERATE_FAILED');
   const result = await generateRes.json();
 
-  // Best-effort AI narrative pass — the PDF renders fine without it.
+  // The single-shot generation endpoint already returns the six AI Life-Pillar
+  // narratives — reuse them and skip the extra /api/kundali/narratives round
+  // trip entirely. (The separate narratives endpoint stays for legacy callers.)
   let aiPillars = pillars;
-  try {
-    const narrativeRes = await fetch('/api/kundali/narratives', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ report: result, language }),
-    });
-    if (narrativeRes.ok) {
-      const narrativeJson = await narrativeRes.json();
-      if (Array.isArray(narrativeJson?.pillars) && narrativeJson.pillars.length === 6) {
-        aiPillars = narrativeJson.pillars as ReportNarrative[];
+  if (Array.isArray(result?.pillars) && result.pillars.length === 6) {
+    aiPillars = result.pillars as ReportNarrative[];
+  } else {
+    try {
+      const narrativeRes = await fetch('/api/kundali/narratives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report: result, language }),
+      });
+      if (narrativeRes.ok) {
+        const narrativeJson = await narrativeRes.json();
+        if (Array.isArray(narrativeJson?.pillars) && narrativeJson.pillars.length === 6) {
+          aiPillars = narrativeJson.pillars as ReportNarrative[];
+        }
       }
+    } catch {
+      // Narratives are optional garnish — never block the download.
     }
-  } catch {
-    // Narratives are optional garnish — never block the download.
   }
 
   return { reportData: mapGenerateResultToReportData(result, entry, aiPillars), pillars: aiPillars };
@@ -201,6 +208,8 @@ async function downloadServerPdf(payload: {
   reportData: ReportData;
   pillars?: ReportNarrative[];
   language: PdfLanguage;
+  /** Server-verified signed payment token (required by /api/kundali/pdf). */
+  paymentToken: string;
   /** Optional filename stem override (falls back to the client name). */
   fileName?: string;
 }): Promise<void> {
@@ -211,6 +220,7 @@ async function downloadServerPdf(payload: {
       reportData: payload.reportData,
       pillars: payload.pillars,
       language: payload.language,
+      paymentToken: payload.paymentToken,
       fileName: payload.fileName || payload.reportData.clientName,
     }),
   });
@@ -250,6 +260,7 @@ export default function KundliPdfButton({
   label,
   compact = false,
 }: KundliPdfButtonProps) {
+  const { unlockToken } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'rebuilding' | 'rendering'>('idle');
   const [error, setError] = useState('');
@@ -265,6 +276,13 @@ export default function KundliPdfButton({
       setError('');
 
       try {
+        if (!unlockToken) {
+          setError(
+            'This download is locked — complete payment to unlock the full report. / यह डाउनलोड लॉक है — पूरी रिपोर्ट अनलॉक करने के लिए भुगतान पूर्ण करें।'
+          );
+          return;
+        }
+
         let payload: ResolvedPayload | null =
           reportData ? { reportData, pillars } : null;
 
@@ -290,15 +308,26 @@ export default function KundliPdfButton({
           await downloadServerPdf({
             ...payload,
             language,
+            paymentToken: unlockToken,
             fileName: userName || payload.reportData.clientName,
           });
           trackEvent('kundli_pdf_server_success', { lang: language });
           setModalOpen(false);
-        } catch {
-          // Zero-cost client fallback — same HTML, browser print dialog.
-          trackEvent('kundli_pdf_server_failed', { lang: language });
-          printReportHtml(generateReportHtml(payload.reportData, language));
-          setModalOpen(false);
+        } catch (err) {
+          const code = err instanceof Error ? err.message : 'UNKNOWN';
+          if (code === 'PDF_SERVICE_402' || code === 'PDF_SERVICE_401' || code === 'PDF_SERVICE_403') {
+            // Server refused the payment — never fall back to the client-side
+            // print leak; surface the lock and ask for payment instead.
+            trackEvent('kundli_pdf_paywall_blocked', { lang: language });
+            setError(
+              'This report is locked. Complete payment to unlock the full PDF. / यह रिपोर्ट लॉक है — पूर्ण PDF अनलॉक करने के लिए भुगतान करें।'
+            );
+          } else {
+            // Any other server failure → zero-cost client fallback.
+            trackEvent('kundli_pdf_server_failed', { lang: language });
+            printReportHtml(generateReportHtml(payload.reportData, language));
+            setModalOpen(false);
+          }
         }
       } catch (err) {
         const code = err instanceof Error ? err.message : 'UNKNOWN';
@@ -316,7 +345,7 @@ export default function KundliPdfButton({
         inFlight.current = false;
       }
     },
-    [reportData, pillars, historyEntry]
+    [reportData, pillars, historyEntry, unlockToken]
   );
 
   const displayLabel = label || DEFAULT_LABEL;

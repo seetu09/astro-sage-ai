@@ -7,6 +7,8 @@ import { Loader2, Lock, AlertCircle } from "lucide-react";
 export interface PaymentSuccessDetails {
   orderId: string;
   paymentId: string;
+  /** Server-minted signed unlock token returned by `/api/payment/verify`. */
+  unlockToken?: string;
 }
 
 interface PaymentButtonProps {
@@ -123,6 +125,7 @@ export default function PaymentButton({
               onSuccess?.({
                 orderId: response.razorpay_order_id,
                 paymentId: response.razorpay_payment_id,
+                unlockToken: verifyData.unlockToken as string | undefined,
               });
             } else {
               setError(verifyData.error || "Payment verification failed");

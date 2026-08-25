@@ -7,11 +7,15 @@ import { isLocale, LocaleCode } from '@/lib/astrologyDictionary';
 export interface PaymentSuccessDetails {
   orderId?: string;
   paymentId?: string;
+  /** Server-minted signed unlock token returned by `/api/payment/verify`. */
+  unlockToken?: string;
 }
 
 interface AppContextType {
   /** Whether the user has unlocked the paid report (persisted across refreshes). */
   isPaid: boolean;
+  /** Server-signed proof of payment required by paid routes (PDF download etc.). */
+  unlockToken: string | null;
   /** Toggle isPaid = true after successful payment (Razorpay onSuccess or redirect callback). */
   markAsPaid: (details?: PaymentSuccessDetails) => void;
   /** Reset payment state (dev/testing or support override). */
@@ -24,6 +28,7 @@ interface AppContextType {
 
 const defaultValue: AppContextType = {
   isPaid: false,
+  unlockToken: null,
   markAsPaid: () => {},
   resetPayment: () => {},
   selectedLanguage: 'en',
@@ -33,11 +38,13 @@ const defaultValue: AppContextType = {
 const AppContext = createContext<AppContextType>(defaultValue);
 
 const IS_PAID_STORAGE_KEY = 'astroveda-is-paid';
+const UNLOCK_TOKEN_STORAGE_KEY = 'astroveda-unlock-token';
 const PAYMENT_FLAG_PARAM = 'payment';
 const PAYMENT_ID_PARAM = 'razorpay_payment_id';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isPaid, setIsPaid] = useState(false);
+  const [unlockToken, setUnlockToken] = useState<string | null>(null);
   const { language, setLanguage } = useLanguage();
 
   // --- Restore persisted payment state (hydration-safe) ---------------------
@@ -45,6 +52,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       if (localStorage.getItem(IS_PAID_STORAGE_KEY) === 'true') {
         setIsPaid(true);
+      }
+      const savedToken = localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
+      if (savedToken) {
+        setUnlockToken(savedToken);
       }
     } catch {
       // localStorage unavailable — stay locked
@@ -81,19 +92,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const markAsPaid = useCallback((details?: PaymentSuccessDetails) => {
     try {
       localStorage.setItem(IS_PAID_STORAGE_KEY, 'true');
+      if (details?.unlockToken) {
+        localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, details.unlockToken);
+      }
     } catch {
       // ignore storage failures — in-memory unlock still works this session
     }
     setIsPaid(true);
+    if (details?.unlockToken) {
+      setUnlockToken(details.unlockToken);
+    }
   }, []);
 
   const resetPayment = useCallback(() => {
     try {
       localStorage.removeItem(IS_PAID_STORAGE_KEY);
+      localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
     } catch {
       // ignore
     }
     setIsPaid(false);
+    setUnlockToken(null);
   }, []);
 
   const setSelectedLanguage = useCallback(
@@ -107,6 +126,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         isPaid,
+        unlockToken,
         markAsPaid,
         resetPayment,
         selectedLanguage: isLocale(language) ? language : 'en',

@@ -1,21 +1,19 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, StatTile, KeyValueRow } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import {
   localizeSign,
   localizePlanet,
   localizeNakshatra,
-  signLordName,
 } from '../reportModel';
 
 /**
- * PAGE 2 — Panchang at Birth.
+ * PANCHANG — bare section (composed onto Page 1).
  * The five limbs (Tithi, Vara, Nakshatra, Yoga, Karana) plus the lunar-day
  * ruler and Nakshatra lord, derived from the calculation layer.
  */
-export function PanchangPage({ model }: { model: ReportModel }) {
+export function PanchangSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const calc = model.calculations?.lagna;
   // Moon's nakshatra lord via the nakshatra index.
@@ -31,13 +29,7 @@ export function PanchangPage({ model }: { model: ReportModel }) {
   ];
 
   return (
-    <PageShell
-      title={t('Panchang', 'पंचांग')}
-      chapter="02"
-      subject={model.clientName}
-      page={2}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Panchang at Birth', 'जन्म के समय पंचांग')}
         subtitle={t('The five limbs of time at your moment of birth', 'जन्म के क्षण के पांच अंग')}
@@ -53,26 +45,16 @@ export function PanchangPage({ model }: { model: ReportModel }) {
       </div>
 
       {calc && (
-        <>
-          <SectionHeading
-            title={t('Lunar Foundation', 'चंद्र आधार')}
-            accent="violet"
+        <div className="rpt-stat-grid">
+          <StatTile
+            label={t('Moon Sign', 'चंद्र राशि')}
+            value={localizeSign(model.language, signFromIndex(calc.moonSign))}
           />
-          <div className="rpt-stat-grid">
-            <StatTile
-              label={t('Moon Sign', 'चंद्र राशि')}
-              value={localizeSign(model.language, signFromIndex(calc.moonSign))}
-            />
-            <StatTile
-              label={t('Moon Lord', 'चंद्र स्वामी')}
-              value={signLordName(model.language, calc.moonSign)}
-            />
-            <StatTile
-              label={t('Nakshatra Lord', 'नक्षत्र स्वामी')}
-              value={localizePlanet(model.language, nakshatraLordFromIndex(nakIndex))}
-            />
-          </div>
-        </>
+          <StatTile
+            label={t('Nakshatra Lord', 'नक्षत्र स्वामी')}
+            value={localizePlanet(model.language, nakshatraLordFromIndex(nakIndex))}
+          />
+        </div>
       )}
 
       <p className="rpt-note">
@@ -81,7 +63,7 @@ export function PanchangPage({ model }: { model: ReportModel }) {
           'नोट: तिथि, करण एवं योग मान पूर्ण पंचांग इंजन सक्षम होने पर अद्यतित होंगे; शेष रिपोर्ट पर इसका प्रभाव नहीं पड़ता।'
         )}
       </p>
-    </PageShell>
+    </>
   );
 }
 

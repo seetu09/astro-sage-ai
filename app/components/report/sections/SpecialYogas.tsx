@@ -1,15 +1,14 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, MilestoneTable, Milestone } from '../primitives';
 import type { ReportModel } from '../reportModel';
 
 /**
- * PAGE 17 — Special Yogas.
+ * SPECIAL YOGAS — bare section.
  * Surfaces the major combination yogae detected in the calculation layer and
  * any domain insights flagged as yogas on the ReportData.
  */
-export function SpecialYogasPage({ model }: { model: ReportModel }) {
+export function SpecialYogasSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const report = model.calculations?.yogas;
   const reportedYogas = model.yogas;
@@ -46,13 +45,7 @@ export function SpecialYogasPage({ model }: { model: ReportModel }) {
   ];
 
   return (
-    <PageShell
-      title={t('Special Yogas', 'विशेष योग')}
-      chapter="17"
-      subject={model.clientName}
-      page={17}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Yoga Combinations', 'योग संयुक्त') + ` (${merged.length})`}
         subtitle={t('Major planetary combinations active at birth', 'जन्म समय सक्रिय प्रमुख ग्रह-संयोजन')}
@@ -101,6 +94,6 @@ export function SpecialYogasPage({ model }: { model: ReportModel }) {
             : fallback
         }
       />
-    </PageShell>
+    </>
   );
 }

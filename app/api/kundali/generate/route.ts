@@ -4,6 +4,12 @@ import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/a
 import { computeKundliCalculations } from "@/lib/kundli-report";
 import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
 import {
+  buildChartDigest,
+  buildFallbackPillars,
+  parseAndValidatePillars,
+  type LifePillarConfig,
+} from "@/lib/pillarNarratives";
+import {
   FreeTierData,
   PaidTierData,
   CareerTimings,
@@ -59,62 +65,166 @@ function buildCacheKey(details: BirthDetails): string {
   ].join("|");
 }
 
-// --- Generate the written interpretation via Gemini (temperature 0.2, chart-data-only) ---
-async function generateInterpretation(chartData: ChartData, lang: "en" | "hi"): Promise<string> {
+// ─── SINGLE-SHOT structured AI report generation ───────────────────────────
+// ONE Gemini call produces the full written interpretation, the free tier, the
+// paid tier (domain analyses, yogas, doshas, remedies, timings) AND the six
+// Life Pillar narratives — so no separate /api/kundali/narratives round-trip,
+// no token duplication, and no per-section silent failures. Every text field
+// is generated in the user's selected language (pure Devanagari for Hindi).
+interface SingleShotReport {
+  interpretation: string;
+  freeTier: {
+    corePersonality: { summary: string };
+    topCareers: string[];
+    wealthType: string;
+  };
+  paidTier: {
+    careerTimings: CareerTimings;
+    marriageDynamics: MarriageDynamics;
+    wealthAllocation: WealthAllocation;
+    yogas: YogaItem[];
+    doshas: DoshaItem[];
+    remedies: RemedyItem[];
+    fullBreakdown: ReportPage[];
+    timings: KeyTiming[];
+    lifeDomains: {
+      career: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
+      wealth: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
+      marriage: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
+      health: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
+    };
+  };
+  pillars: Record<string, unknown>;
+}
+
+/** Extract the first balanced JSON object from a model response. */
+function extractJson(text: string): string {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return text;
+  return text.slice(start, end + 1);
+}
+
+async function generateCompleteReport(
+  chartData: ChartData,
+  calculations: FullKundliReportData["calculations"],
+  lang: "en" | "hi"
+): Promise<SingleShotReport | null> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not set");
-  }
+  if (!apiKey) return null;
 
   const chartJson = JSON.stringify(chartData, null, 2);
+  const digest = buildChartDigest({
+    success: true,
+    chartData,
+    interpretation: "",
+    freeTier: undefined as never,
+    paidTier: undefined as never,
+    calculations,
+  } as FullKundliReportData);
 
-  const geminiResponse = await fetch(
+  const langRule =
+    lang === "hi"
+      ? `ABSOLUTE RULE: Every string in this response MUST be written in 100% pure Hindi using Devanagari script only. NO English, NO Hinglish, NO Roman characters anywhere — including inside the "interpretation", "overview", "summary", "note", "recommendations", "event", "milestones" and every other text field. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति', 'विवाह'। Milestone "period" fields may keep year ranges like '2026–2028' (digits are allowed).`
+      : `ABSOLUTE RULE: Every string in this response MUST be written in 100% modern English for a layperson. Explain every Vedic term in plain language (e.g., '10th house (career and public standing)', 'Saturn (the planet of discipline)'). NO Hindi, NO Devanagari, NO Hinglish anywhere.`;
+
+  const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text: `${getSystemPrompt(lang)}\n\nYou are given the exact, deterministic Vedic chart data (Lahiri Ayanamsa) computed by the local calculation engine. Interpret ONLY the provided planetary and house data. Do not recalculate, modify, or guess any astronomical positions. Base every statement strictly on the JSON chart data supplied.`,
-            },
-          ],
-        },
+        systemInstruction: { parts: [{ text: getSystemPrompt(lang) }] },
         contents: [
           {
             role: "user",
             parts: [
               {
-                text: `Here is the birth chart data (JSON):\n\n${chartJson}\n\nPlease provide a warm, insightful Vedic astrology interpretation covering: the Ascendant/Lagna and its significance, the Moon sign and nakshatra, the Sun sign, key planetary placements (house + sign + retrograde status), notable yogas, and practical guidance. Keep it structured and readable.`,
+                text: `Here is the exact deterministic Vedic birth chart (Lahiri Ayanamsa) computed by the local engine, plus a chart-fact digest. Interpret ONLY this data — never recalculate or guess positions.
+
+CHART JSON:
+${chartJson}
+
+CHART FACTS DIGEST:
+${digest}
+
+${langRule}
+
+Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
+{
+  "interpretation": "3-4 paragraph warm markdown narrative covering: Ascendant/Lagna, Moon sign + nakshatra, Sun sign, key planetary placements (house+sign+retrograde), notable yogas, and practical guidance. Must be complete — no truncation.",
+  "freeTier": {
+    "corePersonality": { "summary": "2-3 sentence personality snapshot from lagna, Moon, Sun and nakshatra" },
+    "topCareers": ["career 1", "career 2", "career 3"],
+    "wealthType": "one short phrase for the wealth archetype"
+  },
+  "paidTier": {
+    "careerTimings": { "overview": "", "favorable": [{"period":"","note":""}], "challenging": [{"period":"","note":""}] },
+    "marriageDynamics": { "overview": "", "strengths": ["",""], "challenges": [], "favorable": [{"period":"","note":""}] },
+    "wealthAllocation": { "overview": "", "allocation": [{"category":"","percentage":0,"note":""}] },
+    "yogas": [{"name":"","presence":true,"impact":"layman impact","description":"","benefit":""}],
+    "doshas": [{"name":"","description":"","severity":"low|moderate|high","isNeutralized":true}],
+    "remedies": [{"type":"","description":""}],
+    "fullBreakdown": [{"title":"","content":""}],
+    "timings": [{"event":"","timing":"","note":""}],
+    "lifeDomains": {
+      "career": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
+      "wealth": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
+      "marriage": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
+      "health": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] }
+    }
+  },
+  "pillars": {
+    "career": {
+      "badges": { "score": "short strength tag with houses", "timeframe": "active window like '2026–2034'", "lord": "ruling planet" },
+      "narrativeEn": "2-3 empathetic sentences about career (max 420 chars)",
+      "narrativeHi": "SAME meaning in pure Devanagari Hindi, zero English (max 300 chars)",
+      "milestones": [{"period":"2026–2028","event":"","note":"","outcome":"positive|neutral|caution"}]
+    },
+    "wealth": { "badges": { "score": "", "timeframe": "", "lord": "" }, "narrativeEn": "", "narrativeHi": "", "milestones": [] },
+    "marriage": { "badges": { "score": "", "timeframe": "", "lord": "" }, "narrativeEn": "", "narrativeHi": "", "milestones": [] },
+    "health": { "badges": { "score": "", "timeframe": "", "lord": "" }, "narrativeEn": "", "narrativeHi": "", "milestones": [] },
+    "education": { "badges": { "score": "", "timeframe": "", "lord": "" }, "narrativeEn": "", "narrativeHi": "", "milestones": [] },
+    "family": { "badges": { "score": "", "timeframe": "", "lord": "" }, "narrativeEn": "", "narrativeHi": "", "milestones": [] }
+  }
+}
+
+HARD RULES:
+- Interpretation must be FULL and complete (400+ words); never truncate or emit placeholders like 'coming soon'.
+- Base every statement strictly on the supplied chart facts.
+- Each pillar milestone needs a concrete year window (e.g. '2026–2028'), never 'soon'.
+- Narrative fields must be 2-3 full sentences, never a single word or one short line.
+- Empathy over drama: never predict death, disease or disasters. Respect the safety boundary.
+- ${lang === "hi" ? "The pillars' narrativeHi is primary and MUST be pure Devanagari Hindi; narrativeEn is secondary but still required." : "The pillars' narrativeEn is primary and MUST be modern English; narrativeHi is secondary but still required."}
+- Return ONLY the JSON object.`,
               },
             ],
           },
         ],
         generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 1024,
+          temperature: 0.3,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json",
         },
       }),
     }
   );
 
-  if (!geminiResponse.ok) {
-    const body = await geminiResponse.text().catch(() => "");
-    throw new Error(`Gemini API error (${geminiResponse.status}): ${body.slice(0, 300)}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Gemini error (${res.status}): ${body.slice(0, 200)}`);
   }
 
-  const json = await geminiResponse.json();
+  const json = await res.json();
   const text = json?.candidates?.[0]?.content?.parts
-    ?.map((part: any) => part.text ?? "")
+    ?.map((p: any) => p.text ?? "")
     .join("")
     .trim();
+  if (!text) throw new Error("Gemini returned an empty report");
 
-  if (!text) {
-    throw new Error("Gemini returned an empty interpretation");
-  }
-
-  return text;
+  const parsed = JSON.parse(extractJson(text)) as SingleShotReport;
+  if (!parsed || typeof parsed !== "object") return null;
+  return parsed;
 }
 
 // ─── Vimshottari Dasha helpers (deterministic, no AI) ────────────────────────
@@ -223,135 +333,23 @@ function moonNakshatraIndex(chartData: ChartData): number {
 }
 
 interface StructuredReport {
-  freeTier: {
-    corePersonality: { summary: string };
-    topCareers: string[];
-    wealthType: string;
-  };
-  paidTier: {
-    careerTimings: CareerTimings;
-    marriageDynamics: MarriageDynamics;
-    wealthAllocation: WealthAllocation;
-    yogas: YogaItem[];
-    doshas: DoshaItem[];
-    remedies: RemedyItem[];
-    fullBreakdown: ReportPage[];
-    timings: KeyTiming[];
-    lifeDomains: {
-      career: {
-        overview: string;
-        strengths: string[];
-        challenges: string[];
-        recommendations: string[];
-      };
-      wealth: {
-        overview: string;
-        strengths: string[];
-        challenges: string[];
-        recommendations: string[];
-      };
-      marriage: {
-        overview: string;
-        strengths: string[];
-        challenges: string[];
-        recommendations: string[];
-      };
-      health: {
-        overview: string;
-        strengths: string[];
-        challenges: string[];
-        recommendations: string[];
-      };
-    };
-  };
+  freeTier: SingleShotReport["freeTier"];
+  paidTier: SingleShotReport["paidTier"];
 }
 
-/** Extract the first balanced JSON object from a model response. */
-function extractJson(text: string): string {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return text;
-  return text.slice(start, end + 1);
-}
-
-// --- Generate the structured free/paid breakdown via Gemini (structured JSON) ---
-async function generateStructuredReport(
+/** Minimal context object `buildFallbackPillars` reads (chart + calculations). */
+function fallbackContext(
   chartData: ChartData,
-  interpretation: string,
-  lang: "en" | "hi"
-): Promise<StructuredReport> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-
-  const chartJson = JSON.stringify(chartData, null, 2);
-
-  const langInstruction =
-    lang === "hi"
-      ? "ABSOLUTE RULE: Output MUST be 100% pure Hindi in Devanagari script. NO English, NO Hinglish, NO Roman characters anywhere. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति'."
-      : "ABSOLUTE RULE: Output MUST be 100% modern English. Explain all Vedic terms in plain language (e.g., '10th house = career and public standing'). Strictly no Hindi or Devanagari.";
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: getSystemPrompt(lang) }] },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: `Here is the exact deterministic birth chart JSON:\n\n${chartJson}\n\n${interpretation}\n\n${langInstruction}\n\nReturn STRICT JSON (no markdown, no commentary) of this exact shape:
-{
-  "freeTier": {
-    "corePersonality": { "summary": "2-3 sentence personality snapshot from lagna, Moon, Sun and nakshatra" },
-    "topCareers": ["career 1", "career 2", "career 3"],
-    "wealthType": "one short phrase describing the wealth archetype"
-  },
-  "paidTier": {
-    "careerTimings": { "overview": "", "favorable": [{"period":"","note":""}], "challenging": [{"period":"","note":""}] },
-    "marriageDynamics": { "overview": "", "strengths": ["",""], "challenges": [], "favorable": [{"period":"","note":""}] },
-    "wealthAllocation": { "overview": "", "allocation": [{"category":"","percentage":0,"note":""}] },
-    "yogas": [{"name":"","presence":true,"impact":"layman impact","description":"","benefit":""}],
-    "doshas": [{"name":"","description":"","severity":"low|moderate|high","isNeutralized":true}],
-    "remedies": [{"type":"","description":""}],
-    "fullBreakdown": [{"title":"","content":""}],
-    "timings": [{"event":"","timing":"","note":""}],
-    "lifeDomains": {
-      "career": { "overview": "", "strengths": [], "challenges": [], "recommendations": [] },
-      "wealth": { "overview": "", "strengths": [], "challenges": [], "recommendations": [] },
-      "marriage": { "overview": "", "strengths": [], "challenges": [], "recommendations": [] },
-      "health": { "overview": "", "strengths": [], "challenges": [], "recommendations": [] }
-    }
-  }
-}
-Base every statement strictly on the chart. Be concise. Return ONLY JSON.`,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 2048,
-          responseMimeType: "application/json",
-        },
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Gemini structured error (${res.status}): ${body.slice(0, 200)}`);
-  }
-
-  const json = await res.json();
-  const text = json?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? "").join("").trim();
-  if (!text) throw new Error("Gemini returned an empty structured report");
-
-  const parsed = JSON.parse(extractJson(text)) as StructuredReport;
-  if (!parsed?.freeTier || !parsed?.paidTier) throw new Error("Malformed structured report");
-  return parsed;
+  calculations: FullKundliReportData["calculations"]
+): FullKundliReportData {
+  return {
+    success: true,
+    chartData,
+    interpretation: "",
+    freeTier: undefined as unknown as FullKundliReportData["freeTier"],
+    paidTier: undefined as unknown as FullKundliReportData["paidTier"],
+    calculations,
+  };
 }
 
 // --- Deterministic fallback builders (no AI dependency) ---
@@ -581,18 +579,45 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // --- 3. Generate the written interpretation via Gemini (always fresh) ---
+    // --- 5. Deterministic calculations layer (pure TypeScript, cache-friendly) ---
+    const calculations = computeKundliCalculations(chartData, details.birthDate, new Date());
+
+    // --- 3+4. SINGLE-SHOT AI report (interpretation + free/paid tiers + pillars) ---
+    // One Gemini call populates every narrative field at once — no separate
+    // /api/kundali/narratives round-trip, no token duplication, and no per-
+    // section silent failures. On any AI outage the deterministic fallbacks
+    // below still guarantee a complete, renderable report.
     const FALLBACK_INTERPRETATION =
       lang === "hi"
         ? "आपका चार्ट सफलतापूर्वक तैयार हो गया है। ज्योतिष पठन अस्थायी रूप से अनुपलब्ध है।"
         : "Your chart was generated successfully. Astrological reading is temporarily unavailable.";
 
+    const birthDateKey = details.birthDate;
     let interpretation = "";
+    let structured: StructuredReport | null = null;
+    let pillars: LifePillarConfig[] = buildFallbackPillars(fallbackContext(chartData, calculations), lang);
+    let aiSource = false;
+
     try {
-      interpretation = await generateInterpretation(chartData, lang);
-    } catch (geminiError) {
-      // Gemini failures (404/500/network) must never break the chart response
-      console.error("Kundali interpretation failed:", geminiError);
+      const complete = await generateCompleteReport(chartData, calculations, lang);
+      if (complete && complete.interpretation?.trim()) {
+        aiSource = true;
+        interpretation = complete.interpretation.trim();
+        structured = {
+          freeTier: complete.freeTier,
+          paidTier: complete.paidTier,
+        };
+        const parsedPillars = parseAndValidatePillars(
+          JSON.stringify(complete.pillars || {}),
+          buildFallbackPillars(fallbackContext(chartData, calculations), lang)
+        );
+        if (parsedPillars && parsedPillars.length === 6) {
+          pillars = parsedPillars;
+        }
+      }
+    } catch (aiError) {
+      // AI failures must never break the chart response — fallbacks below kick in.
+      console.error("Kundali AI report failed:", aiError);
     }
 
     // Guarantee interpretation is never undefined, null, or empty
@@ -600,22 +625,8 @@ export async function POST(req: NextRequest) {
       interpretation = FALLBACK_INTERPRETATION;
     }
 
-    // --- 4. Build the structured free/paid tiers (always present) ---
-    // Gemini structured output is best-effort; deterministic fallbacks below
-    // guarantee a complete, renderable response even if it fails.
-    const birthDateKey = details.birthDate;
-    let structured: StructuredReport | null = null;
-    try {
-      structured = await generateStructuredReport(chartData, interpretation, lang);
-    } catch (structuredError) {
-      console.error("Kundali structured report failed:", structuredError);
-    }
-
     const freeTier = buildFreeTier(chartData, birthDateKey, structured);
     const paidTier = buildPaidTier(chartData, birthDateKey, interpretation, structured, lang);
-
-    // --- 5. Deterministic calculations layer (pure TypeScript, cache-friendly) ---
-    const calculations = computeKundliCalculations(chartData, details.birthDate, new Date());
 
     return NextResponse.json({
       success: true,
@@ -624,7 +635,9 @@ export async function POST(req: NextRequest) {
       freeTier,
       paidTier,
       calculations,
-    } as FullKundliReportData);
+      pillars,
+      aiSource,
+    } as FullKundliReportData & { pillars: LifePillarConfig[]; aiSource: boolean });
   } catch (error) {
     console.error("Kundali generation failed:", error);
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });

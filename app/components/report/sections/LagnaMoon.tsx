@@ -1,16 +1,15 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, StatTile, NarrativeCard, Hr } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import { localizeSign, localizePlanet, signLordName } from '../reportModel';
 
 /**
- * PAGE 5 — Lagna & Moon Sign Deep Dive.
+ * LAGNA & MOON — bare section.
  * Detailed treatment of the Ascendant (Lagna) and Rashi (Moon sign),
  * including lords, elemental nature and thematic influence.
  */
-export function LagnaMoonPage({ model }: { model: ReportModel }) {
+export function LagnaMoonSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const calc = model.calculations?.lagna;
 
@@ -20,13 +19,7 @@ export function LagnaMoonPage({ model }: { model: ReportModel }) {
   const moonLord = calc ? signLordName(model.language, calc.moonSign) : '—';
 
   return (
-    <PageShell
-      title={t('Lagna & Moon Deep Dive', 'लग्न एवं चंद्र विश्लेषण')}
-      chapter="05"
-      subject={model.clientName}
-      page={5}
-      totalPages={24}
-    >
+    <>
       <SectionHeading title={t('Ascendant (Lagna)', 'लग्न')} subtitle={t(`${ascName} • ruled by ${ascLord}`, `${ascName} • स्वामी ${ascLord}`)} />
 
       <div className="rpt-stat-grid">
@@ -61,7 +54,7 @@ export function LagnaMoonPage({ model }: { model: ReportModel }) {
         <StatTile label={t('Moon Lord', 'चंद्र स्वामी')} value={moonLord} />
         <StatTile label={t('Element', 'तत्त्व')} value={elementOf(calc?.moonSign)} />
       </div>
-    </PageShell>
+    </>
   );
 }
 

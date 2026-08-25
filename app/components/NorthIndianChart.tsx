@@ -52,47 +52,48 @@ export interface NorthIndianChartProps {
 
 // ---------------------------------------------------------------------------
 // North Indian house layout (SVG polygon points)
-// The chart is a 400×400 viewBox. Houses are arranged in the classic
-// North Indian diamond pattern with the ascendant at the top-center.
+// The chart is a 400×400 viewBox. The outer square (20,20)→(380,380) is split
+// into a 3×3 grid of 120-unit cells; the eight outer cells hold houses 1–8 and
+// the centre cell is divided into a diamond of four triangles (houses 9–12)
+// meeting at (200,200). Every polygon shares its edges with its neighbours so
+// the shape tiles perfectly with no gaps or stretching.
 // ---------------------------------------------------------------------------
 
 const CHART_SIZE = 400;
 const CENTER = CHART_SIZE / 2;
-const OUTER = 180; // distance from center to outer corners
-const MID = 120; // distance to mid-edge points
 
 // 12 house center positions in North Indian layout
 // Houses 1-12 arranged clockwise starting from top-center
 const HOUSE_POSITIONS: Record<number, [number, number]> = {
-  1: [CENTER, CENTER - OUTER], // top center
-  2: [CENTER + OUTER, CENTER - OUTER], // top right
-  3: [CENTER + OUTER, CENTER], // right
-  4: [CENTER + OUTER, CENTER + OUTER], // bottom right
-  5: [CENTER, CENTER + OUTER], // bottom center
-  6: [CENTER - OUTER, CENTER + OUTER], // bottom left
-  7: [CENTER - OUTER, CENTER], // left
-  8: [CENTER - OUTER, CENTER - OUTER], // top left
-  9: [CENTER, CENTER - MID], // upper middle
-  10: [CENTER + MID, CENTER - MID], // upper right
-  11: [CENTER + MID, CENTER], // right middle
-  12: [CENTER - MID, CENTER], // left middle
+  1: [200, 74], // top center
+  2: [320, 74], // top right
+  3: [320, 200], // right
+  4: [320, 326], // bottom right
+  5: [200, 326], // bottom center
+  6: [80, 326], // bottom left
+  7: [80, 200], // left
+  8: [80, 74], // top left
+  9: [200, 165], // upper middle (diamond top triangle)
+  10: [238, 200], // right middle (diamond right triangle)
+  11: [200, 235], // lower middle (diamond bottom triangle)
+  12: [162, 200], // left middle (diamond left triangle)
 };
 
 // House polygon points for the North Indian chart
-// Each house is a quadrilateral defined by 4 points
+// Each outer house is a quadrilateral; the four centre houses are triangles.
 const HOUSE_POLYGONS: Record<number, string> = {
-  1: '180,20 220,20 260,60 140,60', // top center diamond
-  2: '220,20 380,20 380,60 260,60', // top right
-  3: '340,60 380,60 380,340 340,340', // right
-  4: '340,340 380,340 380,380 260,340', // bottom right
-  5: '140,340 260,340 300,380 100,380', // bottom center
-  6: '20,340 60,340 100,380 20,380', // bottom left
-  7: '60,60 100,60 100,340 60,340', // left
-  8: '20,20 60,20 100,60 20,60', // top left
-  9: '180,60 220,60 260,140 140,140', // upper middle
-  10: '220,60 340,60 300,140 260,140', // upper right
-  11: '260,140 300,140 300,260 260,260', // right middle
-  12: '140,140 100,140 100,260 140,260', // left middle
+  1: '140,20 260,20 260,140 140,140', // top center
+  2: '260,20 380,20 380,140 260,140', // top right
+  3: '260,140 380,140 380,260 260,260', // right
+  4: '260,260 380,260 380,380 260,380', // bottom right
+  5: '140,260 260,260 260,380 140,380', // bottom center
+  6: '20,260 140,260 140,380 20,380', // bottom left
+  7: '20,140 140,140 140,260 20,260', // left
+  8: '20,20 140,20 140,140 20,140', // top left
+  9: '140,140 260,140 200,200', // centre top triangle
+  10: '260,140 260,260 200,200', // centre right triangle
+  11: '260,260 140,260 200,200', // centre bottom triangle
+  12: '140,260 140,140 200,200', // centre left triangle
 };
 
 // Sign names for sign number lookup (1-12)
@@ -220,15 +221,9 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
             className="fill-transparent stroke-slate-300/60 dark:stroke-[#FFD166]/30 stroke-2"
           />
 
-          {/* Diagonal lines forming the diamond */}
-          <line x1="20" y1="20" x2="380" y2="380" className="stroke-slate-300/40 dark:stroke-[#FFD166]/20 stroke-1" />
-          <line x1="380" y1="20" x2="20" y2="380" className="stroke-slate-300/40 dark:stroke-[#FFD166]/20 stroke-1" />
-
-          {/* Inner diamond (center) */}
-          <polygon
-            points="200,60 340,200 200,340 60,200"
-            className="fill-white/90 dark:fill-[#121026]/50 stroke-slate-300/60 dark:stroke-[#FFD166]/40 stroke-2"
-          />
+          {/* Centre-square diagonals forming the diamond of houses 9–12 */}
+          <line x1="140" y1="140" x2="260" y2="260" className="stroke-slate-300/40 dark:stroke-[#FFD166]/20 stroke-1" />
+          <line x1="260" y1="140" x2="140" y2="260" className="stroke-slate-300/40 dark:stroke-[#FFD166]/20 stroke-1" />
 
           {/* House polygons */}
           {Object.entries(HOUSE_POLYGONS).map(([houseNum, points]) => {

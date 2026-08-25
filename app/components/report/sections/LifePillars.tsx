@@ -119,9 +119,15 @@ const PILLARS: LifePillarConfig[] = [
 export function LifePillarPage({
   model,
   pillar,
+  page,
+  totalPages,
 }: {
   model: ReportModel;
   pillar: LifePillarConfig;
+  /** Override the printed page number (defaults to the config value). */
+  page?: number;
+  /** Override the printed total-page count. */
+  totalPages?: number;
 }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const title = model.language === 'hi' ? pillar.titleHi : pillar.titleEn;
@@ -130,10 +136,10 @@ export function LifePillarPage({
   return (
     <PageShell
       title={title}
-      chapter={String(pillar.page).padStart(2, '0')}
+      chapter={String(page ?? pillar.page).padStart(2, '0')}
       subject={model.clientName}
-      page={pillar.page}
-      totalPages={24}
+      page={page ?? pillar.page}
+      totalPages={totalPages ?? 24}
     >
       <BadgeGroup
         badges={[
@@ -159,10 +165,10 @@ export function LifePillarPage({
 }
 
 /**
- * Page 13 — Life Balance overview board (cross-pillar comparison).
- * Keeps the 7–14 pillar block contiguous while adding synthesis value.
+ * LIFE BALANCE — bare section (cross-pillar comparison board).
+ * Keeps the pillar block contiguous while adding synthesis value.
  */
-export function LifeBalancePage({
+export function LifeBalanceSection({
   model,
   pillars,
 }: {
@@ -172,13 +178,7 @@ export function LifeBalancePage({
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const list = pillars && pillars.length === 6 ? pillars : PILLARS;
   return (
-    <PageShell
-      title={t('Life Pillars — Overview', 'जीवन स्तंभ सारांश')}
-      chapter="13"
-      subject={model.clientName}
-      page={13}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Six Pillars at a Glance', 'छह स्तंभ एक नज़र में')}
         subtitle={t('Relative strength across the life domains', 'जीवन के विभिन्न क्षेत्रों की सापेक्ष शक्ति')}
@@ -196,16 +196,16 @@ export function LifeBalancePage({
           );
         })}
             </div>
-    </PageShell>
+    </>
   );
 }
 
 /**
- * Page 14 — Consolidated milestone tracker (cross-pillar timeline).
+ * MILESTONE TRACKER — bare section (cross-pillar timeline).
  * Merges every pillar's forecast rows into one timeline so the reader can see
  * how the life domains interact over the decade.
  */
-export function MilestoneTrackerPage({
+export function MilestoneTrackerSection({
   model,
   pillars,
 }: {
@@ -228,13 +228,7 @@ export function MilestoneTrackerPage({
   const bands = Array.from(new Set(all.map((x) => x.period)));
 
   return (
-    <PageShell
-      title={t('Milestone Tracker', 'मील के पत्थर ट्रैकर')}
-      chapter="14"
-      subject={model.clientName}
-      page={14}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Decade Timeline', 'दशक कालक्रम')}
         subtitle={t('How each pillar interacts over time', 'प्रत्येक स्तंभ समय के साथ कैसे अंतःक्रिया करता है')}
@@ -261,7 +255,7 @@ export function MilestoneTrackerPage({
           </div>
         ))}
       </div>
-    </PageShell>
+    </>
   );
 }
 

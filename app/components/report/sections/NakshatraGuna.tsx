@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, StatTile } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import { localizeNakshatra, localizePlanet, nakshatraLordName } from '../reportModel';
@@ -13,12 +12,12 @@ export interface GunaRow {
 }
 
 /**
- * PAGE 6 — Nakshatra & Guna Breakdown.
+ * NAKSHATRA & GUNA — bare section.
  * Details the birth Nakshatra and its lord, then the five-fold Guna
  * (Varna, Vashya, Tara, Yoni, Varna now consolidated into a compact table)
  * used in traditional compatibility (Ashtakoota) analysis.
  */
-export function NakshatraGunaPage({ model }: { model: ReportModel }) {
+export function NakshatraGunaSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const calc = model.calculations?.lagna;
   const nakIndex = calc?.moonNakshatraIndex ?? 1;
@@ -36,13 +35,7 @@ export function NakshatraGunaPage({ model }: { model: ReportModel }) {
   ];
 
   return (
-    <PageShell
-      title={t('Nakshatra & Guna', 'नक्षत्र एवं गुण')}
-      chapter="06"
-      subject={model.clientName}
-      page={6}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={t('Birth Nakshatra', 'जन्म नक्षत्र')}
         subtitle={t('Lunar mansion and its ruling deity', 'नक्षत्र एवं उसके अधिष्ठाता देवता')}
@@ -91,6 +84,6 @@ export function NakshatraGunaPage({ model }: { model: ReportModel }) {
           'गुण अंक पारंपरिक मिलान सारणी से दिए जाते हैं; कुल अंक वैदिक मिलान की दिशा बताते हैं।'
         )}
       </p>
-    </PageShell>
+    </>
   );
 }

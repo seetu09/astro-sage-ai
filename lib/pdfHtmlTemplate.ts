@@ -289,11 +289,19 @@ ${PAGE_FOOTER(7, lang)}
 const buildDomainPage = (domain: ReportData["domainInsights"][0], idx: number, data: ReportData, lang: "hi" | "en"): string => `
 ${PAGE_CHROME(domain.domain.charAt(0).toUpperCase() + domain.domain.slice(1), lang, 8 + idx, data)}
 <h1 class="${lang === 'en' ? 'en' : ''}">${domain.domain.charAt(0).toUpperCase() + domain.domain.slice(1)}</h1>
+${(domain.prediction || domain.analysis) ? `
 <h2 class="${lang === 'en' ? 'en' : ''}">${L("domainInsights", lang)}:</h2>
-<p class="p en">${escapeHTML(domain.prediction)}</p>
+<p class="p en">${escapeHTML(domain.prediction || "—")}</p>
 <h2 class="${lang === 'en' ? 'en' : ''}">${L("planetaryPositions", lang)}:</h2>
-<p class="p en">${escapeHTML(domain.analysis)}</p>
+<p class="p en">${escapeHTML(domain.analysis || "—")}</p>
 ${domain.timeframe ? `<p class="p en" style="font-weight:700;">${escapeHTML(domain.timeframe)}</p>` : ""}
+` : `<p class="p en">Detailed ${escapeHTML(domain.domain)} analysis is included in the premium report.</p>`}
+<div class="divider"></div>
+<h2 class="${lang === 'en' ? 'en' : ''}">${lang === "hi" ? "मुख्य समय-अवधियाँ" : "Key Timelines"}</h2>
+<table class="table-0">
+<tr><th>${lang === "hi" ? "अवधि" : "Period"}</th><th>${lang === "hi" ? "प्रभाव" : "Influence"}</th></tr>
+${data.dashaPeriods.slice(0, 4).map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML(d.subPeriod || d.mahaDasha)}</td></tr>`).join("") || `<tr><td>—</td><td>${lang === "hi" ? "उपलब्ध नहीं" : "Not available"}</td></tr>`}
+</table>
 ${PAGE_FOOTER(8 + idx, lang)}
 `;
 
@@ -309,34 +317,6 @@ ${PAGE_CHROME(L("northIndian", lang), lang, 14, data)}
 <h1 class="${lang === 'en' ? 'en' : ''}">${L("northIndian", lang)} ${L("planetaryPositions", lang)}</h1>
 <div class="chart-container">${renderChartSvg(data, lang, "north")}</div>
 ${PAGE_FOOTER(14, lang)}
-`;
-
-const buildSouthIndianChartPage = (data: ReportData, lang: "hi" | "en"): string => `
-${PAGE_CHROME(L("southIndian", lang), lang, 15, data)}
-<h1 class="${lang === 'en' ? 'en' : ''}">${L("southIndian", lang)} ${L("planetaryPositions", lang)}</h1>
-<div class="chart-container">${renderChartSvg(data, lang, "south")}</div>
-${PAGE_FOOTER(15, lang)}
-`;
-
-const buildTransitPage = (data: ReportData, lang: "hi" | "en"): string => `
-${PAGE_CHROME("गोचर/F Gochar", lang, 16, data)}
-<h1 class="${lang === 'en' ? 'en' : ''}">गोचर / Gochar</h1>
-<p class="p en">Transit analysis will be populated from current planetary positions. This section examines gochar effects on the natal chart and timing of results.</p>
-${PAGE_FOOTER(16, lang)}
-`;
-
-const buildVargaPage = (data: ReportData, lang: "hi" | "en"): string => `
-${PAGE_CHROME("वर्ग/D9", lang, 17, data)}
-<h1 class="${lang === 'en' ? 'en' : ''}">वर्ग / Varga Charts (D-9)</h1>
-<p class="p en">Harmonic subdivision charts used for event timing precision. Navamsa chart details will be rendered here for comprehensive prediction.</p>
-${PAGE_FOOTER(17, lang)}
-`;
-
-const buildMuhurtaPage = (data: ReportData, lang: "hi" | "en"): string => `
-${PAGE_CHROME("मuhurta/Election", lang, 18, data)}
-<h1 class="${lang === 'en' ? 'en' : ''}">मुहूर्त / Muhurta</h1>
-<p class="p en">Electional astrology recommendations for optimal timing of events, based on tithi, nakshatra, yoga, and karana strength.</p>
-${PAGE_FOOTER(18, lang)}
 `;
 
 const buildScorecardPage = (data: ReportData, lang: "hi" | "en"): string => `
@@ -427,14 +407,18 @@ export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): s
     buildYogasPage(reportData, lang),
     buildRemediesPage(reportData, lang),
   ];
-  reportData.domainInsights.forEach((d, i) => pages.push(buildDomainPage(d, i, reportData, lang)));
-  pages.push(buildReferencesPage(reportData, lang));
+  // Dense domain pages — only emit the ones carrying actual insights so no
+  // placeholder/blank pages leak into the PDF.
+  reportData.domainInsights
+    .filter((d) => d.prediction || d.analysis)
+    .forEach((d, i) => pages.push(buildDomainPage(d, i, reportData, lang)));
+  if (reportData.kalpurushaPhalDeepikaRefs?.length) {
+    pages.push(buildReferencesPage(reportData, lang));
+  }
   pages.push(buildNorthIndianChartPage(reportData, lang));
-  pages.push(buildSouthIndianChartPage(reportData, lang));
-  pages.push(buildTransitPage(reportData, lang));
-  pages.push(buildVargaPage(reportData, lang));
-  pages.push(buildMuhurtaPage(reportData, lang));
-  pages.push(buildScorecardPage(reportData, lang));
+  if (reportData.scorecard?.length) {
+    pages.push(buildScorecardPage(reportData, lang));
+  }
   pages.push(buildSummaryPage(reportData, lang));
   // AI Life-Pillar appendix — one localized page per provided narrative.
   (reportData.narratives || []).forEach((n, i) => pages.push(buildNarrativePage(n, i, reportData, lang)));

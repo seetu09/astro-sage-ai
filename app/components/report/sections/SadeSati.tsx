@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, BadgeGroup, NarrativeCard, MilestoneTable } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import { localizeSign } from '../reportModel';
@@ -23,11 +22,11 @@ const DAIHYA_LABELS: Record<DhaiyaPhase, { en: string; hi: string }> = {
 };
 
 /**
- * PAGE 19 — Sade Sati & Dhaiya.
+ * SADE SATI & DHAIYA — bare section.
  * Reports Saturn's 2½-life Sade Sati (rising/peak/setting) and the sub-period
  * Dhaiya window, derived deterministically from the calculation layer.
  */
-export function SadeSatiPage({ model }: { model: ReportModel }) {
+export function SadeSatiSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const ss = model.calculations?.doshas?.sadeSati;
   const active = ss?.isActive ?? false;
@@ -37,13 +36,7 @@ export function SadeSatiPage({ model }: { model: ReportModel }) {
   const satSign = localizeSign(model.language, SIGN_NAMES[(ss?.saturnSignNow ?? 1) - 1] ?? 'Saturn');
 
   return (
-    <PageShell
-      title={t('Sade Sati', 'साढ़े साती')}
-      chapter="19"
-      subject={model.clientName}
-      page={19}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={active ? t('Active Sade Sati Period', 'सक्रिय साढ़े साती अवधि') : t('No Active Sade Sati', 'कोई सक्रिय साढ़े साती नहीं')}
         subtitle={t(`Phase: ${phaseLabel}`, `चरण: ${phaseLabel}`)}
@@ -104,6 +97,6 @@ export function SadeSatiPage({ model }: { model: ReportModel }) {
           ]}
         />
       )}
-    </PageShell>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, NarrativeCard, MilestoneTable, Badge } from '../primitives';
 import type { ReportModel } from '../reportModel';
 
@@ -22,11 +21,11 @@ function houseLabel(num: number): string {
 }
 
 /**
- * PAGE 18 — Mangal Dosha (Mars affliction).
+ * MANGAL DOSHA — bare section (Mars affliction).
  * Surfaces the deterministic Mangal Dosha check (presence, severity, bases,
  * cancellations) and the recommended remedies.
  */
-export function MangalDoshaPage({ model }: { model: ReportModel }) {
+export function MangalDoshaSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const md = model.calculations?.doshas?.mangal;
 
@@ -44,13 +43,7 @@ export function MangalDoshaPage({ model }: { model: ReportModel }) {
     t('Severe', 'गंभीर');
 
   return (
-    <PageShell
-      title={t('Mangal Dosha', 'मंगल दोष')}
-      chapter="18"
-      subject={model.clientName}
-      page={18}
-      totalPages={24}
-    >
+    <>
       <SectionHeading
         title={present ? t('Mars Dosha Identified', 'मंगल दोष पाया गया') : t('No Mangal Dosha', 'कोई मंगल दोष नहीं')}
         subtitle={t(`Severity: ${severityLabel}`, `गंभीरता: ${severityLabel}`)}
@@ -132,6 +125,6 @@ export function MangalDoshaPage({ model }: { model: ReportModel }) {
           }))}
         />
       )}
-    </PageShell>
+    </>
   );
 }

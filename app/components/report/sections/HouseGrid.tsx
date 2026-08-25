@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, StatTile, KeyValueRow } from '../primitives';
 import type { ReportModel } from '../reportModel';
 import { localizeSign, localizePlanet } from '../reportModel';
@@ -35,43 +34,24 @@ const H12_HI: string[] = [
 ];
 
 /**
- * Pages 15-16 — Twelve House Grid.
- * Each page renders six houses in a 2-column grid, pulling planet occupants
- * from houseCusps and planetaryPositions on the model.
+ * HOUSE GRID — bare section (all 12 houses on one compact page).
+ * Renders a dense 3-column grid of all twelve houses, pulling planet
+ * occupants from houseCusps and planetaryPositions on the model.
  */
-export function HouseGridPage({
-  model,
-  page,
-  startHouse,
-}: {
-  model: ReportModel;
-  page: 15 | 16;
-  startHouse: 1 | 7;
-}) {
-    const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
+export function HouseGridSection({ model }: { model: ReportModel }) {
+  const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const houses = model.houseCusps;
   const planets = model.planetaryPositions;
 
-  const slice = Array.from({ length: 6 }, (_, i) => startHouse + i);
-
   return (
-    <PageShell
-      title={t('Twelve Houses', 'द्वादश भाव')}
-      chapter={String(page).padStart(2, '0')}
-      subject={model.clientName}
-      page={page}
-      totalPages={24}
-    >
-            <SectionHeading
-        title={t(
-          page === 15 ? 'Houses 1–6 (Self → Service)' : 'Houses 7–12 (Partner → Liberation)',
-          page === 15 ? 'भाव 1–6 (आत्म → सेवा)' : 'भाव 7–12 (साथी → मोक्ष)'
-        )}
-        subtitle={t('The twelve life domains and their significators', 'जीवन के दोन क्षेत्र और उनके संकेतक')}
+    <>
+      <SectionHeading
+        title={t('Twelve Houses', 'द्वादश भाव')}
+        subtitle={t('The twelve life domains and their significators', 'जीवन के बारह क्षेत्र और उनके संकेतक')}
       />
 
       <div className="rpt-house-grid">
-        {slice.map((h) => {
+        {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => {
           const cusp = houses?.[h - 1];
           const signName = cusp?.sign ?? '';
           const occupying = (planets || []).filter((p) => planetHouseOf(p, h)).map((p) => p.body);
@@ -101,7 +81,7 @@ export function HouseGridPage({
           );
         })}
       </div>
-    </PageShell>
+    </>
   );
 }
 

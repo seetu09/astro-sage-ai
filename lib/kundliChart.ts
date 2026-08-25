@@ -144,21 +144,26 @@ interface HouseCell {
   glyphY: number;
 }
 
-// x,y for each house drawn from the established North-Indian polygon layout.
+// x,y for each house drawn from the established North-Indian layout.
+// The outer square (20,20)→(380,380) is divided into a 3×3 grid of 120-unit
+// cells; the eight outer cells hold houses 1–8 and the centre cell is split
+// into a diamond of four triangles (houses 9–12) that meet at (200,200).
+// Every polygon below shares its full edges with its neighbours, so the shape
+// tiles perfectly — no gaps, overlaps, stretching or misalignment.
 // glyphX/glyphY sit just inside each polygon's top-left bounding corner.
 const NORTH_CELLS: HouseCell[] = [
-  { house: 1, poly: '180,20 220,20 260,60 140,60', cx: 200, cy: 46, glyphX: 148, glyphY: 27 },
-  { house: 2, poly: '220,20 380,20 380,60 260,60', cx: 320, cy: 46, glyphX: 228, glyphY: 27 },
-  { house: 3, poly: '340,60 380,60 380,340 340,340', cx: 360, cy: 200, glyphX: 348, glyphY: 67 },
-  { house: 4, poly: '340,340 380,340 380,380 260,340', cx: 320, cy: 356, glyphX: 348, glyphY: 307 },
-  { house: 5, poly: '100,380 140,340 260,340 300,380', cx: 200, cy: 356, glyphX: 228, glyphY: 307 },
-  { house: 6, poly: '20,340 60,340 100,380 20,380', cx: 60, cy: 356, glyphX: 28, glyphY: 347 },
-  { house: 7, poly: '60,60 100,60 100,340 60,340', cx: 80, cy: 200, glyphX: 68, glyphY: 67 },
-  { house: 8, poly: '20,20 60,20 100,60 20,60', cx: 40, cy: 46, glyphX: 28, glyphY: 27 },
-  { house: 9, poly: '180,60 220,60 260,140 140,140', cx: 200, cy: 106, glyphX: 148, glyphY: 67 },
-  { house: 10, poly: '220,60 260,60 300,140 260,140', cx: 280, cy: 106, glyphX: 248, glyphY: 67 },
-  { house: 11, poly: '260,140 300,140 300,260 260,260', cx: 280, cy: 200, glyphX: 268, glyphY: 147 },
-  { house: 12, poly: '140,140 100,140 100,260 140,260', cx: 120, cy: 200, glyphX: 108, glyphY: 147 },
+  { house: 1, poly: '140,20 260,20 260,140 140,140', cx: 200, cy: 74, glyphX: 148, glyphY: 27 },
+  { house: 2, poly: '260,20 380,20 380,140 260,140', cx: 320, cy: 74, glyphX: 268, glyphY: 27 },
+  { house: 3, poly: '260,140 380,140 380,260 260,260', cx: 320, cy: 200, glyphX: 268, glyphY: 147 },
+  { house: 4, poly: '260,260 380,260 380,380 260,380', cx: 320, cy: 326, glyphX: 268, glyphY: 267 },
+  { house: 5, poly: '140,260 260,260 260,380 140,380', cx: 200, cy: 326, glyphX: 148, glyphY: 267 },
+  { house: 6, poly: '20,260 140,260 140,380 20,380', cx: 80, cy: 326, glyphX: 28, glyphY: 267 },
+  { house: 7, poly: '20,140 140,140 140,260 20,260', cx: 80, cy: 200, glyphX: 28, glyphY: 147 },
+  { house: 8, poly: '20,20 140,20 140,140 20,140', cx: 80, cy: 74, glyphX: 28, glyphY: 27 },
+  { house: 9, poly: '140,140 260,140 200,200', cx: 200, cy: 165, glyphX: 152, glyphY: 147 },
+  { house: 10, poly: '260,140 260,260 200,200', cx: 238, cy: 200, glyphX: 238, glyphY: 152 },
+  { house: 11, poly: '260,260 140,260 200,200', cx: 200, cy: 235, glyphX: 158, glyphY: 235 },
+  { house: 12, poly: '140,260 140,140 200,200', cx: 162, cy: 200, glyphX: 148, glyphY: 235 },
 ];
 
 function renderNorthIndian(input: KundliChartInput): string {

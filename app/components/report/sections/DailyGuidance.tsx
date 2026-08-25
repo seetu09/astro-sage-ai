@@ -1,6 +1,5 @@
 'use client';
 
-import PageShell from '../PageShell';
 import { SectionHeading, StatTile, KeyValueRow, Badge } from '../primitives';
 import type { ReportModel } from '../reportModel';
 
@@ -15,11 +14,11 @@ const DAY_INFOS = [
 ];
 
 /**
- * PAGE 24 — Daily Guidance.
+ * DAILY GUIDANCE — bare section.
  * A quick-reference guide: the benefic day + planet, a short action note, and
  * the running dasha summary so the reader can orient day-to-day practice.
  */
-export function DailyGuidancePage({ model }: { model: ReportModel }) {
+export function DailyGuidanceSection({ model }: { model: ReportModel }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
     const today = new Date();
   const dayIdx = today.getDay(); // 0 = Sunday → 6 = Saturday
@@ -39,14 +38,7 @@ export function DailyGuidancePage({ model }: { model: ReportModel }) {
   const cur = model.calculations?.vimshottari?.currentDasha;
 
   return (
-    <PageShell
-      title={t('Daily Guidance', 'दैनिक मार्गदर्शन')}
-      chapter="24"
-      subject={model.clientName}
-      page={24}
-      totalPages={24}
-      cover
-    >
+    <>
       <SectionHeading
         title={t('Today\'s Orientation', 'आज का सारांश')}
         subtitle={t('Your benefic day and the running dasha', 'आपका शुभ दिवस एवं चल रही दशा')}
@@ -72,19 +64,10 @@ export function DailyGuidancePage({ model }: { model: ReportModel }) {
       <KeyValueRow label={t('Midday', 'दोपहर')} value={t('Balanced meals; mindful work', 'संतुलित भोजन; सचेतन कार्य')} />
       <KeyValueRow label={t('Evening', 'शाम')} value={t('Gratitude review and reset', 'कृतज्ञता समीक्षा एवं पुनर्स्थापना')} />
 
-      <SectionHeading
-        title={t('Chart Strength', 'चार्ट शक्ति')}
-        accent="emerald"
-      />
-      <div className="rpt-stat-grid">
-        <StatTile label={t('Ascendant', 'लग्न')} value=" — " />
-        <StatTile label={t('Moon Sign Strength', 'चंद्र राशि शक्ति')} value=" — " />
-      </div>
-
       <p className="rpt-note">
         {t('Align daily actions with the benefic planet of the day and the running Mahadasha lord for best results.', 'दैनिक कार्यों को दिवस के दैवत और चल रही महादशा स्वामी के साथ मिलाकर सर्वोत्तम परिणाम प्राप्त करें।')}
       </p>
-    </PageShell>
+    </>
   );
 }
 
