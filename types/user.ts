@@ -44,6 +44,11 @@ export interface KundaliHistoryEntry {
   moonSign: string;
   sunSign: string;
   nakshatra: string;
+  /** Optional geocoded birth coordinates — enable server-side PDF rebuilds. */
+  latitude?: number;
+  longitude?: number;
+  /** e.g. "+05:30". Defaults to IST when omitted. */
+  timezoneOffset?: string;
 }
 
 export interface ChatHistoryMessage {

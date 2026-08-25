@@ -20,6 +20,7 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
 import DownloadReportButton from '@/app/components/DownloadReportButton';
+import KundliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
 import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
 import {
@@ -291,9 +292,13 @@ export default function KundaliView({
           )}
         </div>
 
-                {/* Download button (only when paid) */}
+                {/* Download actions (only when paid): primary server-rendered
+                    "Download Full 25-Page Kundli" with language modal +
+                    automatic window.print() fallback; secondary instant
+                    client-side quick print. */}
         {isPaid && (
-          <div className="mt-5 flex justify-center">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <KundliPdfButton reportData={reportData} userName={userName} />
             <DownloadReportButton reportData={reportData} userName={userName} />
           </div>
         )}

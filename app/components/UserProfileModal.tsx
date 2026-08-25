@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useWallet } from "../context/WalletContext";
+import KundliPdfButton from "./KundliPdfButton";
 import { getChatHistory, getKundaliHistory } from "@/lib/user-history";
 import type {
   ChatHistoryEntry,
@@ -292,6 +293,20 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
             <HistoryStat label="Nakshatra" value={entry.nakshatra} />
             <HistoryStat label="Birth place" value={entry.placeOfBirth} />
           </dl>
+          {/* Download Full 25-Page Kundli — opens the English / हिंदी selector,
+              then streams the serverless PDF (client print fallback built in). */}
+          <div className="mt-4 border-t border-amber-200/60 pt-3 dark:border-white/10">
+            {entry.latitude != null && entry.longitude != null ? (
+              <KundliPdfButton compact historyEntry={entry} />
+            ) : (
+              <a
+                href="/kundali"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-amber-300 px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-50 dark:border-white/15 dark:text-[#9CA3AF] dark:hover:bg-white/5"
+              >
+                Regenerate on Kundali page to enable PDF download
+              </a>
+            )}
+          </div>
         </div>
       ))}
     </div>

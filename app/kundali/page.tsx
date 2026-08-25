@@ -419,6 +419,11 @@ export default function KundaliPage() {
           moonSign: data.moonSign,
           sunSign: data.sunSign,
           nakshatra: data.nakshatra,
+          // Coordinates let the dashboard rebuild this exact chart server-side
+          // for the "Download Full 25-Page Kundli" flow without re-geocoding.
+          latitude,
+          longitude,
+          timezoneOffset: timezone || '+05:30',
         });
       }
     } catch (err) {

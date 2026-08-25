@@ -9,33 +9,12 @@ import {
   Milestone,
 } from '../primitives';
 import type { ReportModel } from '../reportModel';
+import type {
+  LifePillarConfig,
+  LifePillarKey,
+} from '@/lib/pillarNarratives';
 
-/** The six life pillars covered across the report. */
-export type LifePillarKey =
-  | 'career'
-  | 'wealth'
-  | 'marriage'
-  | 'health'
-  | 'education'
-  | 'family';
-
-/** Config that maps each pillar to its localized labels + 3 badges. */
-export interface LifePillarConfig {
-  key: LifePillarKey;
-  /** Page number this pillar occupies. */
-  page: number;
-  titleEn: string;
-  titleHi: string;
-  /** 3-badge header: exactly {score, timeframe, lord}. */
-  badges: {
-    score: string;
-    timeframe: string;
-    lord: string;
-  };
-    narrativeEn: string;
-  narrativeHi: string;
-  milestones: Milestone[];
-}
+export type { LifePillarConfig, LifePillarKey };
 
 const PILLARS: LifePillarConfig[] = [
   {
@@ -183,8 +162,15 @@ export function LifePillarPage({
  * Page 13 — Life Balance overview board (cross-pillar comparison).
  * Keeps the 7–14 pillar block contiguous while adding synthesis value.
  */
-export function LifeBalancePage({ model }: { model: ReportModel }) {
+export function LifeBalancePage({
+  model,
+  pillars,
+}: {
+  model: ReportModel;
+  pillars?: LifePillarConfig[];
+}) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
+  const list = pillars && pillars.length === 6 ? pillars : PILLARS;
   return (
     <PageShell
       title={t('Life Pillars — Overview', 'जीवन स्तंभ सारांश')}
@@ -198,7 +184,7 @@ export function LifeBalancePage({ model }: { model: ReportModel }) {
         subtitle={t('Relative strength across the life domains', 'जीवन के विभिन्न क्षेत्रों की सापेक्ष शक्ति')}
       />
       <div className="rpt-two-col">
-        {PILLARS.map((p) => {
+        {list.map((p) => {
           const name = model.language === 'hi' ? p.titleHi : p.titleEn;
           return (
             <div key={p.key} className="rpt-synergy-card">
@@ -219,10 +205,17 @@ export function LifeBalancePage({ model }: { model: ReportModel }) {
  * Merges every pillar's forecast rows into one timeline so the reader can see
  * how the life domains interact over the decade.
  */
-export function MilestoneTrackerPage({ model }: { model: ReportModel }) {
+export function MilestoneTrackerPage({
+  model,
+  pillars,
+}: {
+  model: ReportModel;
+  pillars?: LifePillarConfig[];
+}) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
+  const list = pillars && pillars.length === 6 ? pillars : PILLARS;
   const all: { period: string; event: string; pillar: string; outcome: Milestone['outcome'] }[] = [];
-  for (const p of PILLARS) {
+  for (const p of list) {
     for (const m of p.milestones) {
       all.push({
         period: m.period,

@@ -1,0 +1,370 @@
+'use client';
+
+import { useCallback, useRef, useState } from 'react';
+import { Download, Loader2 } from 'lucide-react';
+import LanguageSelectModal, { type PdfLanguage } from './LanguageSelectModal';
+import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
+import type { KundaliHistoryEntry } from '@/types/user';
+import { trackEvent } from '@/lib/analytics';
+
+interface KundliPdfButtonProps {
+  userName?: string;
+  /** Ready-made report payload (kundali result page path). */
+  reportData?: ReportData | null;
+  /** AI Life-Pillar narratives when already fetched — appended as PDF appendix pages. */
+  pillars?: ReportNarrative[];
+  /**
+   * Dashboard mode: rebuild the full report server-side from stored birth
+   * details (`POST /api/kundali/generate`) before rendering the PDF. Requires
+   * latitude/longitude on the entry (present for all newly saved charts).
+   */
+  historyEntry?: KundaliHistoryEntry;
+  /** Override the CTA copy; defaults to "Download Full 25-Page Kundli". */
+  label?: string;
+  /** Compact styling for dashboard history cards. */
+  compact?: boolean;
+}
+
+interface ResolvedPayload {
+  reportData: ReportData;
+  pillars?: ReportNarrative[];
+}
+
+const DEFAULT_LABEL = 'Download Full 25-Page Kundli';
+
+/** Strip a bilingual sign value like "Aquarius (कुंभ)" down to its first part. */
+function cleanAstroValue(value: unknown): string {
+  return String(value ?? '').replace(/\s*\([^)]*\)\s*/g, '').trim();
+}
+
+/**
+ * Rebuild the complete localized report from a dashboard history entry:
+ * 1. POST /api/kundali/generate   → deterministic chart + tiers (+ AI reading)
+ * 2. POST /api/kundali/narratives → six AI Life-Pillar narratives (best-effort)
+ * then map both onto the shared `ReportData` template contract.
+ */
+async function resolvePayload(
+  reportData: ReportData | null | undefined,
+  pillars: ReportNarrative[] | undefined,
+  entry: KundaliHistoryEntry | undefined,
+  language: PdfLanguage
+): Promise<ResolvedPayload> {
+  if (reportData) return { reportData, pillars };
+  if (!entry) throw new Error('NO_SOURCE');
+
+  const generateRes = await fetch('/api/kundali/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      birthDate: entry.dateOfBirth,
+      birthTime: entry.timeOfBirth,
+      birthPlace: entry.placeOfBirth,
+      latitude: entry.latitude ?? null,
+      longitude: entry.longitude ?? null,
+      timezoneOffset: entry.timezoneOffset || '+05:30',
+      language,
+    }),
+  });
+  if (!generateRes.ok) throw new Error('GENERATE_FAILED');
+  const result = await generateRes.json();
+
+  // Best-effort AI narrative pass — the PDF renders fine without it.
+  let aiPillars = pillars;
+  try {
+    const narrativeRes = await fetch('/api/kundali/narratives', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ report: result, language }),
+    });
+    if (narrativeRes.ok) {
+      const narrativeJson = await narrativeRes.json();
+      if (Array.isArray(narrativeJson?.pillars) && narrativeJson.pillars.length === 6) {
+        aiPillars = narrativeJson.pillars as ReportNarrative[];
+      }
+    }
+  } catch {
+    // Narratives are optional garnish — never block the download.
+  }
+
+  return { reportData: mapGenerateResultToReportData(result, entry, aiPillars), pillars: aiPillars };
+}
+
+/** Map `/api/kundali/generate`'s response onto the A4 template contract. */
+function mapGenerateResultToReportData(
+  result: Record<string, any>,
+  entry: KundaliHistoryEntry,
+  aiPillars?: ReportNarrative[]
+): ReportData {
+  const chart = result?.chartData ?? {};
+  const paid = result?.paidTier ?? {};
+  const lifeDomains = paid.lifeDomains ?? {};
+
+  return {
+    clientName: entry.name || 'User',
+    chartType: 'North Indian',
+    birthDetails: {
+      date: entry.dateOfBirth || '',
+      time: entry.timeOfBirth || '',
+      latitude: entry.latitude != null ? Number(entry.latitude).toFixed(2) : '',
+      longitude: entry.longitude != null ? Number(entry.longitude).toFixed(2) : '',
+      timezone: entry.timezoneOffset || '+05:30',
+    },
+    planetaryPositions: (Array.isArray(chart.planets) ? chart.planets : []).map((p: Record<string, unknown>) => ({
+      body: String(p?.name ?? ''),
+      sign: cleanAstroValue(p?.sign),
+      degree:
+        typeof p?.degree === 'number'
+          ? (p.degree as number).toFixed(2)
+          : String(p?.degree ?? ''),
+      house: String(p?.house ?? ''),
+      retro: Boolean(p?.retrograde),
+    })),
+    houseCusps: (Array.isArray(chart.houses) ? chart.houses : []).map((h: Record<string, unknown>, i: number) => ({
+      house: Number(h?.house ?? i + 1),
+      sign: cleanAstroValue(h?.sign),
+      degree: '',
+    })),
+    dashaPeriods: (Array.isArray(paid.dashaRoadmap) ? paid.dashaRoadmap : []).map((d: Record<string, string>) => ({
+      mahaDasha: String(d.lord ?? ''),
+      startYear: String(d.startDate ?? '').split('-')[0] || '',
+      endYear: String(d.endDate ?? '').split('-')[0] || '',
+      subPeriod: d.theme || '',
+    })),
+    yogas: (Array.isArray(paid.yogas) ? paid.yogas : [])
+      .filter((y: Record<string, unknown>) => y?.presence !== false)
+      .map((y: Record<string, string>) => ({
+        name: String(y.name ?? ''),
+        description: String(y.description ?? y.impact ?? ''),
+      })),
+    remedies: (Array.isArray(paid.remedies) ? paid.remedies : []).map((r: Record<string, string>) => ({
+      category: String(r.type ?? ''),
+      description: String(r.description ?? ''),
+    })),
+    domainInsights: (['career', 'marriage', 'wealth', 'health'] as const)
+      .filter((key) => lifeDomains?.[key])
+      .map((key) => ({
+        domain: key,
+        prediction: String(lifeDomains[key]?.overview ?? ''),
+        analysis: (lifeDomains[key]?.recommendations ?? []).join('. '),
+        timeframe: undefined,
+      })),
+    northIndianChartSvg: '',
+    kalpurushaPhalDeepikaRefs: [],
+    scorecard: [],
+    isPaidTier: true,
+    ...(aiPillars ? { narratives: aiPillars } : {}),
+  };
+}
+
+/**
+ * Fallback `@media print` trigger — renders the same A4 template in a hidden
+ * iframe and fires window.print(). Zero server cost, instant, and works even
+ * when the serverless PDF function is cold or unavailable.
+ */
+function printReportHtml(html: string): void {
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  iframe.style.zIndex = '-1';
+  iframe.setAttribute('aria-hidden', 'true');
+
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument || (iframe.contentWindow as Window | null)?.document;
+  if (!doc) return;
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  // Give the hidden document a beat to lay out + fetch web fonts, then hand
+  // off to the browser print dialog. The template's `@media print` CSS takes
+  // over pagination (hard A4 page breaks per .page-container).
+  iframe.onload = () => {
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } finally {
+        setTimeout(() => iframe.parentNode?.removeChild(iframe), 1000);
+      }
+    }, 400);
+  };
+}
+
+/** Stream the server-rendered PDF back to the user as a file download. */
+async function downloadServerPdf(payload: {
+  reportData: ReportData;
+  pillars?: ReportNarrative[];
+  language: PdfLanguage;
+  /** Optional filename stem override (falls back to the client name). */
+  fileName?: string;
+}): Promise<void> {
+  const res = await fetch('/api/kundali/pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      reportData: payload.reportData,
+      pillars: payload.pillars,
+      language: payload.language,
+      fileName: payload.fileName || payload.reportData.clientName,
+    }),
+  });
+  if (!res.ok) throw new Error(`PDF_SERVICE_${res.status}`);
+
+  const blob = await res.blob();
+  if (!blob || blob.size === 0) throw new Error('EMPTY_PDF');
+
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${(payload.reportData.clientName || 'kundli')
+    .replace(/[^a-z0-9-_]+/gi, '-')
+    .replace(/^-+|-+$/g, '')}-kundli-${payload.language}.pdf`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/**
+ * KundliPdfButton — "Download Full 25-Page Kundli" CTA.
+ *
+ * Flow:
+ *   click → LanguageSelectModal (English / हिंदी)
+ *         → [dashboard mode] rebuild report from stored birth details
+ *         → POST /api/kundali/pdf (serverless Chromium render, streamed back)
+ *         → on ANY server failure → automatic client-side iframe window.print()
+ *           fallback driven by the same A4 template's `@media print` CSS.
+ *   …or the user picks "Print instantly" for the zero-server path up front.
+ */
+export default function KundliPdfButton({
+  userName,
+  reportData,
+  pillars,
+  historyEntry,
+  label,
+  compact = false,
+}: KundliPdfButtonProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [phase, setPhase] = useState<'idle' | 'rebuilding' | 'rendering'>('idle');
+  const [error, setError] = useState('');
+  // Guard against double-clicks racing two downloads for the same entry.
+  const inFlight = useRef(false);
+
+  const busy = phase !== 'idle';
+
+  const runFlow = useCallback(
+    async (language: PdfLanguage, mode: 'download' | 'print') => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setError('');
+
+      try {
+        let payload: ResolvedPayload | null =
+          reportData ? { reportData, pillars } : null;
+
+        if (!payload) {
+          setPhase('rebuilding');
+          payload = await resolvePayload(null, pillars, historyEntry, language);
+        }
+
+        if (mode === 'print') {
+          trackEvent('kundli_pdf_print_fallback', { lang: language, source: 'manual' });
+          printReportHtml(generateReportHtml(payload.reportData, language));
+          setModalOpen(false);
+          return;
+        }
+
+        setPhase('rendering');
+        trackEvent('kundli_pdf_server_started', {
+          lang: language,
+          has_pillars: !!payload.pillars?.length,
+          source: reportData ? 'page' : 'history',
+        });
+        try {
+          await downloadServerPdf({
+            ...payload,
+            language,
+            fileName: userName || payload.reportData.clientName,
+          });
+          trackEvent('kundli_pdf_server_success', { lang: language });
+          setModalOpen(false);
+        } catch {
+          // Zero-cost client fallback — same HTML, browser print dialog.
+          trackEvent('kundli_pdf_server_failed', { lang: language });
+          printReportHtml(generateReportHtml(payload.reportData, language));
+          setModalOpen(false);
+        }
+      } catch (err) {
+        const code = err instanceof Error ? err.message : 'UNKNOWN';
+        if (code === 'NO_SOURCE') {
+          setError('Nothing to export yet — generate a kundali first. / पहले कुंडली बनाएं।');
+        } else if (code === 'GENERATE_FAILED') {
+          setError(
+            'Could not rebuild this chart (missing coordinates?). Open it on the Kundali page and try again. / कुंडली दोबारा बनाकर प्रयास करें।'
+          );
+        } else {
+          setError('Export failed. Please try again. / निर्यात विफल। कृपया पुनः प्रयास करें।');
+        }
+      } finally {
+        setPhase('idle');
+        inFlight.current = false;
+      }
+    },
+    [reportData, pillars, historyEntry]
+  );
+
+  const displayLabel = label || DEFAULT_LABEL;
+  const busyMessage =
+    phase === 'rebuilding'
+      ? 'Rebuilding your full chart… / कुंडली तैयार हो रही है…'
+      : 'Rendering your 25-page PDF… / PDF बनाई जा रही है…';
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError('');
+          setModalOpen(true);
+        }}
+        disabled={busy}
+        className={
+          compact
+            ? 'inline-flex items-center gap-1.5 rounded-lg border border-amber-300/70 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:border-amber-500 hover:bg-amber-50 disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-[#FFD166] dark:hover:bg-white/10'
+            : 'flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all disabled:opacity-60 disabled:cursor-not-allowed'
+        }
+        aria-label={`${displayLabel} (choose English or Hindi)`}
+      >
+        {busy ? (
+          <Loader2 className={compact ? 'h-3.5 w-3.5 animate-spin' : 'h-4 w-4 sm:h-5 sm:w-5 animate-spin'} />
+        ) : (
+          <Download className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4 sm:h-5 sm:w-5'} />
+        )}
+        {displayLabel}
+      </button>
+
+      <LanguageSelectModal
+        isOpen={modalOpen}
+        isBusy={busy}
+        busyMessage={busyMessage}
+        errorMessage={error}
+        onSelect={(language) => void runFlow(language, 'download')}
+        onPrintInstantly={(language) => void runFlow(language, 'print')}
+        onClose={() => {
+          if (!busy) {
+            setModalOpen(false);
+            setError('');
+          }
+        }}
+      />
+    </>
+  );
+}
+
+

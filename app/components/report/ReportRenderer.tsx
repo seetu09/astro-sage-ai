@@ -17,6 +17,7 @@ import {
   MilestoneTrackerPage,
   PILLARS,
 } from './sections/LifePillars';
+import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { HouseGridPage } from './sections/HouseGrid';
 import { SpecialYogasPage } from './sections/SpecialYogas';
 import { MangalDoshaPage } from './sections/MangalDosha';
@@ -33,10 +34,17 @@ export interface ReportRendererProps {
   reportData: ReportData;
   calculations?: KundliCalculations;
   language?: 'en' | 'hi';
+  /**
+   * Optional AI-generated Life Pillar narratives (see
+   * `POST /api/kundali/narratives`). When provided as a complete 6-item set it
+   * replaces the static pillar config; otherwise the built-in defaults are used.
+   */
+  pillars?: LifePillarConfig[];
   onPrint?: () => void;
 }
 
-function buildPages(model: ReportModel): React.ReactNode[] {
+function buildPages(model: ReportModel, pillars?: LifePillarConfig[]): React.ReactNode[] {
+  const pillarList = pillars && pillars.length === 6 ? pillars : PILLARS;
   return [
     <NativitySummaryPage key="nativity" model={model} />,
     <PanchangPage key="panchang" model={model} />,
@@ -44,11 +52,11 @@ function buildPages(model: ReportModel): React.ReactNode[] {
     <ChartsPage key="charts" model={model} />,
     <LagnaMoonPage key="lagna" model={model} />,
     <NakshatraGunaPage key="nakshatra" model={model} />,
-    ...PILLARS.map((p) => (
+    ...pillarList.map((p) => (
       <LifePillarPage key={p.key} model={model} pillar={p} />
     )),
-    <LifeBalancePage key="balance" model={model} />,
-    <MilestoneTrackerPage key="tracker" model={model} />,
+    <LifeBalancePage key="balance" model={model} pillars={pillarList} />,
+    <MilestoneTrackerPage key="tracker" model={model} pillars={pillarList} />,
     <HouseGridPage key="houses-1" model={model} page={15} startHouse={1} />,
     <HouseGridPage key="houses-2" model={model} page={16} startHouse={7} />,
     <SpecialYogasPage key="yogas" model={model} />,
@@ -66,6 +74,7 @@ export default function ReportRenderer({
   reportData,
   calculations,
   language = 'en',
+  pillars,
   onPrint,
 }: ReportRendererProps) {
   const model: ReportModel = React.useMemo(
@@ -73,7 +82,7 @@ export default function ReportRenderer({
     [reportData, calculations, language]
   );
 
-  const pages = buildPages(model);
+  const pages = buildPages(model, pillars);
 
   return (
     <section className="report-root" data-report-pages={pages.length}>

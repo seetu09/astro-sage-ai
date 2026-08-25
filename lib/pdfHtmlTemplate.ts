@@ -19,6 +19,28 @@ export interface ReportData {
   kalpurushaPhalDeepikaRefs: { verse: string; interpretation: string }[];
   scorecard: { parameter: string; score: number; maxScore: number }[];
   isPaidTier: boolean;
+  /**
+   * Optional AI Life-Pillar narratives (`POST /api/kundali/narratives` →
+   * `LifePillarConfig[]`). When present, each pillar is rendered as its own
+   * localized appendix page right after the Summary — this is what takes the
+   * report from the 20 deterministic pages up to the full "25-page" edition.
+   */
+  narratives?: ReportNarrative[];
+}
+
+/**
+ * Localized AI narrative for one of the six Life Pillars, as consumed by the
+ * PDF template appendix. Field names mirror `LifePillarConfig` from
+ * `@/lib/pillarNarratives` so payloads can be passed through unmodified.
+ */
+export interface ReportNarrative {
+  key: string;
+  titleEn: string;
+  titleHi: string;
+  badges?: { score?: string; timeframe?: string; lord?: string };
+  narrativeEn: string;
+  narrativeHi: string;
+  milestones?: { period: string; event: string; note?: string; outcome?: "positive" | "neutral" | "caution" }[];
 }
 
 const LABEL = {
@@ -73,8 +95,19 @@ const L = (key: keyof typeof LABEL.hi, lang: "hi" | "en"): string => LABEL[lang]
 const CSS = `
 @page { margin: 0; padding: 0; size: A4; }
 @media print {
-  @page { size: A4 portrait; margin: 8mm; }
-  .page-container { page-break-after: always; height: 100vh; }
+  @page { size: A4 portrait; margin: 0; }
+  /* Client fallback (window.print): force exact A4 sheets with hard breaks so
+     every .page-container lands on its own physical sheet, chrome included. */
+  html, body { width: 210mm; overflow: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page-container {
+    page-break-after: always;
+    break-after: page;
+    width: 210mm;
+    height: 296mm; /* 297mm minus a hair avoids blank overflow sheets in Chrome */
+    min-height: auto;
+    overflow: hidden;
+  }
+  .page-container:last-child { page-break-after: auto; break-after: auto; }
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Inter', sans-serif; font-size: 12pt; line-height: 1.4; color: #1a1a1a; background: #fff; }
@@ -325,6 +358,65 @@ ${PAGE_CHROME("सारांश/Summary", lang, 20, data)}
 ${PAGE_FOOTER(20, lang)}
 `;
 
+// ─── AI Life-Pillar appendix (pages 21+) ───────────────────────────────────
+// Each narrative becomes its own localized A4 page appended after the
+// deterministic Summary. With all six pillars present the report reaches the
+// full "25-page" edition (20 base + up to 6 appendix pages).
+const NARRATIVE_LABEL = {
+  hi: {
+    appendix: "परिशिष्ट — जीवन स्तंभ",
+    milestones: "प्रमुख मील के पत्थर",
+    aiNote: "यह अध्याय AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन पर आधारित है।",
+  },
+  en: {
+    appendix: "Appendix — Life Pillars",
+    milestones: "Key Milestones",
+    aiNote: "This chapter is based on AI-assisted Vedic astrology guidance.",
+  },
+} as const;
+
+const OUTCOME_TAG_COLOR: Record<string, string> = {
+  positive: "#059669",
+  neutral: "#6b7280",
+  caution: "#d97706",
+};
+
+const buildNarrativePage = (
+  n: ReportNarrative,
+  idx: number,
+  data: ReportData,
+  lang: "hi" | "en"
+): string => {
+  const title = lang === "hi" ? n.titleHi || n.titleEn : n.titleEn || n.titleHi;
+  const narrative = lang === "hi" ? n.narrativeHi || n.narrativeEn : n.narrativeEn || n.narrativeHi;
+  const label = NARRATIVE_LABEL[lang];
+  const pageNumber = 21 + idx;
+  const badges = n.badges || {};
+  const badgeCells = [
+    badges.score,
+    badges.timeframe,
+    badges.lord,
+  ].filter(Boolean) as string[];
+
+  return `
+${PAGE_CHROME(title, lang, pageNumber, data)}
+<p class="note">${escapeHTML(label.appendix)}</p>
+<h1 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(title)}</h1>
+${badgeCells.length ? `<p class="p"><span class="tag paid">${badgeCells.map(b => escapeHTML(b)).join("</span> <span class=\"tag paid\">")}</span></p>` : ""}
+<h2 class="${lang === 'en' ? 'en' : ''}">${L("domainInsights", lang)}</h2>
+<p class="p${lang === "en" ? " en" : ""}" style="font-size:10pt;">${escapeHTML(narrative)}</p>
+${(n.milestones && n.milestones.length) ? `
+<div class="divider"></div>
+<h2 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(label.milestones)}</h2>
+<table class="table-0">
+<tr><th>${lang === "hi" ? "अवधि" : "Period"}</th><th>${lang === "hi" ? "घटना" : "Event"}</th><th>${lang === "hi" ? "टिप्पणी" : "Note"}</th></tr>
+${n.milestones.map(m => `<tr><td>${escapeHTML(m.period)}</td><td>${escapeHTML(m.event)}${m.outcome ? ` <span style="color:${OUTCOME_TAG_COLOR[m.outcome] || "#6b7280"};font-weight:700;">●</span>` : ""}</td><td>${escapeHTML(m.note || "-")}</td></tr>`).join("")}
+</table>` : ""}
+<p class="note">${escapeHTML(label.aiNote)}</p>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+};
+
 export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): string {
   const pages: string[] = [
     buildCoverPage(reportData, lang),
@@ -344,6 +436,8 @@ export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): s
   pages.push(buildMuhurtaPage(reportData, lang));
   pages.push(buildScorecardPage(reportData, lang));
   pages.push(buildSummaryPage(reportData, lang));
+  // AI Life-Pillar appendix — one localized page per provided narrative.
+  (reportData.narratives || []).forEach((n, i) => pages.push(buildNarrativePage(n, i, reportData, lang)));
   return `
 <!DOCTYPE html>
 <html lang="${lang}">
