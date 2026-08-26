@@ -122,10 +122,9 @@ const CSS = `
     page-break-after: always;
     break-after: page;
     width: 210mm;
+    min-height: 297mm;
     height: auto;
-    min-height: 296mm; /* 297mm minus a hair avoids blank overflow sheets in Chrome */
-    max-height: 297mm;
-    overflow: hidden;
+    /* REMOVED: max-height and overflow: hidden — these clip content and create artificial blank space */
   }
   .page-container:last-child { page-break-after: auto; break-after: auto; }
 }
@@ -200,6 +199,19 @@ html, body { overflow: hidden; }
 .av-cell.av-strong { background: #ecfdf5; border-color: #059669; }
 .av-h { display: block; font-size: 7pt; color: #666; }
 .av-b { display: block; font-size: 11pt; font-weight: 700; }
+
+/* Dual-domain layout — two life domains packed onto ONE A4 sheet. */
+.dual-domain-grid { display: flex; flex-direction: column; gap: 4mm; }
+.domain-half { flex: 1; min-height: 0; }
+.domain-title { font-size: 11.5pt; font-weight: 700; margin-bottom: 0.15cm; color: #333; }
+.domain-title.en { font-family: 'Inter', sans-serif; }
+.domain-badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5mm; margin-bottom: 0.2cm; }
+.domain-badges .tag { text-align: center; padding: 2pt 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.domain-narrative { font-size: 9pt; text-align: justify; line-height: 1.5; max-height: 65mm; overflow: hidden; margin-bottom: 0.2cm; }
+.mini-table { width: 100%; border-collapse: collapse; }
+.mini-table th, .mini-table td { border: 0.5pt solid #bbb; padding: 2mm 4px; text-align: left; font-size: 8.5pt; }
+.mini-table th { background: #f0f0f0; }
+.domain-divider { border-top: 0.6pt solid rgba(0, 0, 0, 0.1); margin: 4mm 0; }
 `;
 
 const PAGE_CHROME = (title: string, lang: "hi" | "en", pageNumber: number, data: Pick<ReportData, "clientName" | "isPaidTier">): string => `<div class="page-container">
@@ -452,47 +464,75 @@ const DOMAIN_HOUSES: Record<string, number> = {
   career: 10, marriage: 7, wealth: 2, health: 6, finance: 11, education: 4,
 };
 
+/** Clamp a narrative to at most `max` words so a dual-domain half never spills. */
+const clampWords = (text: string, max: number): string => {
+  const words = text.split(/\s+/).filter(Boolean);
+  return words.length <= max ? text : `${words.slice(0, max).join(" ")}…`;
+};
+
 /**
- * Domain page — Career / Marriage / Wealth / Health … Each keeps its THREE
- * header metric badges (focus bhava, cusp-sign lord, running window), the
- * merged prediction+analysis narrative and the milestone-window table on ONE
- * dense sheet.
+ * DUAL-DOMAIN PAGE — TWO life domains share ONE A4 sheet. Each half carries
+ * the three metric badges in a horizontal grid row, a justified narrative
+ * (≤180 words, hard-clipped at 65mm) and a compact 2-row milestone table of
+ * only the next upcoming windows; a hairline divider separates the halves.
  */
-const buildDomainPage = (
-  domain: ReportData["domainInsights"][0],
+const buildLifeDomainsPage = (
+  domains: ReportData["domainInsights"],
   data: ReportData,
   lang: "hi" | "en",
   pageNumber: number
 ): string => {
-  const title = domain.domain.charAt(0).toUpperCase() + domain.domain.slice(1);
-  const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
-  const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
-  const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
-  const firstWindow = data.dashaPeriods?.[0]
-    ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
-    : domain.timeframe || "—";
-  const badges = [
-    `${lang === "hi" ? "भाव" : "House"} ${focusHouse}`,
-    `${lang === "hi" ? "स्वामी" : "Lord"}: ${lord}`,
-    firstWindow,
-  ];
-  const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
-  return `
-${PAGE_CHROME(title, lang, pageNumber, data)}
-<h1 style="font-size:14pt;font-weight:700;margin-bottom:0.25cm;" class="${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h1>
-<div class="badge-row">${badges.map(b => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
-${narrativeParts.length
-    ? `<p class="p ${lang === "en" ? "en" : ""}" style="font-size:9.5pt;">${narrativeParts.map(n => escapeHTML(n)).join(" ")}</p>`
-    : `<p class="p en">${lang === "hi" ? "विस्तृत विश्लेषण प्रीमियम रिपोर्ट में शामिल है।" : `Detailed ${escapeHTML(domain.domain)} analysis is included in the premium report.`}</p>`}
-<div class="divider"></div>
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${lang === "hi" ? "मुख्य समय-अवधियाँ" : "Key Milestone Windows"}</h2>
-<table class="table-0">
+  const currentYear = new Date().getFullYear();
+  const sectionHtml = domains
+    .map((domain) => {
+      const title = domain.domain.charAt(0).toUpperCase() + domain.domain.slice(1);
+      const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
+      const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
+      const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
+      const firstWindow = data.dashaPeriods?.[0]
+        ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
+        : domain.timeframe || "—";
+      const badges = [
+        `${lang === "hi" ? "भाव" : "House"} ${focusHouse}`,
+        `${lang === "hi" ? "स्वामी" : "Lord"}: ${lord}`,
+        firstWindow,
+      ];
+      const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
+      const narrative = narrativeParts.length
+        ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
+        : lang === "hi"
+          ? "विस्तृत विश्लेषण प्रीमियम रिपोर्ट में शामिल है।"
+          : `Detailed ${escapeHTML(domain.domain)} analysis is included in the premium report.`;
+      // Milestone table — at most TWO rows, showing only the NEXT upcoming windows.
+      const upcomingWindows = (data.dashaPeriods || [])
+        .filter((d) => {
+          const endYear = parseInt(String(d.endYear), 10);
+          return Number.isNaN(endYear) || endYear >= currentYear;
+        })
+        .slice(0, 2);
+      const milestoneRows = upcomingWindows.length
+        ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([d.mahaDasha, d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
+        : `<tr><td>—</td><td>${lang === "hi" ? "उपलब्ध नहीं" : "Not available"}</td></tr>`;
+      return `<div class="domain-half">
+<h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
+<div class="domain-badges">${badges.map((b) => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
+<p class="domain-narrative ${lang === "en" ? "en" : ""}">${narrative}</p>
+<table class="mini-table">
 <tr><th>${lang === "hi" ? "अवधि" : "Period"}</th><th>${lang === "hi" ? "प्रभाव" : "Influence"}</th></tr>
-${data.dashaPeriods.slice(0, 4).map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([d.mahaDasha, d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("") || `<tr><td>—</td><td>${lang === "hi" ? "उपलब्ध नहीं" : "Not available"}</td></tr>`}
+${milestoneRows}
 </table>
+</div>`;
+    })
+    .join(`<div class="domain-divider"></div>`);
+  return `
+${PAGE_CHROME(lang === "hi" ? "जीवन क्षेत्र विश्लेषण" : "Life Domains Analysis", lang, pageNumber, data)}
+<div class="dual-domain-grid">
+${sectionHtml}
+</div>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
+
 
 /**
  * FINAL SHEET — guarded appendix: Phal-Deepika references + scorecard + a
@@ -605,11 +645,28 @@ export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): s
     pageNo += 1;
     pages.push(coreSheet);
   }
-  // Dense domain pages — only emit the ones carrying actual insights so no
-  // placeholder/blank pages leak into the PDF.
-  reportData.domainInsights
-    .filter((d) => d.prediction || d.analysis)
-    .forEach((d) => push(buildDomainPage(d, reportData, lang, ++pageNo)));
+  // Dense dual-domain pages — Career+Wealth and Marriage+Health (plus
+  // Education+Family when present) each share ONE A4 sheet instead of one
+  // sparse page per domain. Only pairs carrying real predictions are emitted.
+  const domainPairs: [string, string][] = [
+    ["career", "wealth"],
+    ["marriage", "health"],
+    ["education", "family"],
+  ];
+  domainPairs.forEach(([keyA, keyB]) => {
+    const domA = reportData.domainInsights.find((d) => d.domain === keyA);
+    const domB = reportData.domainInsights.find((d) => d.domain === keyB);
+    if (((domA?.prediction?.length ?? 0) > 50) || ((domB?.prediction?.length ?? 0) > 50)) {
+      push(
+        buildLifeDomainsPage(
+          [domA, domB].filter((d): d is ReportData["domainInsights"][0] => Boolean(d)),
+          reportData,
+          lang,
+          ++pageNo
+        )
+      );
+    }
+  });
   // Guarded appendix — references + scorecard + closing summary on one sheet.
   const appendix = buildAppendixSummaryPage(reportData, lang, pageNo + 1);
   if (appendix) {

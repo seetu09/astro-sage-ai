@@ -39,8 +39,6 @@ const AppContext = createContext<AppContextType>(defaultValue);
 
 const IS_PAID_STORAGE_KEY = 'astroveda-is-paid';
 const UNLOCK_TOKEN_STORAGE_KEY = 'astroveda-unlock-token';
-const PAYMENT_FLAG_PARAM = 'payment';
-const PAYMENT_ID_PARAM = 'razorpay_payment_id';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isPaid, setIsPaid] = useState(false);
@@ -48,8 +46,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { language, setLanguage } = useLanguage();
 
   // --- Restore persisted payment state (hydration-safe) ---------------------
+  // SECURITY: localStorage is restored here, but it is NEVER written from URL
+  // params. markAsPaid() (backed by a server-verified payment) is the ONLY
+  // code path that can set isPaid=true — visiting ?payment=success or any
+  // crafted query string cannot unlock the report.
   useEffect(() => {
     try {
+      // Dev-mode guard: clear stale localStorage so it doesn't poison tests.
+      if (process.env.NODE_ENV === 'development') {
+        localStorage.removeItem(IS_PAID_STORAGE_KEY);
+        localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
+        setIsPaid(false);
+        setUnlockToken(null);
+        return;
+      }
       if (localStorage.getItem(IS_PAID_STORAGE_KEY) === 'true') {
         setIsPaid(true);
       }
@@ -59,33 +69,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     } catch {
       // localStorage unavailable — stay locked
-    }
-  }, []);
-
-  // --- Post-payment redirect/callback handler --------------------------------
-  // Supports flows that land back on the page with ?payment=success&razorpay_payment_id=...
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const params = new URLSearchParams(window.location.search);
-    const flag = params.get(PAYMENT_FLAG_PARAM);
-    const paymentId = params.get(PAYMENT_ID_PARAM);
-
-    if (flag === 'success' || paymentId) {
-      try {
-        localStorage.setItem(IS_PAID_STORAGE_KEY, 'true');
-      } catch {
-        // ignore storage failures
-      }
-      setIsPaid(true);
-
-      // Clean the URL so refreshes/reloads don't re-trigger the handler.
-      params.delete(PAYMENT_FLAG_PARAM);
-      params.delete(PAYMENT_ID_PARAM);
-      const remaining = params.toString();
-      const cleanUrl =
-        window.location.pathname + (remaining ? `?${remaining}` : '') + window.location.hash;
-      window.history.replaceState({}, document.title, cleanUrl);
     }
   }, []);
 

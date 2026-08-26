@@ -201,10 +201,10 @@ Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
     "fullBreakdown": [{"title":"","content":""}],
     "timings": [{"event":"","timing":"","note":""}],
     "lifeDomains": {
-      "career": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
-      "wealth": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
-      "marriage": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
-      "health": { "overview": "2-3 sentences", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] }
+      "career": { "overview": "Minimum 200 words of flowing, empathetic prose. Cover: natural work style, leadership vs execution tendency, ideal industries, when to take risks vs play safe, and specific 3-year milestone windows.", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
+      "wealth": { "overview": "Minimum 200 words of flowing, empathetic prose. Cover: natural earning style and income sources, savings temperament, risk appetite vs security needs, suitable investment avenues, and specific 3-year wealth-building milestone windows.", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
+      "marriage": { "overview": "Minimum 200 words of flowing, empathetic prose. Cover: natural approach to partnership and intimacy, qualities sought in a spouse, 7th house and Venus dynamics, communication and conflict patterns, and specific 3-year relationship milestone windows.", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] },
+      "health": { "overview": "Minimum 200 words of flowing, empathetic prose. Cover: baseline vitality and constitution, stress patterns, daily-routine strengths and vulnerabilities, preventive-care focus areas, and specific 3-year wellness milestone windows.", "strengths": ["",""], "challenges": ["",""], "recommendations": ["",""] }
     }
   },
   "pillars": {
@@ -224,6 +224,7 @@ Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
 
 HARD RULES:
 - Interpretation must be FULL and complete (400+ words); never truncate or emit placeholders like 'coming soon'.
+- WORD COUNT RULE: Each overview field MUST be at least 180 words. If you cannot write 180 words, return HTTP 500. Never return a 1-sentence or 2-sentence overview. Never bullet-list inside the overview — flowing paragraphs only.
 - Base every statement strictly on the supplied chart facts.
 - Each pillar milestone needs a concrete year window (e.g. '2026–2028'), never 'soon'.
 - Narrative fields must be 2-3 full sentences, never a single word or one short line.
@@ -312,15 +313,15 @@ ${getLanguageRule(lang)}
 
 Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
 {
-  "career":   { "narrative": "<~250-word flowing paragraph>", "milestones": [{"period":"2027–2029","event":"<one specific sentence>"},{"period":"","event":""},{"period":"","event":""}] },
-  "marriage": { "narrative": "<~250-word flowing paragraph>", "milestones": [3 milestone objects] },
-  "wealth":   { "narrative": "<~250-word flowing paragraph>", "milestones": [3 milestone objects] },
-  "health":   { "narrative": "<~200-word flowing paragraph covering vitality, daily routine and preventive care>" },
+  "career":   { "narrative": "MINIMUM 250 words. Write like a senior astrologer speaking to a client. Cover: current dasha influence on career, specific year windows for promotion/job-change, and practical advice. Flowing prose only. No bullet lists. No placeholders.", "milestones": [{"period":"2027–2029","event":"<one specific sentence>"},{"period":"","event":""},{"period":"","event":""}] },
+  "marriage": { "narrative": "MINIMUM 250 words. Write like a senior astrologer speaking to a client. Cover: current dasha/transit influence on relationships, specific year windows for meeting/marriage/deepening partnership, and practical advice. Flowing prose only. No bullet lists. No placeholders.", "milestones": [3 milestone objects] },
+  "wealth":   { "narrative": "MINIMUM 250 words. Write like a senior astrologer speaking to a client. Cover: current dasha influence on finances, specific year windows for gains/investments/caution, and practical money advice. Flowing prose only. No bullet lists. No placeholders.", "milestones": [3 milestone objects] },
+  "health":   { "narrative": "MINIMUM 200 words. Write like a senior astrologer speaking to a client. Cover: vitality and constitution tendencies, stress patterns, daily routine and preventive care, grounded in the chart. Flowing prose only. No bullet lists. No placeholders." },
   "remedies": { "gemstones": ["<stone + metal + finger + day to wear, justified by chart lords>", "..."], "dailyMantras": ["<mantra 1>","<mantra 2>","<mantra 3>","<mantra 4>"] }
 }
 
 HARD RULES:
-- career, marriage and wealth narrative MUST each be approximately 250 words; health approximately 200 words. Flowing prose paragraphs only — no bullet lists inside narratives, no placeholders, no 'coming soon'.
+- WORD COUNT RULE: career, marriage and wealth narratives MUST each be at least 250 words; health MUST be at least 200 words. Shorter output is a failure. Flowing prose paragraphs only — no bullet lists inside narratives, no placeholders, no 'coming soon'.
 - Exactly 3 milestones per domain; every "period" is a concrete year window (e.g. '2027–2029') grounded in dasha/transit logic from the digest; every "event" is one specific sentence.
 - Exactly 4 dailyMantras — traditional Vedic mantras matching the chart's key planets (e.g., planetary beeja mantras).
 - Gemstone guidance must stay responsible: frame it as a traditional suggestion, never a guarantee.
@@ -517,6 +518,40 @@ function buildFreeTier(chartData: ChartData, birthDate: string, structured: Stru
   };
 }
 
+// ─── Paid-tier life-domain sanitizer ─────────────────────────────────────────
+// NO hardcoded one-liner fallbacks: a domain whose AI overview is missing or
+// too short (<100 chars) gets an EMPTY overview string so the PDF template can
+// render its "Generating detailed analysis..." retry placeholder instead of
+// cheap filler text.
+type LifeDomainInsight = SingleShotReport["paidTier"]["lifeDomains"]["career"];
+const MIN_DOMAIN_OVERVIEW_CHARS = 100;
+
+function sanitizeLifeDomain(domain?: LifeDomainInsight): LifeDomainInsight {
+  const overview =
+    domain &&
+    typeof domain.overview === "string" &&
+    domain.overview.trim().length > MIN_DOMAIN_OVERVIEW_CHARS
+      ? domain.overview.trim()
+      : "";
+  return {
+    overview,
+    strengths: domain?.strengths ?? [],
+    challenges: domain?.challenges ?? [],
+    recommendations: domain?.recommendations ?? [],
+  };
+}
+
+function sanitizeLifeDomains(
+  domains?: SingleShotReport["paidTier"]["lifeDomains"]
+): SingleShotReport["paidTier"]["lifeDomains"] {
+  return {
+    career: sanitizeLifeDomain(domains?.career),
+    wealth: sanitizeLifeDomain(domains?.wealth),
+    marriage: sanitizeLifeDomain(domains?.marriage),
+    health: sanitizeLifeDomain(domains?.health),
+  };
+}
+
 function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: string, structured: StructuredReport | null, lang: "en" | "hi"): PaidTierData {
   // Dasha roadmap is always deterministic for accuracy.
   let dashaRoadmap: DashaRoadmapEntry[] = [];
@@ -593,32 +628,9 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     }
   }
 
-  const defaultLifeDomains = {
-    career: {
-      overview: lang === "hi" ? "आपका करियर पथ स्थिर विकास और पूरक अवसरों का समर्थन करता है।" : "Your career path supports steady growth and periodic breakthroughs.",
-      strengths: lang === "hi" ? ["निर्णय कौशल", "अनुशासन"] : ["Decision-making", "Discipline"],
-      challenges: lang === "hi" ? ["संघर्ष के दौरान धैर्य"] : ["Patience during struggles"],
-      recommendations: lang === "hi" ? ["नया सीखें", "नेटवर्क बनाएं"] : ["Keep learning", "Build networks"],
-    },
-    wealth: {
-      overview: lang === "hi" ? "धन स्थिर बचत और योजनाबद्ध निवेश से निर्मित होता है।" : "Wealth builds through stable savings and planned investments.",
-      strengths: lang === "hi" ? ["वित्तीय योजना", "लंबे समय की दृष्टि"] : ["Financial planning", "Long-term vision"],
-      challenges: lang === "hi" ? ["अधिक जोखिम"] : ["Over-risking"],
-      recommendations: lang === "hi" ? ["विविधीकरण करें", "आपातकालीन फंड बनाएं"] : ["Diversify", "Build emergency fund"],
-    },
-    marriage: {
-      overview: lang === "hi" ? "संबंध ७वें भाव और शुक्र द्वारा आकार लेते हैं; साझेदारी समय के साथ परिपक्व होती है।" : "Relationships are shaped by the 7th house and Venus; partnerships mature with time.",
-      strengths: lang === "hi" ? ["समझदारी", "संवाद"] : ["Understanding", "Communication"],
-      challenges: lang === "hi" ? ["अलगाव का सुविधाजनक"] : ["Comfort with distance"],
-      recommendations: lang === "hi" ? ["स्पष्ट संवाद", "गुरुवार को ध्यान दें"] : ["Clear communication", "Prioritize Thursdays"],
-    },
-    health: {
-      overview: lang === "hi" ? "स्वास्थ्य लग्न और सूर्य स्थिति से प्रभावित है; सतत अभ्यास आवश्यक है।" : "Health is influenced by the ascendant and Sun placement; consistent routine is essential.",
-      strengths: lang === "hi" ? ["शारीरिक लचीलापन", "आत्म-रक्षा"] : ["Physical resilience", "Self-care"],
-      challenges: lang === "hi" ? ["तनाव प्रबंधन"] : ["Stress management"],
-      recommendations: lang === "hi" ? ["योग करें", "पौष्टिक आहार लें"] : ["Practice yoga", "Eat nutritiously"],
-    },
-  };
+  // NOTE: no hardcoded defaultLifeDomains fallback. AI output is sanitized via
+  // sanitizeLifeDomains() — short/missing overviews become "" so the PDF shows
+  // a retry placeholder rather than cheap one-line filler.
 
   return {
     careerTimings,
@@ -637,13 +649,25 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
           ]
         : []),
     timings: structured?.paidTier?.timings ?? [],
-    lifeDomains: structured?.paidTier?.lifeDomains ?? defaultLifeDomains,
+    lifeDomains: sanitizeLifeDomains(structured?.paidTier?.lifeDomains),
   };
 }
 
 export async function POST(req: NextRequest) {
   try {
+    // --- Paywall gate ---------------------------------------------------------
+    // Paid fields (paidTier, pillars, calculations) are only returned when a
+    // valid unlock token is presented. Tokens are minted server-side after a
+    // verified payment; without one, callers get ONLY free-tier data.
     const body = await req.json();
+    const providedToken =
+      (typeof body?.unlockToken === "string" && body.unlockToken) ||
+      req.headers.get("x-unlock-token") ||
+      "";
+    const expectedSecret = process.env.UNLOCK_SECRET;
+    const isUnlocked =
+      !!expectedSecret && !!providedToken && providedToken === expectedSecret;
+
     const rawLang = typeof body.lang === "string" ? body.lang.trim().toLowerCase() : "en";
     const lang: "en" | "hi" = rawLang === "hi" ? "hi" : "en";
 
@@ -780,6 +804,41 @@ export async function POST(req: NextRequest) {
       buildPaidTier(chartData, birthDateKey, interpretation, structured, lang),
       richPredictions
     );
+
+    // --- Word-count quality gate on life-domain narratives --------------------
+    // A domain's visible text must come from EITHER a rich-prediction narrative
+    // (>200 words) OR a substantive paid-tier overview (>200 words). Anything
+    // shorter would render as a cheap one-line card in the PDF, so it is set to
+    // "" (never dummy text) — the pdf/frontend template detects empty strings
+    // and renders its red-bordered "Generating detailed analysis..." retry
+    // placeholder so we can see exactly which domains need regeneration.
+    const countWords = (value: string | undefined | null): number =>
+      typeof value === "string" ? value.trim().split(/\s+/).filter(Boolean).length : 0;
+
+    for (const key of ["career", "wealth", "marriage", "health"] as const) {
+      const current = paidTier?.lifeDomains?.[key];
+      if (!current) continue;
+      const narrative: string | undefined = richPredictions?.[key]?.narrative;
+      const finalText =
+        countWords(narrative) > 200
+          ? narrative!.trim()
+          : countWords(current.overview) > 200
+            ? current.overview.trim()
+            : "";
+      paidTier.lifeDomains![key] = { ...current, overview: finalText };
+    }
+
+
+    // SECURITY: paid data is stripped unless a valid UNLOCK_SECRET token was
+    // presented. Free responses contain NO paidTier, NO pillars, NO calculations.
+    if (!isUnlocked) {
+      return NextResponse.json({
+        success: true,
+        chartData,
+        interpretation,
+        freeTier,
+      });
+    }
 
     return NextResponse.json({
       success: true,

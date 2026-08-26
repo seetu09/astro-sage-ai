@@ -167,10 +167,26 @@ const NORTH_CELLS: HouseCell[] = [
   { house: 12, poly: '400,0 200,0 300,100', cx: 300, cy: 33.33, px: 300 },            // top edge, right half
 ];
 
+/** Exact house-number label anchors (spec-mandated), keyed by house. */
+const NORTH_NUM_POSITIONS: Record<number, [number, number]> = {
+  1: [200, 90],    // top center diamond
+  2: [100, 50],    // top left triangle
+  3: [50, 100],    // top left diamond
+  4: [90, 200],    // left center diamond
+  5: [100, 350],   // bottom left triangle
+  6: [50, 300],    // bottom left diamond
+  7: [200, 310],   // bottom center diamond
+  8: [300, 350],   // bottom right triangle
+  9: [350, 300],   // bottom right diamond
+  10: [310, 200],  // right center diamond
+  11: [300, 50],   // top right triangle
+  12: [350, 100],  // top right diamond
+};
+
 /** Max planet glyphs on one row before a "+n" note is appended. */
 const MAX_ROW_PLANETS = 5;
-/** Horizontal spacing between planet glyphs in a row. */
-const PLANET_STEP = 14;
+/** Vertical offset between stacked planet glyphs sharing a house (±12px rule). */
+const PLANET_STEP = 12;
 
 function renderNorthIndian(input: KundliChartInput): string {
   const {
@@ -180,9 +196,9 @@ function renderNorthIndian(input: KundliChartInput): string {
     houses,
     showTitle = false,
     title,
-    stroke = '#3b3b4d',
+    stroke = '#8c1d1d',
     background = '#ffffff',
-    textColor = '#1a1a2e',
+    textColor = '#2d3748',
   } = input;
 
   const asc = normSign(ascendantSign);
@@ -194,20 +210,23 @@ function renderNorthIndian(input: KundliChartInput): string {
     .map((cell) => {
       const sign = houseMap[cell.house];
       const cellPlanets = byHouse[cell.house] || [];
-      const signs = `<text x="${cell.cx}" y="${cell.cy - 20}" font-size="10" fill="${stroke}" text-anchor="middle">${signSymbol(sign)}</text>`;
-      const num = `<text x="${cell.cx}" y="${cell.cy - 8}" font-size="8" fill="${stroke}" text-anchor="middle">${cell.house}</text>`;
+      const [nx, ny] = NORTH_NUM_POSITIONS[cell.house] ?? [cell.cx, cell.cy];
+      const signs = `<text x="${cell.cx}" y="${ny - 14}" font-size="10" fill="${stroke}" text-anchor="middle">${signSymbol(sign)}</text>`;
+      const num = `<text x="${nx}" y="${ny}" font-size="11" fill="#2d3748" text-anchor="middle">${cell.house}</text>`;
 
+      // Planets stack vertically around the house centre, offset ±12px apart
+      // so co-habiting planets never overlap.
       const visible = cellPlanets.slice(0, MAX_ROW_PLANETS);
       const n = visible.length;
       const glyphs = visible
         .map((p, i) => {
-          const gx = cell.px - (n - 1) * (PLANET_STEP / 2) + i * PLANET_STEP;
-          return `<text x="${gx}" y="${cell.cy + 14}" font-size="9" font-weight="600" fill="${textColor}" text-anchor="middle">${escapeXml(planetGlyph(p, language))}</text>`;
+          const gy = cell.cy + (i - (n - 1) / 2) * PLANET_STEP;
+          return `<text x="${cell.px}" y="${gy}" font-size="9" font-weight="600" fill="${textColor}" text-anchor="middle">${escapeXml(planetGlyph(p, language))}</text>`;
         })
         .join('');
       const overflowNote =
         cellPlanets.length > MAX_ROW_PLANETS
-          ? `<text x="${cell.px}" y="${cell.cy + 26}" font-size="7" fill="${stroke}" text-anchor="middle">+${cellPlanets.length - MAX_ROW_PLANETS}</text>`
+          ? `<text x="${cell.px}" y="${cell.cy + n * PLANET_STEP}" font-size="7" fill="${stroke}" text-anchor="middle">+${cellPlanets.length - MAX_ROW_PLANETS}</text>`
           : '';
 
       // Lagna (house 1) shows the rashi name inside the top kite.

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
 import { getUILabel } from '@/lib/astrologyDictionary';
-import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
+import { ReportData } from '@/lib/pdfHtmlTemplate';
 import { trackEvent } from '@/lib/analytics';
 
 interface DownloadReportButtonProps {
@@ -19,72 +19,38 @@ export default function DownloadReportButton({ reportData, userName = 'User' }: 
   const lang = selectedLanguage === 'hi' ? 'hi' : 'en';
 
   const handleDownload = async () => {
+    if (isGenerating) return;
     setIsGenerating(true);
     trackEvent('download_pdf_clicked', { lang: selectedLanguage });
 
     try {
-      const htmlContent = generateReportHtml(reportData, lang);
+      const response = await fetch('/api/download-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportData,
+          lang,
+          unlockToken: localStorage.getItem('astroveda-unlock-token') || undefined,
+        }),
+      });
 
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0px';
-      iframe.style.bottom = '0px';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.opacity = '0';
-      iframe.style.zIndex = '-1';
-      iframe.setAttribute('aria-hidden', 'true');
-      iframe.setAttribute('tabindex', '-1');
-
-      document.body.appendChild(iframe);
-
-      const doc = iframe.contentDocument || (iframe.contentWindow as any).document;
-      doc.open();
-      doc.write(htmlContent);
-      doc.close();
-
-      const waitForFontsAndPrint = async () => {
-        try {
-          if (document.fonts && document.fonts.ready) {
-            const probe = doc.createElement('span');
-            probe.style.cssText =
-              'position:absolute;left:-9999px;top:-9999px;font-family:"Noto Sans Devanagari",sans-serif;font-size:16px;';
-            probe.textContent = 'क्ष त्र ज्ञ मंत्र ॐ';
-            doc.body.appendChild(probe);
-            await document.fonts.load('16px "Noto Sans Devanagari", sans-serif', 'क्ष त्र ज्ञ मंत्र ॐ');
-            doc.body.removeChild(probe);
-            await document.fonts.ready;
-          } else {
-            await new Promise((r) => setTimeout(r, 1500));
-          }
-        } catch {
-          // Font readiness is best-effort
-        }
-
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch (e) {
-          console.error('Print failed:', e);
-        }
-
-        setTimeout(() => {
-          if (iframe.parentNode) {
-            iframe.parentNode.removeChild(iframe);
-          }
-        }, 500);
-      };
-
-      doc.body.onload = () => {
-        setTimeout(waitForFontsAndPrint, 500);
-      };
-
-      if (doc.body && doc.body.children.length > 0) {
-        setTimeout(waitForFontsAndPrint, 500);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'PDF generation failed');
       }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Kundli-Report-${userName.replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      trackEvent('download_pdf_success', { lang: selectedLanguage });
     } catch (err) {
-      console.error('PDF export failed:', err);
+      console.error('PDF download failed:', err);
       alert(getUILabel('pdfError', selectedLanguage));
     } finally {
       setIsGenerating(false);

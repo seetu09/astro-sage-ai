@@ -408,12 +408,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .page {
   width: 210mm;
-  height: 296mm; /* 297mm minus a hair avoids blank overflow sheets in Chrome */
-  max-height: 296mm;
-  min-height: 296mm;
+  min-height: 297mm;
+  height: auto;
   box-sizing: border-box;
   break-after: page;
-  overflow: hidden;
+  overflow: visible; /* was hidden — do not clip content */
   position: relative;
   background: #ffffff;
   color: #1e293b;

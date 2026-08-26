@@ -116,20 +116,20 @@ const HOUSE_CHIP_LAYOUT: Record<number, HouseChipLayout> = {
   8: { mode: 'row', start: -17, step: 13, r: 6, badgeDx: 12, badgeDy: 0 },
 };
 
-// Exact centroid of each house region (text anchor for number + glyphs).
+// Exact house-number label anchors (spec-mandated) for number + glyphs.
 const HOUSE_POSITIONS: Record<number, [number, number]> = {
-  1: [200, 100],       // top kite (Lagna / ascendant)
-  2: [100, 33.33],     // outer triangle — top edge, left half
-  3: [33.33, 100],     // outer triangle — left edge, upper half
-  4: [100, 200],       // left kite
-  5: [33.33, 300],     // outer triangle — left edge, lower half
-  6: [100, 366.67],    // outer triangle — bottom edge, left half
-  7: [200, 300],       // bottom kite
-  8: [300, 366.67],    // outer triangle — bottom edge, right half
-  9: [366.67, 300],    // outer triangle — right edge, lower half
-  10: [300, 200],      // right kite
-  11: [366.67, 100],   // outer triangle — right edge, upper half
-  12: [300, 33.33],    // outer triangle — top edge, right half
+  1: [200, 90],        // top center diamond
+  2: [100, 50],        // top left triangle
+  3: [50, 100],        // top left diamond
+  4: [90, 200],        // left center diamond
+  5: [100, 350],       // bottom left triangle
+  6: [50, 300],        // bottom left diamond
+  7: [200, 310],       // bottom center diamond
+  8: [300, 350],       // bottom right triangle
+  9: [350, 300],       // bottom right diamond
+  10: [310, 200],      // right center diamond
+  11: [300, 50],       // top right triangle
+  12: [350, 100],      // top right diamond
 };
 
 // Exact region outlines: kites are quads through the centre M, outers triangles.
@@ -318,14 +318,14 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                   {getSignSymbol(houseSign)}
                 </text>
 
-                {/* House number — pinned exactly at the region centroid */}
+                {/* House number — spec-exact anchor/size/color */}
                 <text
                   x={cx}
                   y={cy}
                   textAnchor="middle"
-                  dominantBaseline="central"
+                  fontSize={11}
                   fontWeight="normal"
-                  className="text-[8px] sm:text-[9px] fill-slate-400 dark:fill-[#6B7280]"
+                  className="fill-[#2d3748] dark:fill-slate-300"
                 >
                   {h}
                 </text>
