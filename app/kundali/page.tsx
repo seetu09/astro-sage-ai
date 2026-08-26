@@ -796,33 +796,7 @@ export default function KundaliPage() {
           </motion.div>
         ) : (
           <>
-          <KundaliView
-            freeTier={kundliData?.freeTier ?? EMPTY_FREE_TIER}
-            paidTier={kundliData?.paidTier ?? EMPTY_PAID_TIER}
-            pillars={kundliData?.pillars}
-            userEmail={kundliData?.email || email}
-            userName={kundliData?.name || name}
-            birthDetails={{
-              date: kundliData?.dateOfBirth || '',
-              time: kundliData?.timeOfBirth || '',
-              latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(2) : '',
-              longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(2) : '',
-              timezone: kundliData?.chartData?.timezone || 'IST (+05:30)',
-            }}
-            planets={kundliData?.planets?.map((p) => ({
-              body: p.name || '',
-              sign: p.sign || '',
-              degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
-              house: String(p.house || ''),
-              retro: p.status === 'Retrograde',
-            })) || []}
-            houseCusps={kundliData?.houses?.map((h) => ({
-              house: h.house || 0,
-              sign: String(h.sign || ''),
-              degree: '',
-            })) || []}
-          />
-          {/* ── FREE PREVIEW — birth details + interactive chart (no paid data) ── */}
+          {/* ── FREE PREVIEW (basic details + D1 chart preview + locked CTA card) ── */}
           {!isPaid && kundliData && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1015,6 +989,33 @@ export default function KundaliPage() {
               userName={kundliData?.name || name}
               reportData={reportData ?? undefined}
             >
+          {/* ── Tabbed full premium dashboard (Career / Marriage / Wealth / Dasha + A4 report) ── */}
+          <KundaliView
+            freeTier={kundliData?.freeTier ?? EMPTY_FREE_TIER}
+            paidTier={kundliData?.paidTier ?? EMPTY_PAID_TIER}
+            pillars={kundliData?.pillars}
+            userEmail={kundliData?.email || email}
+            userName={kundliData?.name || name}
+            birthDetails={{
+              date: kundliData?.dateOfBirth || '',
+              time: kundliData?.timeOfBirth || '',
+              latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(2) : '',
+              longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(2) : '',
+              timezone: kundliData?.chartData?.timezone || 'IST (+05:30)',
+            }}
+            planets={kundliData?.planets?.map((p) => ({
+              body: p.name || '',
+              sign: p.sign || '',
+              degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
+              house: String(p.house || ''),
+              retro: p.status === 'Retrograde',
+            })) || []}
+            houseCusps={kundliData?.houses?.map((h) => ({
+              house: h.house || 0,
+              sign: String(h.sign || ''),
+              degree: '',
+            })) || []}
+          />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

@@ -428,8 +428,9 @@ h1, h2, h3, h4, h5, h6 {
   .page {
     background: #ffffff !important;
     color: #1e2931 !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
+    /* Page boundary is owned solely by `.page { break-after: page }` above;
+       inner cards/tables must NOT carry break-inside rules so content never
+       splits mid-element or triggers phantom blank sheets. */
   }
 }
 

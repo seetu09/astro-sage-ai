@@ -114,13 +114,40 @@ function extractJson(text: string): string {
   return text.slice(start, end + 1);
 }
 
+/**
+ * Classify a rejected AI call reason so operator logs can distinguish the root
+ * cause instead of seeing a generic "AI failed" line:
+ *  - api_key      → Gemini refused the request (401/403, bad/expired key).
+ *  - quota        → rate-limited (429).
+ *  - server_error → Gemini backend 5xx.
+ *  - empty_response → model returned no usable content.
+ *  - prompt_format → JSON.parse failed on the model output (prompt/malformed JSON).
+ *  - timeout      → fetch threw a network/timeout TypeError.
+ *  - unknown      → anything else.
+ */
+function classifyAiError(reason: unknown): string {
+  if (reason instanceof Error) {
+    const m = reason.message ?? "";
+    if (/Gemini error \((401|403)\)|api[_-]?key|permission|unauthenticated/i.test(m)) return "api_key";
+    if (/Gemini error \(429\)/.test(m)) return "quota";
+    if (/Gemini error \(5\d\d\)/.test(m)) return "server_error";
+    if (/empty report|empty rich-prediction/i.test(m)) return "empty_response";
+    if (reason instanceof SyntaxError || /unexpected token|is not valid json/i.test(m)) return "prompt_format";
+    if (/typeerror|failed to fetch|network|timeout/i.test(m)) return "timeout";
+  }
+  return "unknown";
+}
+
 async function generateCompleteReport(
   chartData: ChartData,
   calculations: FullKundliReportData["calculations"],
   lang: "en" | "hi"
 ): Promise<SingleShotReport | null> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[kundali/generate] Gemini API key missing — AI generation disabled, deterministic fallbacks in effect.");
+    return null;
+  }
 
   const chartJson = JSON.stringify(chartData, null, 2);
   const digest = buildChartDigest({
@@ -246,7 +273,10 @@ async function generateRichPredictions(
   lang: "en" | "hi"
 ): Promise<RichPredictionReport | null> {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[kundali/generate] Gemini API key missing — AI generation disabled, deterministic fallbacks in effect.");
+    return null;
+  }
 
   const chartJson = JSON.stringify(chartData, null, 2);
   const digest = buildChartDigest({
@@ -709,10 +739,10 @@ export async function POST(req: NextRequest) {
         generateRichPredictions(chartData, calculations, lang),
       ]);
       if (completeRes.status === "rejected") {
-        console.error("Kundali AI report failed:", completeRes.reason);
+        console.error(`[kundali/generate] Main AI report failed — category=${classifyAiError(completeRes.reason)}`, completeRes.reason);
       }
       if (richRes.status === "rejected") {
-        console.error("Rich predictions AI failed:", richRes.reason);
+        console.error(`[kundali/generate] Rich predictions failed — category=${classifyAiError(richRes.reason)}`, richRes.reason);
       }
       richPredictions = richRes.status === "fulfilled" ? richRes.value : null;
       const complete = completeRes.status === "fulfilled" ? completeRes.value : null;
@@ -732,8 +762,9 @@ export async function POST(req: NextRequest) {
         }
       }
     } catch (aiError) {
-      // AI failures must never break the chart response — fallbacks below kick in.
-      console.error("Kundali AI report failed:", aiError);
+      // Synchronous guard (e.g. parseAndValidatePillars throwing). Async
+      // rejections are already surfaced above by allSettled with a category.
+      console.error(`[kundali/generate] AI pipeline error — category=${classifyAiError(aiError)}`, aiError);
     }
 
     // Guarantee interpretation is never undefined, null, or empty

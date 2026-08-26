@@ -148,8 +148,10 @@ html, body { overflow: hidden; }
 }
 .page-container:last-child { page-break-after: auto; }
 .page-content { width: 100%; }
-/* Keep each logical section intact on one physical sheet where possible. */
-.section-block { break-inside: avoid; page-break-inside: avoid; }
+/* Inner cards/tables intentionally carry NO page-break rules — each .page-container
+   is the strict A4 boundary (1 page = 1 A4 unit). Related sections are simply
+   grouped inside that single wrapper so the renderer never forces a mid-card
+   split or emits a near-empty overflow sheet. */
 .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.25cm; border-bottom: 3pt solid #999; margin-bottom: 0.35cm; }
 .header h1 { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 16pt; font-weight: 700; }
 .header h1.en { font-family: 'Inter', sans-serif; }
