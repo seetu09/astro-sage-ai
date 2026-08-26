@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
 import { getUILabel } from '@/lib/astrologyDictionary';
-import { ReportData } from '@/lib/pdfHtmlTemplate';
+import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
 import { trackEvent } from '@/lib/analytics';
 
 interface DownloadReportButtonProps {
@@ -18,25 +18,51 @@ export default function DownloadReportButton({ reportData, userName = 'User' }: 
 
   const lang = selectedLanguage === 'hi' ? 'hi' : 'en';
 
+  // Fallback: client-side iframe print if server PDF fails
+  const fallbackPrint = (htmlContent: string) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;z-index:-1;';
+    iframe.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || (iframe.contentWindow as any)?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => iframe.remove(), 1000);
+    }, 1500);
+  };
+
   const handleDownload = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
     trackEvent('download_pdf_clicked', { lang: selectedLanguage });
 
     try {
+      const unlockToken =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('astroveda-unlock-token') || ''
+          : '';
+
       const response = await fetch('/api/download-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reportData,
-          lang,
-          unlockToken: localStorage.getItem('astroveda-unlock-token') || undefined,
-        }),
+        body: JSON.stringify({ reportData, lang, unlockToken }),
       });
 
+      // If server fails for any reason, fallback to client print
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error || 'PDF generation failed');
+        console.warn('Server PDF failed, using fallback:', await response.text().catch(() => 'unknown'));
+        const htmlContent = generateReportHtml(reportData, lang);
+        fallbackPrint(htmlContent);
+        setIsGenerating(false);
+        return;
       }
 
       const blob = await response.blob();
@@ -51,11 +77,14 @@ export default function DownloadReportButton({ reportData, userName = 'User' }: 
       trackEvent('download_pdf_success', { lang: selectedLanguage });
     } catch (err) {
       console.error('PDF download failed:', err);
-      alert(getUILabel('pdfError', selectedLanguage));
+      // Final fallback: never show error alert, always try to print
+      const htmlContent = generateReportHtml(reportData, lang);
+      fallbackPrint(htmlContent);
     } finally {
       setIsGenerating(false);
     }
   };
+
 
   const downloadLabel = getUILabel('downloadPdf', selectedLanguage);
   const generatingLabel = getUILabel('generatingPdf', selectedLanguage).replace(

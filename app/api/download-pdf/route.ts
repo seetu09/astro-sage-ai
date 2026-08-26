@@ -1,82 +1,97 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { ReportData } from "@/lib/pdfHtmlTemplate";
-import { generateReportHtml } from "@/lib/pdfHtmlTemplate";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
+import { generateReportHtml, type ReportData } from "@/lib/pdfHtmlTemplate";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
+// `headless` / `defaultViewport` exist at runtime on @sparticuz/chromium-min
+// but are missing from its type declarations.
+const chromiumRuntime = chromium as unknown as {
+  headless?: boolean;
+  defaultViewport?: { width: number; height: number };
+};
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { reportData, lang, unlockToken } = body as {
-      reportData: ReportData;
-      lang: "en" | "hi";
-      unlockToken?: string;
-    };
+    const { reportData, lang, unlockToken } = await req.json();
 
-    // Gate the download behind a valid unlock token
+    // Payment verification
     if (!unlockToken || unlockToken !== process.env.UNLOCK_SECRET) {
-      return Response.json({ error: "Payment required" }, { status: 403 });
+      return NextResponse.json({ error: "Payment required" }, { status: 403 });
     }
 
     if (!reportData) {
-      return Response.json({ error: "Missing reportData" }, { status: 400 });
+      return NextResponse.json({ error: "Missing report data" }, { status: 400 });
     }
 
-    const html = generateReportHtml(reportData, lang === "hi" ? "hi" : "en");
+    // Generate HTML
+    const html = generateReportHtml(reportData as ReportData, lang === "hi" ? "hi" : "en");
 
+    // Launch browser with Vercel-compatible settings
     const browser = await puppeteer.launch({
-      args: chromium.args,
+      args: [
+        ...chromium.args,
+        "--hide-scrollbars",
+        "--disable-web-security",
+        "--font-render-hinting=none",
+      ],
+      defaultViewport: chromiumRuntime.defaultViewport,
       executablePath: await chromium.executablePath(),
-      // `chromium.headless` exists at runtime on @sparticuz/chromium-min but is
-      // missing from its type declarations
-      headless: (chromium as unknown as { headless?: boolean }).headless ?? true,
+      headless: chromiumRuntime.headless ?? true,
+      // puppeteer-core v25 renamed ignoreHTTPSErrors → acceptInsecureCerts
+      acceptInsecureCerts: true,
     });
 
-    try {
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: "load" });
-      // networkidle0 is not accepted by setContent() in puppeteer-core v25;
-      // wait for fonts/CDN assets to settle instead (best-effort).
-      await page
-        .waitForNetworkIdle({ idleTime: 400, timeout: 12_000 })
-        .catch(() => {});
+    const page = await browser.newPage();
 
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: { top: "0", right: "0", bottom: "0", left: "0" },
-      });
+    // Set content and wait for fonts.
+    // Note: setContent()'s waitUntil only accepts "load" | "domcontentloaded"
+    // in puppeteer-core v25 typings — waitForNetworkIdle() below provides the
+    // networkidle0 behavior.
+    await page.setContent(html, {
+      waitUntil: ["load", "domcontentloaded"],
+      timeout: 30000,
+    });
+    await page.waitForNetworkIdle({ idleTime: 400, timeout: 12000 }).catch(() => {});
 
-      await browser.close();
+    // Wait for Google Fonts to load
+    await page.evaluateHandle("document.fonts.ready");
 
-      // Keep the Content-Disposition filename safe for HTTP headers
-      const safeName = (reportData.clientName || "User").replace(
-        /[^a-zA-Z0-9-_]+/g,
-        "-"
-      );
+    // Generate PDF
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
+      preferCSSPageSize: true,
+    });
 
-      return new NextResponse(new Uint8Array(pdfBuffer), {
+    await browser.close();
+
+    // Return PDF (Uint8Array.from normalizes to ArrayBuffer-backed bytes for BodyInit)
+    return new Response(
+      new Blob([Uint8Array.from(pdfBuffer)], { type: "application/pdf" }),
+      {
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="Kundli-Report-${safeName}.pdf"`,
-          "Content-Length": String(pdfBuffer.byteLength),
+          "Content-Disposition": `attachment; filename="Kundli-Report-${encodeURIComponent(
+            reportData.clientName || "User"
+          ).replace(/%20/g, "-")}.pdf"`,
+          "Cache-Control": "no-cache",
         },
-      });
-    } catch (renderError) {
-      console.error("PDF generation failed:", renderError);
-      return Response.json({ error: "PDF generation failed" }, { status: 500 });
-    } finally {
-      // Ensure Chromium never leaks on Vercel if rendering throws
-      if (browser.connected) {
-        await browser.close().catch(() => {});
       }
-    }
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    return Response.json({ error: "PDF generation failed" }, { status: 500 });
+    );
+  } catch (error) {
+    console.error("[download-pdf] Generation failed:", error);
+    return NextResponse.json(
+      {
+        error: "PDF generation failed",
+        detail: error instanceof Error ? error.message : "Unknown",
+      },
+      { status: 500 }
+    );
   }
 }

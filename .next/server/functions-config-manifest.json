@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/admin/blogs":{},"/api/health":{},"/api/kundali/narratives":{},"/api/kundali/pdf":{"maxDuration":60},"/opengraph-image":{},"/blog/[slug]":{},"/blog":{}}}
+{"version":1,"functions":{"/api/admin/blogs":{},"/api/health":{},"/api/download-pdf":{"maxDuration":60},"/opengraph-image":{},"/api/kundali/pdf":{"maxDuration":60},"/blog":{},"/blog/[slug]":{},"/api/kundali/narratives":{}}}

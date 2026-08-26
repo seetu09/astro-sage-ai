@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST='{"app/components/ShareCard.tsx -> html2canvas":{"id":1173,"files":["static/chunks/ad2866b8.2fab6639574a89b2.js"]}}';

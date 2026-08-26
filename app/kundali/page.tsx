@@ -18,7 +18,6 @@ import {
   Star,
   ArrowUp,
   Lock,
-  Download,
 } from 'lucide-react';
 import ShareCard from '@/app/components/ShareCard';
 import NorthIndianChart from '@/app/components/NorthIndianChart';
@@ -1315,30 +1314,6 @@ export default function KundaliPage() {
 
           </motion.div>
           </ReportContainer>
-
-          {/* Sticky bottom download bar (paid tier) — TODO(Batch 6): wire PDF generation endpoint handlers */}
-          <div className="sticky bottom-0 z-40 -mx-4 sm:-mx-4 lg:-mx-6 px-4 sm:px-4 lg:px-6 py-3 bg-[#F8F7FC]/90 dark:bg-[#080811]/90 backdrop-blur-md border-t border-slate-200/60 dark:border-white/10">
-            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-2 sm:gap-3">
-              {/* TODO(Batch 6): POST /api/report/pdf?lang=en */}
-              <button
-                disabled
-                title={selectedLanguage === 'hi' ? 'जल्द आ रहा है' : 'PDF download coming soon'}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl opacity-50 cursor-not-allowed transition-all"
-              >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                Download PDF (English)
-              </button>
-              {/* TODO(Batch 6): POST /api/report/pdf?lang=hi */}
-              <button
-                disabled
-                title={selectedLanguage === 'hi' ? 'जल्द आ रहा है' : 'PDF download coming soon'}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl opacity-50 cursor-not-allowed transition-all"
-              >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                डाउनलोड PDF (हिंदी)
-              </button>
-            </div>
-          </div>
           </>
           )}
           </>
