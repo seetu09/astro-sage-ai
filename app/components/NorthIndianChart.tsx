@@ -46,54 +46,106 @@ export interface ChartData {
 export interface NorthIndianChartProps {
   chartData: ChartData;
   type?: ChartType;
-  selectedLanguage: LocaleCode;
+  /** Chart glyph language: 'en' → Su/Mo/Ma…, 'hi' → सू/चं/मं…. Defaults to 'en'. */
+  language?: LocaleCode;
+  /** @deprecated Legacy alias — prefer `language`. Kept for backward compatibility. */
+  selectedLanguage?: LocaleCode;
   className?: string;
 }
 
 // ---------------------------------------------------------------------------
-// North Indian house layout (SVG polygon points)
-// The chart is a 400×400 viewBox. The outer square (20,20)→(380,380) is split
-// into a 3×3 grid of 120-unit cells; the eight outer cells hold houses 1–8 and
-// the centre cell is divided into a diamond of four triangles (houses 9–12)
-// meeting at (200,200). Every polygon shares its edges with its neighbours so
-// the shape tiles perfectly with no gaps or stretching.
+// North Indian house layout — mathematically exact diamond geometry
+// ---------------------------------------------------------------------------
+// The classic figure on the 400×400 viewBox is built from exactly three
+// primitives: the outer box, both corner-to-corner diagonals, and the centre
+// diamond joining the four side midpoints. Together they carve the square
+// into 12 regions: 8 outer triangles + 4 central kites.
+//
+//   Corners   A(0,0) B(400,0) C(400,400) D(0,400)
+//   Midpoints T(200,0) R(400,200) Bo(200,400) L(0,200)      → centre diamond
+//   Diagonal ∩ diamond edges: P(100,100) Q(300,100) S(300,300) U(100,300)
+//   Centre    M(200,200)
+//
+// Houses use the traditional fixed layout: house 1 (Lagna) is always the top
+// diamond quadrant, numbered counter-clockwise around the chart. Every anchor
+// below is the exact polygon centroid of its region.
 // ---------------------------------------------------------------------------
 
 const CHART_SIZE = 400;
 const CENTER = CHART_SIZE / 2;
 
-// 12 house center positions in North Indian layout
-// Houses 1-12 arranged clockwise starting from top-center
-const HOUSE_POSITIONS: Record<number, [number, number]> = {
-  1: [200, 74], // top center
-  2: [320, 74], // top right
-  3: [320, 200], // right
-  4: [320, 326], // bottom right
-  5: [200, 326], // bottom center
-  6: [80, 326], // bottom left
-  7: [80, 200], // left
-  8: [80, 74], // top left
-  9: [200, 165], // upper middle (diamond top triangle)
-  10: [238, 200], // right middle (diamond right triangle)
-  11: [200, 235], // lower middle (diamond bottom triangle)
-  12: [162, 200], // left middle (diamond left triangle)
+/** Max planet chips rendered per house before a "+n" overflow badge shows. */
+const MAX_PLANETS_PER_HOUSE = 4;
+
+/**
+ * Per-house planet-chip layout, tuned so every chip stays inside its region:
+ *  - kites have full quadrant depth below their centroid (spec anchors),
+ *  - corner triangles hug the top/bottom edge → horizontal rows fit,
+ *  - slim side triangles take a tighter vertical column.
+ */
+interface HouseChipLayout {
+  /** 'col' stacks chips vertically; 'row' spreads them horizontally. */
+  mode: 'col' | 'row';
+  /** First-chip offset from the anchor along the stacking axis (signed). */
+  start: number;
+  /** Centre-to-centre spacing between chips. */
+  step: number;
+  /** Chip radius (selected chips render at r + 2). */
+  r: number;
+  /** Overflow-badge offset from the LAST visible chip centre. */
+  badgeDx: number;
+  badgeDy: number;
+}
+
+const HOUSE_CHIP_LAYOUT: Record<number, HouseChipLayout> = {
+  // Kites — generous vertical stacks; badge drops straight below.
+  1: { mode: 'col', start: 16, step: 14, r: 7, badgeDx: 0, badgeDy: 13 },
+  4: { mode: 'col', start: 16, step: 14, r: 7, badgeDx: 0, badgeDy: 13 },
+  7: { mode: 'col', start: 16, step: 14, r: 7, badgeDx: 0, badgeDy: 13 },
+  10: { mode: 'col', start: 16, step: 14, r: 7, badgeDx: 0, badgeDy: 13 },
+  // Side-edge triangles — compact columns; badge sits beside/below the last
+  // chip, shifted toward the chart interior so it never crosses a hypotenuse.
+  3: { mode: 'col', start: 16, step: 12, r: 5, badgeDx: -11, badgeDy: 0 },
+  5: { mode: 'col', start: 16, step: 12, r: 5, badgeDx: -4, badgeDy: 11 },
+  9: { mode: 'col', start: 16, step: 12, r: 5, badgeDx: 4, badgeDy: 11 },
+  11: { mode: 'col', start: 16, step: 12, r: 5, badgeDx: 11, badgeDy: 0 },
+  // Top/bottom-edge corner triangles — horizontal rows; badge trails right.
+  2: { mode: 'row', start: 17, step: 13, r: 6, badgeDx: 12, badgeDy: 0 },
+  12: { mode: 'row', start: 17, step: 13, r: 6, badgeDx: 12, badgeDy: 0 },
+  6: { mode: 'row', start: -17, step: 13, r: 6, badgeDx: 12, badgeDy: 0 },
+  8: { mode: 'row', start: -17, step: 13, r: 6, badgeDx: 12, badgeDy: 0 },
 };
 
-// House polygon points for the North Indian chart
-// Each outer house is a quadrilateral; the four centre houses are triangles.
+// Exact centroid of each house region (text anchor for number + glyphs).
+const HOUSE_POSITIONS: Record<number, [number, number]> = {
+  1: [200, 100],       // top kite (Lagna / ascendant)
+  2: [100, 33.33],     // outer triangle — top edge, left half
+  3: [33.33, 100],     // outer triangle — left edge, upper half
+  4: [100, 200],       // left kite
+  5: [33.33, 300],     // outer triangle — left edge, lower half
+  6: [100, 366.67],    // outer triangle — bottom edge, left half
+  7: [200, 300],       // bottom kite
+  8: [300, 366.67],    // outer triangle — bottom edge, right half
+  9: [366.67, 300],    // outer triangle — right edge, lower half
+  10: [300, 200],      // right kite
+  11: [366.67, 100],   // outer triangle — right edge, upper half
+  12: [300, 33.33],    // outer triangle — top edge, right half
+};
+
+// Exact region outlines: kites are quads through the centre M, outers triangles.
 const HOUSE_POLYGONS: Record<number, string> = {
-  1: '140,20 260,20 260,140 140,140', // top center
-  2: '260,20 380,20 380,140 260,140', // top right
-  3: '260,140 380,140 380,260 260,260', // right
-  4: '260,260 380,260 380,380 260,380', // bottom right
-  5: '140,260 260,260 260,380 140,380', // bottom center
-  6: '20,260 140,260 140,380 20,380', // bottom left
-  7: '20,140 140,140 140,260 20,260', // left
-  8: '20,20 140,20 140,140 20,140', // top left
-  9: '140,140 260,140 200,200', // centre top triangle
-  10: '260,140 260,260 200,200', // centre right triangle
-  11: '260,260 140,260 200,200', // centre bottom triangle
-  12: '140,260 140,140 200,200', // centre left triangle
+  1: '100,100 200,0 300,100 200,200',    // top kite
+  2: '0,0 200,0 100,100',                // top-left triangle
+  3: '0,0 100,100 0,200',                // left-top triangle
+  4: '100,300 0,200 100,100 200,200',    // left kite
+  5: '0,200 100,300 0,400',              // left-bottom triangle
+  6: '0,400 100,300 200,400',            // bottom-left triangle
+  7: '300,300 200,400 100,300 200,200',  // bottom kite
+  8: '200,400 300,300 400,400',          // bottom-right triangle
+  9: '400,400 400,200 300,300',          // right-bottom triangle
+  10: '300,100 400,200 300,300 200,200', // right kite
+  11: '400,200 300,100 400,0',           // right-top triangle
+  12: '400,0 200,0 300,100',             // top-right triangle
 };
 
 // Sign names for sign number lookup (1-12)
@@ -116,9 +168,12 @@ function formatDegree(degree: number): string {
 const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
   chartData,
   type = 'D1',
-  selectedLanguage,
+  language,
+  selectedLanguage: legacySelectedLanguage,
   className = '',
 }) => {
+  // Active locale: new `language` prop wins, then the legacy alias, then 'en'.
+  const selectedLanguage: LocaleCode = language ?? legacySelectedLanguage ?? 'en';
   const retroMarker = getRetrogradeMarker(selectedLanguage);
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
 
@@ -212,69 +267,82 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
           role="img"
           aria-label={`${getChartTypeLabel(type, selectedLanguage)} — ${getSignName(divAscSign)}`}
         >
-          {/* Background */}
-          <rect x="0" y="0" width="400" height="400" rx="12" className="fill-slate-50 dark:fill-[#121026]" />
+          {/* Background wash (theme-aware, sits under the exact figure) */}
+          <rect x="0" y="0" width="400" height="400" className="fill-slate-50 dark:fill-[#121026]" />
 
-          {/* Outer square border */}
-          <rect
-            x="20" y="20" width="360" height="360" rx="8"
-            className="fill-transparent stroke-slate-300/60 dark:stroke-[#FFD166]/30 stroke-2"
-          />
+          {/* Outer Box */}
+          <rect x="0" y="0" width="400" height="400" fill="none" stroke="#8c1d1d" strokeWidth="2" />
 
-          {/* Centre-square diagonals forming the diamond of houses 9–12 */}
-          <line x1="140" y1="140" x2="260" y2="260" className="stroke-slate-300/40 dark:stroke-[#FFD166]/20 stroke-1" />
-          <line x1="260" y1="140" x2="140" y2="260" className="stroke-slate-300/40 dark:stroke-[#FFD166]/20 stroke-1" />
+          {/* Cross lines — corner-to-corner diagonals */}
+          <line x1="0" y1="0" x2="400" y2="400" stroke="#8c1d1d" strokeWidth="1.5" />
+          <line x1="400" y1="0" x2="0" y2="400" stroke="#8c1d1d" strokeWidth="1.5" />
 
-          {/* House polygons */}
+          {/* Center Diamond — joins the four side midpoints */}
+          <polygon points="200,0 400,200 200,400 0,200" fill="none" stroke="#8c1d1d" strokeWidth="1.5" />
+
+          {/* House regions — outlines come from the exact figure above */}
           {Object.entries(HOUSE_POLYGONS).map(([houseNum, points]) => {
             const h = parseInt(houseNum);
-            const pos = HOUSE_POSITIONS[h];
+            const [cx, cy] = HOUSE_POSITIONS[h];
             const housePlanets = planetsByHouse[h] || [];
             const isAscendant = h === 1;
             const houseSign = houseSigns[h] ?? ((chartData.ascendantSign + h - 2) % 12) + 1;
+            const overflow = housePlanets.length - MAX_PLANETS_PER_HOUSE;
+            const chipLayout = HOUSE_CHIP_LAYOUT[h];
+            const visibleCount = Math.min(housePlanets.length, MAX_PLANETS_PER_HOUSE);
 
             return (
               <g key={h}>
-                {/* House polygon */}
+                {/* Region hit-area + hover title */}
                 <polygon
                   points={points}
-                  className={`stroke-slate-200/60 dark:stroke-white/10 fill-slate-50/30 dark:fill-[#121026]/30 ${
+                  className={`fill-slate-50/30 dark:fill-[#121026]/30 ${
                     isAscendant ? 'dark:fill-[#FFD166]/5' : ''
                   }`}
                 >
                   <title>{`House ${h} — ${getSignName(houseSign)}`}</title>
                 </polygon>
 
-                {/* House number */}
-                <text
-                  x={pos[0] - 8}
-                  y={pos[1] - 8}
-                  className="text-[8px] sm:text-[9px] fill-slate-400 dark:fill-[#6B7280]"
-                  fontWeight="normal"
-                >
-                  {h}
-                </text>
-
                 {/* Sign symbol — bound to the actual house sign */}
                 <text
-                  x={pos[0] + 4}
-                  y={pos[1] - 8}
+                  x={cx}
+                  y={cy - 18}
+                  textAnchor="middle"
+                  fontWeight="normal"
                   className={`text-[8px] sm:text-[9px] ${
                     isAscendant
                       ? 'fill-indigo-500 dark:fill-[#4CC9F0]'
                       : 'fill-indigo-400 dark:fill-[#4CC9F0]/70'
                   }`}
-                  fontWeight="normal"
                 >
                   {getSignSymbol(houseSign)}
                 </text>
 
-                {/* Planets in this house */}
-                {housePlanets.map((planet, idx) => {
+                {/* House number — pinned exactly at the region centroid */}
+                <text
+                  x={cx}
+                  y={cy}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontWeight="normal"
+                  className="text-[8px] sm:text-[9px] fill-slate-400 dark:fill-[#6B7280]"
+                >
+                  {h}
+                </text>
+
+                {/* Planets in this house — laid out per-region to stay in-quadrant */}
+                {housePlanets.slice(0, MAX_PLANETS_PER_HOUSE).map((planet, idx) => {
                   const abbr = localizePlanetAbbr(planet.planet, selectedLanguage);
-                  const isRetro = planet.retrograde;
+                  const label = planet.retrograde ? `${abbr}${retroMarker}` : abbr;
                   const isSelected = selectedPlanet === planet.planet;
-                  const yOffset = 12 + idx * 14;
+                  const px =
+                    chipLayout.mode === 'row'
+                      ? cx + (idx - (visibleCount - 1) / 2) * chipLayout.step
+                      : cx;
+                  const py =
+                    chipLayout.mode === 'row'
+                      ? cy + chipLayout.start
+                      : cy + chipLayout.start + idx * chipLayout.step;
 
                   return (
                     <g
@@ -282,16 +350,16 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                       onClick={() => setSelectedPlanet(isSelected ? null : planet.planet)}
                       className="cursor-pointer"
                       role="button"
-                      aria-label={localizePlanet(planet.planet, selectedLanguage)}
+                      aria-label={`${localizePlanet(planet.planet, selectedLanguage)} — House ${h}`}
                     >
                       {/* Native hover tooltip */}
                       <title>
-                        {`${localizePlanet(planet.planet, selectedLanguage)} • ${getSignName(planet.sign)} ${formatDegree(planet.degree)}${isRetro ? ` ${retroMarker}` : ''}`}
+                        {`${localizePlanet(planet.planet, selectedLanguage)} • ${getSignName(planet.sign)} ${formatDegree(planet.degree)}${planet.retrograde ? ` ${retroMarker}` : ''}`}
                       </title>
                       <circle
-                        cx={pos[0]}
-                        cy={pos[1] + yOffset}
-                        r={isSelected ? 10 : 8}
+                        cx={px}
+                        cy={py}
+                        r={isSelected ? chipLayout.r + 2 : chipLayout.r}
                         className={`transition-all ${
                           isSelected
                             ? 'fill-violet-100 dark:fill-[#FFD166]/25 stroke-violet-500 dark:stroke-[#FFD166] stroke-2'
@@ -299,48 +367,65 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                         }`}
                       />
                       <text
-                        x={pos[0]}
-                        y={pos[1] + yOffset + 3}
+                        x={px}
+                        y={py}
                         textAnchor="middle"
+                        dominantBaseline="central"
                         pointerEvents="none"
                         className="text-[7px] sm:text-[8px] font-semibold fill-indigo-900 dark:fill-[#FFD166]"
                       >
-                        {abbr}
+                        {label}
                       </text>
-                      {isRetro && (
-                        <text
-                          x={pos[0]}
-                          y={pos[1] + yOffset + 14}
-                          textAnchor="middle"
-                          pointerEvents="none"
-                          className="text-[5px] sm:text-[6px] fill-red-500 dark:fill-red-400"
-                        >
-                          {retroMarker}
-                        </text>
-                      )}
                     </g>
                   );
                 })}
+
+                {/* Overflow badge when more planets share one house */}
+                {overflow > 0 && (
+                  <text
+                    x={
+                      (chipLayout.mode === 'row'
+                        ? cx + ((visibleCount - 1) / 2) * chipLayout.step
+                        : cx) + chipLayout.badgeDx
+                    }
+                    y={
+                      (chipLayout.mode === 'row'
+                        ? cy + chipLayout.start
+                        : cy + chipLayout.start + (visibleCount - 1) * chipLayout.step) +
+                      chipLayout.badgeDy
+                    }
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    pointerEvents="none"
+                    className="text-[6px] sm:text-[7px] fill-slate-400 dark:fill-[#6B7280]"
+                  >
+                    {`+${overflow}`}
+                  </text>
+                )}
               </g>
             );
           })}
 
-          {/* Ascendant label in center diamond */}
-          <text
-            x={CENTER - 20}
-            y={CENTER - 10}
-            className="text-[7px] sm:text-[8px] fill-slate-400 dark:fill-[#6B7280]"
-          >
-            {selectedLanguage === 'hi' ? 'लग्न' : 'Lagna'}
-          </text>
-          <text
-            x={CENTER - 10}
-            y={CENTER + 8}
-            textAnchor="middle"
-            className="text-[10px] sm:text-xs font-semibold fill-indigo-700 dark:fill-[#FFD166]"
-          >
-            {getSignSymbol(divAscSign)}
-          </text>
+          {/* Ascendant marker at the exact centre where the four kites meet */}
+          <g pointerEvents="none">
+            <text
+              x={CENTER}
+              y={CENTER - 6}
+              textAnchor="middle"
+              className="text-[6px] sm:text-[7px] fill-slate-400 dark:fill-[#6B7280]"
+            >
+              {selectedLanguage === 'hi' ? 'लग्न' : 'Lagna'}
+            </text>
+            <text
+              x={CENTER}
+              y={CENTER + 12}
+              textAnchor="middle"
+              dominantBaseline="central"
+              className="text-[11px] sm:text-xs font-semibold fill-indigo-700 dark:fill-[#FFD166]"
+            >
+              {getSignSymbol(divAscSign)}
+            </text>
+          </g>
         </svg>
 
         {/* Selected Planet Detail Card */}

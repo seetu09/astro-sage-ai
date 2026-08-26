@@ -22,7 +22,9 @@ import {
   ReportPage,
   KeyTiming,
   type FullKundliReportData,
+  type RichPredictionReport,
 } from "@/types/kundali";
+import { applyRichPredictions } from "@/lib/richPredictions";
 
 // --- Language-aware system prompt builder ---
 function getSystemPrompt(lang: "en" | "hi"): string {
@@ -51,6 +53,13 @@ ${safetyBoundaryHi}
   return `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency. ALWAYS explain Vedic terms in plain, modern English (e.g., "the 10th house (career and public standing)", "Saturn (the planet of discipline and karmic lessons)"). Use 100% modern English. Strictly no Hindi, Devanagari, or mixed Hinglish.
 
 ${safetyBoundaryEn}`;
+}
+
+/** Shared language-purity rule injected into every AI prompt. */
+function getLanguageRule(lang: "en" | "hi"): string {
+  return lang === "hi"
+    ? `ABSOLUTE RULE: Every string in this response MUST be written in 100% pure Hindi using Devanagari script only. NO English, NO Hinglish, NO Roman characters anywhere — including inside the "interpretation", "narrative", "overview", "summary", "note", "recommendations", "event", "milestones" and every other text field. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति', 'विवाह'। Milestone "period" fields may keep year ranges like '2026–2028' (digits are allowed).`
+    : `ABSOLUTE RULE: Every string in this response MUST be written in 100% modern English for a layperson. Explain every Vedic term in plain language (e.g., '10th house (career and public standing)', 'Saturn (the planet of discipline)'). NO Hindi, NO Devanagari, NO Hinglish anywhere.`;
 }
 
 // --- Build the deterministic cache key from birth details ---
@@ -123,10 +132,7 @@ async function generateCompleteReport(
     calculations,
   } as FullKundliReportData);
 
-  const langRule =
-    lang === "hi"
-      ? `ABSOLUTE RULE: Every string in this response MUST be written in 100% pure Hindi using Devanagari script only. NO English, NO Hinglish, NO Roman characters anywhere — including inside the "interpretation", "overview", "summary", "note", "recommendations", "event", "milestones" and every other text field. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति', 'विवाह'। Milestone "period" fields may keep year ranges like '2026–2028' (digits are allowed).`
-      : `ABSOLUTE RULE: Every string in this response MUST be written in 100% modern English for a layperson. Explain every Vedic term in plain language (e.g., '10th house (career and public standing)', 'Saturn (the planet of discipline)'). NO Hindi, NO Devanagari, NO Hinglish anywhere.`;
+  const langRule = getLanguageRule(lang);
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -223,6 +229,102 @@ HARD RULES:
   if (!text) throw new Error("Gemini returned an empty report");
 
   const parsed = JSON.parse(extractJson(text)) as SingleShotReport;
+  if (!parsed || typeof parsed !== "object") return null;
+  return parsed;
+}
+
+// ─── SINGLE-SHOT rich predictions (dedicated structured call) ───────────────
+// One focused Gemini call produces the deep narrative blocks the short one-
+// liners used to fake: ~250-word career/marriage/wealth paragraphs each with
+// exactly three dated milestones, a ~200-word health paragraph, gemstone
+// suggestions and exactly four daily mantras — everything in the user's
+// selected language. Runs CONCURRENTLY with generateCompleteReport via
+// Promise.allSettled, so a failure here can never degrade the main report.
+async function generateRichPredictions(
+  chartData: ChartData,
+  calculations: FullKundliReportData["calculations"],
+  lang: "en" | "hi"
+): Promise<RichPredictionReport | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const chartJson = JSON.stringify(chartData, null, 2);
+  const digest = buildChartDigest({
+    success: true,
+    chartData,
+    interpretation: "",
+    freeTier: undefined as never,
+    paidTier: undefined as never,
+    calculations,
+  } as FullKundliReportData);
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: getSystemPrompt(lang) }] },
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `Here is the exact deterministic Vedic birth chart (Lahiri Ayanamsa) computed by the local engine, plus a chart-fact digest. Write deep, warm prediction narratives interpreting ONLY this data — never recalculate or guess positions.
+
+CHART JSON:
+${chartJson}
+
+CHART FACTS DIGEST:
+${digest}
+
+${getLanguageRule(lang)}
+
+Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
+{
+  "career":   { "narrative": "<~250-word flowing paragraph>", "milestones": [{"period":"2027–2029","event":"<one specific sentence>"},{"period":"","event":""},{"period":"","event":""}] },
+  "marriage": { "narrative": "<~250-word flowing paragraph>", "milestones": [3 milestone objects] },
+  "wealth":   { "narrative": "<~250-word flowing paragraph>", "milestones": [3 milestone objects] },
+  "health":   { "narrative": "<~200-word flowing paragraph covering vitality, daily routine and preventive care>" },
+  "remedies": { "gemstones": ["<stone + metal + finger + day to wear, justified by chart lords>", "..."], "dailyMantras": ["<mantra 1>","<mantra 2>","<mantra 3>","<mantra 4>"] }
+}
+
+HARD RULES:
+- career, marriage and wealth narrative MUST each be approximately 250 words; health approximately 200 words. Flowing prose paragraphs only — no bullet lists inside narratives, no placeholders, no 'coming soon'.
+- Exactly 3 milestones per domain; every "period" is a concrete year window (e.g. '2027–2029') grounded in dasha/transit logic from the digest; every "event" is one specific sentence.
+- Exactly 4 dailyMantras — traditional Vedic mantras matching the chart's key planets (e.g., planetary beeja mantras).
+- Gemstone guidance must stay responsible: frame it as a traditional suggestion, never a guarantee.
+- Base every statement strictly on the supplied chart facts.
+- Empathy over drama: never predict death, disease or disasters. Respect the safety boundary.
+- Return ONLY the JSON object.`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 4096,
+          responseMimeType: "application/json",
+        },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `Gemini rich-predictions error (${res.status}): ${body.slice(0, 200)}`
+    );
+  }
+
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts
+    ?.map((p: any) => p.text ?? "")
+    .join("")
+    .trim();
+  if (!text) throw new Error("Gemini returned an empty rich-prediction report");
+
+  const parsed = JSON.parse(extractJson(text)) as RichPredictionReport;
   if (!parsed || typeof parsed !== "object") return null;
   return parsed;
 }
@@ -597,9 +699,23 @@ export async function POST(req: NextRequest) {
     let structured: StructuredReport | null = null;
     let pillars: LifePillarConfig[] = buildFallbackPillars(fallbackContext(chartData, calculations), lang);
     let aiSource = false;
+    let richPredictions: RichPredictionReport | null = null;
 
     try {
-      const complete = await generateCompleteReport(chartData, calculations, lang);
+      // Main report + rich predictions run CONCURRENTLY; allSettled isolates a
+      // failure in either call so the other still lands untouched.
+      const [completeRes, richRes] = await Promise.allSettled([
+        generateCompleteReport(chartData, calculations, lang),
+        generateRichPredictions(chartData, calculations, lang),
+      ]);
+      if (completeRes.status === "rejected") {
+        console.error("Kundali AI report failed:", completeRes.reason);
+      }
+      if (richRes.status === "rejected") {
+        console.error("Rich predictions AI failed:", richRes.reason);
+      }
+      richPredictions = richRes.status === "fulfilled" ? richRes.value : null;
+      const complete = completeRes.status === "fulfilled" ? completeRes.value : null;
       if (complete && complete.interpretation?.trim()) {
         aiSource = true;
         interpretation = complete.interpretation.trim();
@@ -626,7 +742,13 @@ export async function POST(req: NextRequest) {
     }
 
     const freeTier = buildFreeTier(chartData, birthDateKey, structured);
-    const paidTier = buildPaidTier(chartData, birthDateKey, interpretation, structured, lang);
+    // Fold the rich narrative blocks over whichever overview strings survived
+    // (AI short-form or deterministic one-liners). Pure merge — when the rich
+    // call returned nothing the draft passes through unchanged.
+    const paidTier = applyRichPredictions(
+      buildPaidTier(chartData, birthDateKey, interpretation, structured, lang),
+      richPredictions
+    );
 
     return NextResponse.json({
       success: true,

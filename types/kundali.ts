@@ -92,6 +92,31 @@ export interface DomainInsight {
   strengths: string[];
   challenges: string[];
   recommendations: string[];
+  /** Full ~250/200-word generated paragraph from the rich AI layer, when available. */
+  narrative?: string;
+  /** Up to three dated milestone windows for this domain. */
+  milestones?: RichMilestone[];
+}
+
+/** A dated milestone window produced by the rich-prediction AI layer. */
+export interface RichMilestone {
+  /** Concrete year window, e.g. "2026–2028" (digits allowed in Hindi mode). */
+  period: string;
+  event: string;
+}
+
+/**
+ * Structured output of the dedicated single-shot rich-prediction LLM call
+ * (`generateRichPredictions`). When that call fails or is unavailable the
+ * deterministic one-line fallbacks remain in place — every consumer treats
+ * this as an enhancement, never a requirement.
+ */
+export interface RichPredictionReport {
+  career: { narrative: string; milestones: RichMilestone[] };
+  marriage: { narrative: string; milestones: RichMilestone[] };
+  wealth: { narrative: string; milestones: RichMilestone[] };
+  health: { narrative: string };
+  remedies: { gemstones: string[]; dailyMantras: string[] };
 }
 
 export interface LifeDomains {
@@ -125,6 +150,11 @@ export interface PaidTierData {
   fullBreakdown: ReportPage[];
   timings: KeyTiming[];
   lifeDomains: LifeDomains;
+  /**
+   * Gemstone suggestions + exactly four daily mantras from the rich AI layer.
+   * Optional — absent whenever the rich-prediction call did not run/succeed.
+   */
+  remedyKit?: { gemstones: string[]; dailyMantras: string[] };
 }
 
 export interface KundaliResponse {

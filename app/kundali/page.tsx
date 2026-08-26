@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ShareCard from '@/app/components/ShareCard';
 import NorthIndianChart from '@/app/components/NorthIndianChart';
+import KundaliPaywallBanner from '@/app/components/KundaliPaywallBanner';
 import {
   PlanetaryPositionsTable,
   KPDetailsTable,
@@ -41,13 +42,14 @@ import {
   getChartTypeLabel,
   ChartType,
   NAKSHATRA_NAMES,
+  NAKSHATRA_LORDS,
 } from '@/lib/astrologyDictionary';
 import { useAuth } from '@/app/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 import { trackEvent } from '@/lib/analytics';
-import { FreeTierData, PaidTierData } from '@/types/kundali';
+import { FreeTierData, PaidTierData, type KundliCalculations, type RichMilestone } from '@/types/kundali';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 
@@ -245,6 +247,64 @@ function parseDegree(degree: string | number | undefined | null): number {
     return isNaN(parsed) ? 0 : parsed;
   }
   return 0;
+}
+
+// --- Helper: derive the weekday (Vara) from an ISO birth date ---
+function weekdayFromDate(dateStr: string | undefined | null, locale: 'en' | 'hi'): string {
+  const cleaned = cleanAstroValue(dateStr);
+  if (!cleaned) return '--';
+  const d = new Date(cleaned);
+  if (isNaN(d.getTime())) return '--';
+  const names: Record<'en' | 'hi', string[]> = {
+    en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    hi: ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'],
+  };
+  // Date-only ISO strings parse as UTC midnight — use getUTCDay() so the
+  // calendar weekday is timezone-independent.
+  return names[locale][d.getUTCDay()] ?? '--';
+}
+
+// --- Helper: Nakshatra lord (English) for a birth nakshatra value ---
+function nakshatraLordFor(nakshatra: string | undefined | null): string {
+  const english = extractEnglishPart(nakshatra);
+  if (!english) return '';
+  const idx = NAKSHATRA_NAMES.en.indexOf(english.trim());
+  return idx >= 0 ? NAKSHATRA_LORDS[idx] ?? '' : '';
+}
+
+// --- Helper: localize the birth-nakshatra lord (falls back to '') ---
+function localizeNakshatraLordClean(nakshatra: string | undefined | null, locale: 'en' | 'hi'): string {
+  const lord = nakshatraLordFor(nakshatra);
+  return lord ? localizePlanet(lord, locale) : '';
+}
+
+// --- Helper: extract the Navamsa (D9) matrix for the PDF template ---
+// Reads defensively off the stored generate-response so a missing calculations
+// layer simply yields undefined (the PDF skips that block).
+function extractD9Chart(src: unknown): ReportData['d9Chart'] {
+  const calcs = (src as { calculations?: KundliCalculations } | null | undefined)?.calculations;
+  const d9 = calcs?.divisionalCharts?.D9;
+  if (!d9) return undefined;
+  return {
+    ascendantSign: Number(d9.ascendantSign) || 1,
+    planets: (d9.planetCoordinates ?? []).map((p) => ({
+      planet: String(p.planet ?? ''),
+      sign: Number(p.sign) || 1,
+      house: Number(p.house) || 1,
+      retrograde: Boolean(p.retrograde),
+    })),
+  };
+}
+
+// --- Helper: extract Sarvashtakavarga bindus for the PDF template ---
+function extractSarvashtakavarga(src: unknown): ReportData['sarvashtakavarga'] {
+  const sav = (src as { calculations?: KundliCalculations } | null | undefined)?.calculations
+    ?.ashtakavarga;
+  if (!sav?.sarvashtakavarga?.length) return undefined;
+  return {
+    bindus: sav.sarvashtakavarga.map(Number),
+    beneficialHouses: (sav.beneficialHouses ?? []).map(Number),
+  };
 }
 
 
@@ -515,21 +575,59 @@ export default function KundaliPage() {
       name: y.name,
       description: y.description,
     })),
-    remedies: (kundliData?.paidTier?.remedies ?? []).map((r) => ({
-      category: r.type,
-      description: r.description,
-    })),
+    remedies: [
+      ...(kundliData?.paidTier?.remedies ?? []).map((r) => ({
+        category: r.type,
+        description: r.description,
+      })),
+      // Rich AI remedy kit — daily mantras + gemstone digest.
+      ...(kundliData?.paidTier?.remedyKit?.dailyMantras ?? []).map((m) => ({
+        category: selectedLanguage === 'hi' ? 'दैनिक मंत्र' : 'Daily Mantra',
+        description: m,
+      })),
+      ...((kundliData?.paidTier?.remedyKit?.gemstones ?? []).length
+        ? [{
+            category: selectedLanguage === 'hi' ? 'रत्न सुझाव' : 'Gemstone Suggestion',
+            description: (kundliData?.paidTier?.remedyKit?.gemstones ?? []).join(' · '),
+          }]
+        : []),
+    ],
     domainInsights: Object.entries(kundliData?.paidTier?.lifeDomains ?? {})
       .filter(([domain]) => ['career', 'marriage', 'wealth', 'health', 'finance', 'education'].includes(domain))
-      .map(([domain, insight]) => ({
-        domain: domain as 'career' | 'marriage' | 'wealth' | 'health' | 'finance' | 'education',
-        prediction: insight.overview || '',
-        analysis: insight.recommendations?.join('. ') || '',
-        timeframe: undefined,
-      })),
+      .map(([domain, insight]) => {
+        const milestones: RichMilestone[] = insight.milestones ?? [];
+        return {
+          domain: domain as 'career' | 'marriage' | 'wealth' | 'health' | 'finance' | 'education',
+          // Rich ~250/200-word AI paragraph when present, else the short overview.
+          prediction: insight.narrative || insight.overview || '',
+          analysis:
+            milestones.map((m) => `${m.period}: ${m.event}`).join(' • ') ||
+            insight.recommendations?.join('. ') ||
+            '',
+          timeframe: milestones[0]?.period,
+        };
+      }),
     northIndianChartSvg: '',
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
+    // Dense-layout extras — Panchang strip, D9 matrix and Ashtakavarga grid.
+    // All optional; the PDF template skips blocks whose data is absent.
+    panchang: {
+      varaWeekday: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
+      nakshatra: cleanAstroValue(kundliData?.chartData?.nakshatra || kundliData?.nakshatra),
+      nakshatraLord: nakshatraLordFor(
+        kundliData?.chartData?.nakshatra || kundliData?.nakshatra
+      ),
+      moonSign: cleanAstroValue(kundliData?.chartData?.rashi || kundliData?.moonSign),
+      sunSign: cleanAstroValue(kundliData?.chartData?.sunSign || kundliData?.sunSign),
+      lagna: cleanAstroValue(
+        kundliData?.chartData?.lagna ||
+          kundliData?.chartData?.ascendant ||
+          kundliData?.ascendant
+      ),
+    },
+    d9Chart: extractD9Chart(kundliData),
+    sarvashtakavarga: extractSarvashtakavarga(kundliData),
     isPaidTier: isPaid,
   } : null;
 
@@ -731,6 +829,12 @@ export default function KundaliPage() {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4 sm:space-y-6"
             >
+              {/* Prominent paywall banner (free tier) — premium upsell */}
+              <KundaliPaywallBanner
+                userEmail={kundliData?.email || email}
+                userName={kundliData?.name || name}
+              />
+
               <div className="text-center">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
                   {t.kundali.birthChart}
@@ -785,23 +889,95 @@ export default function KundaliPage() {
                 ))}
               </div>
 
-              {/* Chart Type Tab Switcher + North Indian Chart (preview) */}
+              {/* Panchang Summary (free tier snapshot — five limbs where data exists) */}
+              <div className="glass-card rounded-xl p-4 sm:p-6">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 min-w-0">
+                    <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                    <span className="truncate">
+                      {selectedLanguage === 'hi' ? 'जन्म पंचांग सारांश' : 'Panchang at Birth'}
+                    </span>
+                  </h2>
+                  <span className="shrink-0 text-[10px] uppercase tracking-wide font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
+                    {selectedLanguage === 'hi' ? 'निःशुल्क' : 'Free'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  {[
+                    {
+                      label: selectedLanguage === 'hi' ? 'वार (सप्ताह का दिन)' : 'Vara (Weekday)',
+                      value: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'जन्म नक्षत्र' : 'Birth Nakshatra',
+                      value:
+                        localizeNakshatraClean(
+                          kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
+                          selectedLanguage
+                        ) || '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'नक्षत्र स्वामी' : 'Nakshatra Lord',
+                      value:
+                        localizeNakshatraLordClean(
+                          kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
+                          selectedLanguage
+                        ) || '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'चंद्र राशि' : 'Moon Sign (Rashi)',
+                      value:
+                        localizeSignClean(kundliData?.chartData?.rashi || kundliData?.moonSign, selectedLanguage) ||
+                        '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'सूर्य राशि' : 'Sun Sign',
+                      value:
+                        localizeSignClean(kundliData?.chartData?.sunSign || kundliData?.sunSign, selectedLanguage) ||
+                        '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'लग्न' : 'Ascendant (Lagna)',
+                      value:
+                        localizeSignClean(
+                          kundliData?.chartData?.lagna ||
+                            kundliData?.chartData?.ascendant ||
+                            kundliData?.ascendant,
+                          selectedLanguage
+                        ) || '--',
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-xl p-2.5 sm:p-3 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10"
+                    >
+                      <p className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-[#6B7280] truncate">
+                        {item.label}
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-400 dark:text-[#6B7280] mt-3">
+                  {selectedLanguage === 'hi'
+                    ? 'तिथि, योग और करण विवरण प्रीमियम रिपोर्ट में शामिल हैं।'
+                    : 'Tithi, Yoga and Karana details are included in the premium report.'}
+                </p>
+              </div>
+
+              {/* D1 Birth Chart Preview (free tier — divisional charts are premium) */}
               {hasPlanets && (
                 <div className="glass-card rounded-xl p-4 sm:p-6">
-                  <div className="flex flex-wrap gap-1.5 mb-4 overflow-x-auto">
-                    {(['D1', 'D9', 'BhavChalit', 'D3', 'D4', 'D7', 'D10'] as ChartType[]).map((ct) => (
-                      <button
-                        key={ct}
-                        onClick={() => setActiveChartType(ct)}
-                        className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
-                          activeChartType === ct
-                            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] shadow-sunlit-soft'
-                            : 'bg-slate-50/50 dark:bg-white/[0.03] text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-950 dark:hover:text-[#F3F4F6] border border-slate-200/60 dark:border-white/10'
-                        }`}
-                      >
-                        {getChartTypeLabel(ct, selectedLanguage)}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <span className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 min-w-0">
+                      <Sparkles className="w-4 h-4 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                      <span className="truncate">{getChartTypeLabel('D1', selectedLanguage)}</span>
+                    </span>
+                    <span className="shrink-0 text-[10px] uppercase tracking-wide font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
+                      {selectedLanguage === 'hi' ? 'पूर्वावलोकन' : 'Preview'}
+                    </span>
                   </div>
 
                   <NorthIndianChart
@@ -820,36 +996,17 @@ export default function KundaliPage() {
                         sign: signToIndex(h.sign),
                       })),
                     }}
-                    type={activeChartType}
-                    selectedLanguage={selectedLanguage}
+                    type="D1"
+                    language={selectedLanguage}
                   />
                 </div>
               )}
 
-              {/* Planetary Positions Table (preview) */}
-              {hasPlanets && (
-                <PlanetaryPositionsTable
-                  planets={(kundliData?.planets ?? []).map((p) => ({
-                    planet: p.name,
-                    sign: signToIndex(p.sign),
-                    degree: p.degree,
-                    house: p.house,
-                    retrograde: p.status === 'Retrograde',
-                    nakshatra: p.nakshatra,
-                  }))}
-                  ascendantSign={signToIndex(kundliData?.ascendant)}
-                  ascendantDegree={15}
-                  selectedLanguage={selectedLanguage}
-                />
-              )}
-
-              <div className="text-center">
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-                  {language === 'hi'
-                    ? 'पूर्ण विश्लेषण, योग, दोष, उपाय और PDF रिपोर्ट के लिए अनलॉक करें।'
-                    : 'Unlock the full analysis, yogas, doshas, remedies and PDF report.'}
-                </p>
-              </div>
+              {/* Bottom paywall banner (free tier) — final upsell before footer */}
+              <KundaliPaywallBanner
+                userEmail={kundliData?.email || email}
+                userName={kundliData?.name || name}
+              />
             </motion.div>
           )}
           {isPaid && (
@@ -969,7 +1126,7 @@ export default function KundaliPage() {
                     })),
                   }}
                   type={activeChartType}
-                  selectedLanguage={selectedLanguage}
+                  language={selectedLanguage}
                 />
               </div>
             )}

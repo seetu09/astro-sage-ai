@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import LanguageSelectModal, { type PdfLanguage } from './LanguageSelectModal';
 import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
+import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
 import type { KundaliHistoryEntry } from '@/types/user';
 import { useApp } from '@/app/context/AppContext';
 import { trackEvent } from '@/lib/analytics';
@@ -36,6 +37,18 @@ const DEFAULT_LABEL = 'Download Full 25-Page Kundli';
 /** Strip a bilingual sign value like "Aquarius (कुंभ)" down to its first part. */
 function cleanAstroValue(value: unknown): string {
   return String(value ?? '').replace(/\s*\([^)]*\)\s*/g, '').trim();
+}
+
+/** Localized calendar weekday (Vara) from an ISO date — timezone-safe via UTC. */
+function weekdayLabel(dateStr: string | undefined, locale: string): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const names =
+    locale === 'hi'
+      ? ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार']
+      : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return names[d.getUTCDay()] ?? '';
 }
 
 /**
@@ -93,14 +106,15 @@ async function resolvePayload(
     }
   }
 
-  return { reportData: mapGenerateResultToReportData(result, entry, aiPillars), pillars: aiPillars };
+  return { reportData: mapGenerateResultToReportData(result, entry, aiPillars, language), pillars: aiPillars };
 }
 
 /** Map `/api/kundali/generate`'s response onto the A4 template contract. */
 function mapGenerateResultToReportData(
   result: Record<string, any>,
   entry: KundaliHistoryEntry,
-  aiPillars?: ReportNarrative[]
+  aiPillars?: ReportNarrative[],
+  language: string = 'en'
 ): ReportData {
   const chart = result?.chartData ?? {};
   const paid = result?.paidTier ?? {};
@@ -143,21 +157,84 @@ function mapGenerateResultToReportData(
         name: String(y.name ?? ''),
         description: String(y.description ?? y.impact ?? ''),
       })),
-    remedies: (Array.isArray(paid.remedies) ? paid.remedies : []).map((r: Record<string, string>) => ({
-      category: String(r.type ?? ''),
-      description: String(r.description ?? ''),
-    })),
+    remedies: [
+      ...(Array.isArray(paid.remedies) ? paid.remedies : []).map((r: Record<string, string>) => ({
+        category: String(r.type ?? ''),
+        description: String(r.description ?? ''),
+      })),
+      // Rich AI remedy kit — exactly four daily mantras, then a gemstone digest.
+      ...(Array.isArray(paid.remedyKit?.dailyMantras)
+        ? (paid.remedyKit.dailyMantras as unknown[]).map((m) => ({
+            category: language === 'hi' ? 'दैनिक मंत्र' : 'Daily Mantra',
+            description: String(m ?? ''),
+          }))
+        : []),
+      ...(Array.isArray(paid.remedyKit?.gemstones) && paid.remedyKit.gemstones.length
+        ? [{
+            category: language === 'hi' ? 'रत्न सुझाव' : 'Gemstone Suggestion',
+            description: (paid.remedyKit.gemstones as unknown[]).map(String).join(' · '),
+          }]
+        : []),
+    ],
     domainInsights: (['career', 'marriage', 'wealth', 'health'] as const)
       .filter((key) => lifeDomains?.[key])
-      .map((key) => ({
-        domain: key,
-        prediction: String(lifeDomains[key]?.overview ?? ''),
-        analysis: (lifeDomains[key]?.recommendations ?? []).join('. '),
-        timeframe: undefined,
-      })),
+      .map((key) => {
+        const insight = lifeDomains[key] as Record<string, any>;
+        const milestones = Array.isArray(insight.milestones) ? insight.milestones : [];
+        return {
+          domain: key,
+          // Rich ~250/200-word AI paragraph when present, else the short overview.
+          prediction: insight.narrative || insight.overview || '',
+          analysis:
+            milestones
+              .map((m: Record<string, unknown>) => `${m.period}: ${m.event}`)
+              .join(' • ') || (insight.recommendations ?? []).join('. '),
+          timeframe: milestones[0]?.period,
+        };
+      }),
     northIndianChartSvg: '',
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
+    // Dense-layout extras — Panchang strip, D9 matrix and Ashtakavarga grid
+    // (all optional; the template skips missing blocks gracefully).
+    panchang: {
+      varaWeekday: weekdayLabel(entry.dateOfBirth, language),
+      nakshatra: cleanAstroValue(chart.nakshatra),
+      nakshatraLord: (() => {
+        const idx = NAKSHATRA_NAMES.en.indexOf(cleanAstroValue(chart.nakshatra));
+        return idx >= 0 ? NAKSHATRA_LORDS[idx] ?? '' : '';
+      })(),
+      moonSign: cleanAstroValue(chart.rashi || chart.moonSign),
+      sunSign: cleanAstroValue(chart.sunSign),
+      lagna: cleanAstroValue(
+        chart.lagna ||
+          chart.ascendant ||
+          (Array.isArray(chart.houses) ? chart.houses[0]?.sign : '')
+      ),
+    },
+    d9Chart: (() => {
+      const d9 = result?.calculations?.divisionalCharts?.D9;
+      if (!d9) return undefined;
+      return {
+        ascendantSign: Number(d9.ascendantSign) || 1,
+        planets: (Array.isArray(d9.planetCoordinates) ? d9.planetCoordinates : []).map(
+          (p: Record<string, unknown>) => ({
+            planet: String(p?.planet ?? ''),
+            sign: Number(p?.sign) || 1,
+            house: Number(p?.house) || 1,
+            retrograde: Boolean(p?.retrograde),
+          })
+        ),
+      };
+    })(),
+    sarvashtakavarga: (() => {
+      const sav = result?.calculations?.ashtakavarga;
+      if (!Array.isArray(sav?.sarvashtakavarga) || !sav.sarvashtakavarga.length) return undefined;
+      return {
+        bindus: sav.sarvashtakavarga.map(Number),
+        beneficialHouses: (Array.isArray(sav.beneficialHouses) ? sav.beneficialHouses : []).map(Number),
+      };
+    })(),
     isPaidTier: true,
     ...(aiPillars ? { narratives: aiPillars } : {}),
   };

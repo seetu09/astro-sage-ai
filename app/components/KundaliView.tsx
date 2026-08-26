@@ -31,6 +31,7 @@ import {
   WealthAllocation,
   DashaRoadmapEntry,
   KundliCalculations,
+  RichMilestone,
 } from '@/types/kundali';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 
@@ -112,15 +113,55 @@ export default function KundaliView({
       name: y.name,
       description: y.description,
     })),
-    remedies: (paidTier.remedies || []).map((r) => ({
-      category: r.type,
-      description: r.description,
-    })),
+    remedies: [
+      ...(paidTier.remedies || []).map((r) => ({
+        category: r.type,
+        description: r.description,
+      })),
+      // Rich AI remedy kit — daily mantras + gemstone digest.
+      ...(paidTier.remedyKit?.dailyMantras ?? []).map((m) => ({
+        category: language === 'hi' ? 'दैनिक मंत्र' : 'Daily Mantra',
+        description: m,
+      })),
+      ...((paidTier.remedyKit?.gemstones ?? []).length
+        ? [{
+            category: language === 'hi' ? 'रत्न सुझाव' : 'Gemstone Suggestion',
+            description: (paidTier.remedyKit?.gemstones ?? []).join(' · '),
+          }]
+        : []),
+    ],
     domainInsights: [
-      { domain: 'career', prediction: paidTier.careerTimings?.overview || '', analysis: '' },
-      { domain: 'marriage', prediction: paidTier.marriageDynamics?.overview || '', analysis: '' },
-      { domain: 'wealth', prediction: paidTier.wealthAllocation?.overview || '', analysis: '' },
-      { domain: 'health', prediction: '', analysis: '' },
+      {
+        domain: 'career' as const,
+        // Rich ~250-word AI paragraph when present, else the short overview.
+        prediction: paidTier.lifeDomains?.career?.narrative || paidTier.careerTimings?.overview || '',
+        analysis: (paidTier.lifeDomains?.career?.milestones ?? [])
+          .map((m) => `${m.period}: ${m.event}`)
+          .join(' • '),
+        timeframe: paidTier.lifeDomains?.career?.milestones?.[0]?.period,
+      },
+      {
+        domain: 'marriage' as const,
+        prediction: paidTier.lifeDomains?.marriage?.narrative || paidTier.marriageDynamics?.overview || '',
+        analysis: (paidTier.lifeDomains?.marriage?.milestones ?? [])
+          .map((m) => `${m.period}: ${m.event}`)
+          .join(' • '),
+        timeframe: paidTier.lifeDomains?.marriage?.milestones?.[0]?.period,
+      },
+      {
+        domain: 'wealth' as const,
+        prediction: paidTier.lifeDomains?.wealth?.narrative || paidTier.wealthAllocation?.overview || '',
+        analysis: (paidTier.lifeDomains?.wealth?.milestones ?? [])
+          .map((m) => `${m.period}: ${m.event}`)
+          .join(' • '),
+        timeframe: paidTier.lifeDomains?.wealth?.milestones?.[0]?.period,
+      },
+      {
+        domain: 'health' as const,
+        prediction: paidTier.lifeDomains?.health?.narrative || paidTier.lifeDomains?.health?.overview || '',
+        analysis: '',
+        timeframe: undefined,
+      },
       { domain: 'finance', prediction: '', analysis: '' },
       { domain: 'education', prediction: '', analysis: '' },
     ],
@@ -288,6 +329,33 @@ export default function KundaliView({
           {/* Active tab content */}
           <div className={isPaid ? '' : 'blur-[6px] select-none pointer-events-none opacity-70'}>
             <TabPanel tab={activeTab} paidTier={paidTier} language={language} />
+
+            {/* Rich AI remedy kit — gemstone suggestions + exactly four daily mantras */}
+            {(!!paidTier.remedyKit?.gemstones?.length || !!paidTier.remedyKit?.dailyMantras?.length) && (
+              <div className="glass-card rounded-xl p-4 mt-4">
+                <h3 className="text-sm sm:text-base font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
+                  {language === 'hi' ? 'रत्न एवं दैनिक मंत्र' : 'Gemstones & Daily Mantras'}
+                </h3>
+                {!!paidTier.remedyKit?.gemstones?.length && (
+                  <ul className="space-y-1 mb-3">
+                    {paidTier.remedyKit.gemstones.map((g, i) => (
+                      <li key={`gem-${i}`} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">
+                        💎 {g}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {!!paidTier.remedyKit?.dailyMantras?.length && (
+                  <ul className="space-y-1">
+                    {paidTier.remedyKit.dailyMantras.map((m, i) => (
+                      <li key={`mantra-${i}`} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">
+                        🕉️ {m}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Frosted-glass lock overlay + CTA (only when not paid) */}
@@ -341,9 +409,15 @@ function TabPanel({
   paidTier: PaidTierData;
   language: 'en' | 'hi';
 }) {
-  if (tab === 'career') return <CareerPanel data={paidTier.careerTimings} language={language} />;
-  if (tab === 'marriage') return <MarriagePanel data={paidTier.marriageDynamics} language={language} />;
-  if (tab === 'wealth') return <WealthPanel data={paidTier.wealthAllocation} language={language} />;
+  // Milestone windows produced by the rich AI layer live on lifeDomains.
+  const milestonesFor = (key: 'career' | 'marriage' | 'wealth'): RichMilestone[] =>
+    paidTier.lifeDomains?.[key]?.milestones ?? [];
+  if (tab === 'career')
+    return <CareerPanel data={paidTier.careerTimings} language={language} milestones={milestonesFor('career')} />;
+  if (tab === 'marriage')
+    return <MarriagePanel data={paidTier.marriageDynamics} language={language} milestones={milestonesFor('marriage')} />;
+  if (tab === 'wealth')
+    return <WealthPanel data={paidTier.wealthAllocation} language={language} milestones={milestonesFor('wealth')} />;
   return <DashaPanel data={paidTier.dashaRoadmap} language={language} />;
 }
 
@@ -355,11 +429,30 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CareerPanel({ data, language }: { data: CareerTimings; language: 'en' | 'hi' }) {
+/** Dated milestone windows from the rich AI layer — renders nothing when absent. */
+function MilestoneChips({ items }: { items?: RichMilestone[] }) {
+  if (!items?.length) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-3">
+      {items.map((m, i) => (
+        <span
+          key={`${m.period}-${i}`}
+          className="text-[11px] rounded-full px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 text-violet-700 dark:text-[#FFD166]"
+        >
+          <span className="font-semibold">{m.period}</span>
+          {m.event ? <> · {m.event}</> : null}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function CareerPanel({ data, language, milestones = [] }: { data: CareerTimings; language: 'en' | 'hi'; milestones?: RichMilestone[] }) {
   return (
     <div>
       <SectionTitle>{language === 'hi' ? 'करियर समय-रेखा' : 'Career Timings'}</SectionTitle>
       <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-3">{data.overview}</p>
+      <MilestoneChips items={milestones} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{language === 'hi' ? 'अनुकूल अवधि' : 'Favorable Periods'}</p>
@@ -386,11 +479,12 @@ function CareerPanel({ data, language }: { data: CareerTimings; language: 'en' |
   );
 }
 
-function MarriagePanel({ data, language }: { data: MarriageDynamics; language: 'en' | 'hi' }) {
+function MarriagePanel({ data, language, milestones = [] }: { data: MarriageDynamics; language: 'en' | 'hi'; milestones?: RichMilestone[] }) {
   return (
     <div>
       <SectionTitle>{language === 'hi' ? 'विवाह गतिशीलता' : 'Marriage Dynamics'}</SectionTitle>
       <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-3">{data.overview}</p>
+      <MilestoneChips items={milestones} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{language === 'hi' ? 'मज़बूती' : 'Strengths'}</p>
@@ -423,11 +517,12 @@ function MarriagePanel({ data, language }: { data: MarriageDynamics; language: '
   );
 }
 
-function WealthPanel({ data, language }: { data: WealthAllocation; language: 'en' | 'hi' }) {
+function WealthPanel({ data, language, milestones = [] }: { data: WealthAllocation; language: 'en' | 'hi'; milestones?: RichMilestone[] }) {
   return (
     <div>
       <SectionTitle>{language === 'hi' ? 'धन आवंटन' : 'Wealth Allocation'}</SectionTitle>
       <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-3">{data.overview}</p>
+      <MilestoneChips items={milestones} />
       <div className="space-y-2">
         {(data.allocation || []).map((slice) => (
           <div key={slice.category}>

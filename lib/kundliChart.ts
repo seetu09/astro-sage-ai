@@ -137,34 +137,40 @@ function groupPlanetsByHouse(
 interface HouseCell {
   house: number;
   poly: string;
+  /** Exact region centroid — anchor for the sign/number column. */
   cx: number;
   cy: number;
-  /** Top-left text anchor for the sign glyph (inside the polygon bbox). */
-  glyphX: number;
-  glyphY: number;
+  /** Planet-row centre (nudged inward inside slim side triangles). */
+  px: number;
 }
 
-// x,y for each house drawn from the established North-Indian layout.
-// The outer square (20,20)→(380,380) is divided into a 3×3 grid of 120-unit
-// cells; the eight outer cells hold houses 1–8 and the centre cell is split
-// into a diamond of four triangles (houses 9–12) that meet at (200,200).
-// Every polygon below shares its full edges with its neighbours, so the shape
-// tiles perfectly — no gaps, overlaps, stretching or misalignment.
-// glyphX/glyphY sit just inside each polygon's top-left bounding corner.
+// Exact North-Indian diamond decomposition on the 400×400 viewBox:
+//   corners A(0,0) B(400,0) C(400,400) D(0,400)
+//   side midpoints T(200,0) R(400,200) Bo(200,400) L(0,200) → centre diamond
+//   diagonal ∩ diamond edge: P(100,100) Q(300,100) S(300,300) U(100,300)
+//   centre M(200,200)
+// 8 outer triangles + 4 central kites; houses numbered counter-clockwise from
+// the top kite (house 1 = Lagna). Anchors are exact polygon centroids; `px`
+// keeps planet rows inside their quadrant in the narrow side triangles.
 const NORTH_CELLS: HouseCell[] = [
-  { house: 1, poly: '140,20 260,20 260,140 140,140', cx: 200, cy: 74, glyphX: 148, glyphY: 27 },
-  { house: 2, poly: '260,20 380,20 380,140 260,140', cx: 320, cy: 74, glyphX: 268, glyphY: 27 },
-  { house: 3, poly: '260,140 380,140 380,260 260,260', cx: 320, cy: 200, glyphX: 268, glyphY: 147 },
-  { house: 4, poly: '260,260 380,260 380,380 260,380', cx: 320, cy: 326, glyphX: 268, glyphY: 267 },
-  { house: 5, poly: '140,260 260,260 260,380 140,380', cx: 200, cy: 326, glyphX: 148, glyphY: 267 },
-  { house: 6, poly: '20,260 140,260 140,380 20,380', cx: 80, cy: 326, glyphX: 28, glyphY: 267 },
-  { house: 7, poly: '20,140 140,140 140,260 20,260', cx: 80, cy: 200, glyphX: 28, glyphY: 147 },
-  { house: 8, poly: '20,20 140,20 140,140 20,140', cx: 80, cy: 74, glyphX: 28, glyphY: 27 },
-  { house: 9, poly: '140,140 260,140 200,200', cx: 200, cy: 165, glyphX: 152, glyphY: 147 },
-  { house: 10, poly: '260,140 260,260 200,200', cx: 238, cy: 200, glyphX: 238, glyphY: 152 },
-  { house: 11, poly: '260,260 140,260 200,200', cx: 200, cy: 235, glyphX: 158, glyphY: 235 },
-  { house: 12, poly: '140,260 140,140 200,200', cx: 162, cy: 200, glyphX: 148, glyphY: 235 },
+  { house: 1, poly: '100,100 200,0 300,100 200,200', cx: 200, cy: 100, px: 200 },     // top kite — Lagna
+  { house: 2, poly: '0,0 200,0 100,100', cx: 100, cy: 33.33, px: 100 },               // top edge, left half
+  { house: 3, poly: '0,0 100,100 0,200', cx: 33.33, cy: 100, px: 49.33 },             // left edge, upper half
+  { house: 4, poly: '100,300 0,200 100,100 200,200', cx: 100, cy: 200, px: 100 },     // left kite
+  { house: 5, poly: '0,200 100,300 0,400', cx: 33.33, cy: 300, px: 49.33 },           // left edge, lower half
+  { house: 6, poly: '0,400 100,300 200,400', cx: 100, cy: 366.67, px: 100 },          // bottom edge, left half
+  { house: 7, poly: '300,300 200,400 100,300 200,200', cx: 200, cy: 300, px: 200 },   // bottom kite
+  { house: 8, poly: '200,400 300,300 400,400', cx: 300, cy: 366.67, px: 300 },        // bottom edge, right half
+  { house: 9, poly: '400,400 400,200 300,300', cx: 366.67, cy: 300, px: 350.67 },     // right edge, lower half
+  { house: 10, poly: '300,100 400,200 300,300 200,200', cx: 300, cy: 200, px: 300 },  // right kite
+  { house: 11, poly: '400,200 300,100 400,0', cx: 366.67, cy: 100, px: 350.67 },      // right edge, upper half
+  { house: 12, poly: '400,0 200,0 300,100', cx: 300, cy: 33.33, px: 300 },            // top edge, right half
 ];
+
+/** Max planet glyphs on one row before a "+n" note is appended. */
+const MAX_ROW_PLANETS = 5;
+/** Horizontal spacing between planet glyphs in a row. */
+const PLANET_STEP = 14;
 
 function renderNorthIndian(input: KundliChartInput): string {
   const {
@@ -183,36 +189,42 @@ function renderNorthIndian(input: KundliChartInput): string {
   const houseMap = buildHouseMap(asc, houses);
   const byHouse = groupPlanetsByHouse(planets);
 
-  const cells = NORTH_CELLS.slice().sort((a, b) => a.house - b.house);
-
-  const houseBlocks = cells
+  // Column layout per region: sign glyph above the house number, planets below.
+  const houseBlocks = NORTH_CELLS
     .map((cell) => {
       const sign = houseMap[cell.house];
       const cellPlanets = byHouse[cell.house] || [];
-      const signs = `<text x="${cell.glyphX}" y="${cell.glyphY}" font-size="9" fill="${stroke}" text-anchor="start">${signSymbol(sign)}</text>`;
-      const num = `<text x="${cell.glyphX + 14}" y="${cell.glyphY - 1}" font-size="8" fill="${stroke}" text-anchor="start">${cell.house}</text>`;
-      // Planet glyphs centred in the cell, one row that grows to fit up to 3.
-      const n = Math.min(cellPlanets.length, 6);
-      const glyphs = cellPlanets
-        .slice(0, n)
+      const signs = `<text x="${cell.cx}" y="${cell.cy - 20}" font-size="10" fill="${stroke}" text-anchor="middle">${signSymbol(sign)}</text>`;
+      const num = `<text x="${cell.cx}" y="${cell.cy - 8}" font-size="8" fill="${stroke}" text-anchor="middle">${cell.house}</text>`;
+
+      const visible = cellPlanets.slice(0, MAX_ROW_PLANETS);
+      const n = visible.length;
+      const glyphs = visible
         .map((p, i) => {
-          const gx = cell.cx - (n - 1) * 9 + i * 18;
-          const gy = cell.cy + 12;
-          return `<text x="${gx}" y="${gy}" font-size="9" font-weight="600" fill="${textColor}" text-anchor="middle">${escapeXml(planetGlyph(p, language))}</text>`;
+          const gx = cell.px - (n - 1) * (PLANET_STEP / 2) + i * PLANET_STEP;
+          return `<text x="${gx}" y="${cell.cy + 14}" font-size="9" font-weight="600" fill="${textColor}" text-anchor="middle">${escapeXml(planetGlyph(p, language))}</text>`;
         })
         .join('');
-      // Lagna (house 1) shows the rashi name in the diamond.
+      const overflowNote =
+        cellPlanets.length > MAX_ROW_PLANETS
+          ? `<text x="${cell.px}" y="${cell.cy + 26}" font-size="7" fill="${stroke}" text-anchor="middle">+${cellPlanets.length - MAX_ROW_PLANETS}</text>`
+          : '';
+
+      // Lagna (house 1) shows the rashi name inside the top kite.
       const lagna =
         cell.house === 1
-          ? `<text x="${cell.cx}" y="${cell.cy - 2}" font-size="10" font-weight="700" fill="${textColor}" text-anchor="middle">${escapeXml(localizeRashi(asc, language))}</text>`
+          ? `<text x="${cell.cx}" y="${cell.cy + 34}" font-size="10" font-weight="700" fill="${textColor}" text-anchor="middle">${escapeXml(localizeRashi(asc, language))}</text>`
           : '';
-      return `<g>${signs}${num}${glyphs}${lagna}</g>`;
+      return `<g>${signs}${num}${glyphs}${overflowNote}${lagna}</g>`;
     })
     .join('');
 
-  const gridLines = NORTH_CELLS.map(
-    (c) => `<polygon points="${c.poly}" fill="${background}" stroke="${stroke}" stroke-width="1" stroke-linejoin="round"/>`
-  ).join('');
+  // The exact North-Indian figure: outer box + both corner diagonals +
+  // centre diamond joining the four side midpoints.
+  const figure = `<rect x="0" y="0" width="${VIEW}" height="${VIEW}" fill="none" stroke="${stroke}" stroke-width="2"/>
+<line x1="0" y1="0" x2="${VIEW}" y2="${VIEW}" stroke="${stroke}" stroke-width="1.5"/>
+<line x1="${VIEW}" y1="0" x2="0" y2="${VIEW}" stroke="${stroke}" stroke-width="1.5"/>
+<polygon points="200,0 ${VIEW},200 200,${VIEW} 0,200" fill="none" stroke="${stroke}" stroke-width="1.5"/>`;
 
   const titleBlock = showTitle
     ? `<text x="${VIEW / 2}" y="14" font-size="12" font-weight="600" fill="${textColor}" text-anchor="middle">${escapeXml(title || (language === 'hi' ? 'उत्तर भारतीय चार्ट' : 'North Indian Chart'))}</text>`
@@ -221,7 +233,7 @@ function renderNorthIndian(input: KundliChartInput): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEW} ${VIEW}" width="${VIEW}" height="${VIEW}" role="img" aria-label="${escapeXml(title || 'Kundli chart')}">
 <rect width="${VIEW}" height="${VIEW}" fill="${background}"/>
 ${titleBlock}
-${gridLines}
+${figure}
 ${houseBlocks}
 </svg>`;
 }

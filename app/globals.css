@@ -106,14 +106,6 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: auto;
     z-index: auto;
   }
-  .pdf-offscreen .pdf-page {
-    break-after: page;
-    page-break-after: always;
-  }
-  .pdf-offscreen .pdf-page:last-child {
-    break-after: auto;
-    page-break-after: auto;
-  }
 }
 
 @layer components {
@@ -446,7 +438,7 @@ h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 13mm 14mm;
+  padding: 12mm; /* uniform A4 margin, matches the PDF template's dense sheets */
   box-sizing: border-box;
 }
 
