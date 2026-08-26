@@ -656,7 +656,7 @@ export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): s
   domainPairs.forEach(([keyA, keyB]) => {
     const domA = reportData.domainInsights.find((d) => d.domain === keyA);
     const domB = reportData.domainInsights.find((d) => d.domain === keyB);
-    if (((domA?.prediction?.length ?? 0) > 50) || ((domB?.prediction?.length ?? 0) > 50)) {
+    if (((domA?.prediction?.length ?? 0) > 20) || ((domB?.prediction?.length ?? 0) > 20)) {
       push(
         buildLifeDomainsPage(
           [domA, domB].filter((d): d is ReportData["domainInsights"][0] => Boolean(d)),

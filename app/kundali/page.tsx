@@ -3,37 +3,21 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft,
   Info,
   Sparkles,
-  Share2,
   Loader2,
-  Copy,
-  CheckCircle2,
   AlertTriangle,
   X,
   MapPin,
   Sun,
   Moon,
-  Star,
-  ArrowUp,
   Lock,
 } from 'lucide-react';
-import ShareCard from '@/app/components/ShareCard';
 import NorthIndianChart from '@/app/components/NorthIndianChart';
 import KundaliPaywallBanner from '@/app/components/KundaliPaywallBanner';
-import {
-  PlanetaryPositionsTable,
-  KPDetailsTable,
-  VimshottariDashaTimeline,
-  DashaEntry,
-} from '@/app/components/AstrologyTables';
-import ReportContent from '@/app/components/ReportContent';
-import Remedies from '@/app/components/Remedies';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import ReportContainer from '@/app/components/ReportContainer';
 import KundaliView from '@/app/components/KundaliView';
-import MarkdownView from '@/app/components/MarkdownView';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
@@ -41,7 +25,6 @@ import {
   localizePlanet,
   localizeSign,
   getChartTypeLabel,
-  ChartType,
   NAKSHATRA_NAMES,
   NAKSHATRA_LORDS,
 } from '@/lib/astrologyDictionary';
@@ -50,7 +33,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 import { trackEvent } from '@/lib/analytics';
-import { FreeTierData, PaidTierData, type KundliCalculations, type RichMilestone } from '@/types/kundali';
+import { FreeTierData, PaidTierData, type KundliCalculations, type RichMilestone, type RichPredictionReport } from '@/types/kundali';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 
@@ -110,6 +93,8 @@ interface KundliData {
   paidTier?: PaidTierData;
   /** Six AI Life-Pillar narratives returned by the single-shot report generation. */
   pillars?: LifePillarConfig[];
+  /** Dedicated rich-prediction AI output (deep ~250/200-word domain narratives). */
+  richPredictions?: RichPredictionReport;
 }
 
 const EMPTY_FREE_TIER: FreeTierData = {
@@ -141,54 +126,6 @@ const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', '
 const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
 const nakshatras = ['Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'];
 
-
-// Shown when the AI interpretation is unavailable (e.g. Gemini 404/500)
-const INTERPRETATION_FALLBACK =
-  'Your chart was generated successfully. Astrological reading is temporarily unavailable.';
-
-const PLANET_SYMBOLS: Record<string, string> = {
-  Sun: 'Su',
-  Moon: 'Mo',
-  Mars: 'Ma',
-  Mercury: 'Me',
-  Jupiter: 'Ju',
-  Venus: 'Ve',
-  Saturn: 'Sa',
-  Rahu: 'Ra',
-  Ketu: 'Ke',
-};
-
-// Vimshottari Dasha lords and years
-const DASHA_LORDS = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
-const DASHA_YEARS = [7, 20, 6, 10, 7, 18, 16, 19, 17];
-
-function generateMockDasha(moonSign: string): DashaEntry[] {
-  // Clamp to 0 so an unknown/empty moonSign degrades gracefully instead of
-  // producing negative indices and undefined dasha lords downstream.
-  const moonSignIndex = Math.max(0, signs.indexOf(moonSign));
-  const nakshatraIndex = Math.floor((moonSignIndex * 30 + 15) / (360 / 27));
-  const startLordIndex = ((nakshatraIndex % 9) + 9) % 9;
-
-  const dasha: DashaEntry[] = [];
-  let currentDate = new Date();
-
-  for (let i = 0; i < 9; i++) {
-    const lordIndex = (startLordIndex + i) % 9;
-    const years = DASHA_YEARS[lordIndex];
-    const start = new Date(currentDate);
-    const end = new Date(currentDate);
-    end.setFullYear(end.getFullYear() + years);
-
-    dasha.push({
-      planet: DASHA_LORDS[lordIndex],
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
-    });
-    currentDate = end;
-  }
-
-  return dasha;
-}
 
 // --- Helper: localize a nakshatra name to the selected language ---
 function localizeNakshatra(nakshatra: string, locale: 'en' | 'hi'): string {
@@ -330,9 +267,6 @@ export default function KundaliPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [errorKind, setErrorKind] = useState<'geocode' | 'network' | 'generic'>('generic');
-  const [copied, setCopied] = useState(false);
-  const [showShare, setShowShare] = useState(false);
-  const [activeChartType, setActiveChartType] = useState<ChartType>('D1');
   const { profile, saveProfile } = useUserProfile();
 
   // Pre-fill saved profile data on mount
@@ -433,6 +367,7 @@ export default function KundaliPage() {
         pillars: Array.isArray(result.pillars) && result.pillars.length === 6
           ? (result.pillars as LifePillarConfig[])
           : undefined,
+        richPredictions: (result.richPredictions as RichPredictionReport | null | undefined) ?? undefined,
         // Store the raw flat chartData for direct binding in summary cards + SVG chart
         chartData: {
           lagna: chartData?.lagna,
@@ -515,36 +450,10 @@ export default function KundaliPage() {
     }
   };
 
-  const handleBack = () => {
-    setShowResult(false);
-  };
-
   // Defensive rendering guard: only draw the SVG chart, planet tables and
   // analysis sections when a non-empty planets array actually exists.
   const hasPlanets =
     !!kundliData && Array.isArray(kundliData.planets) && kundliData.planets.length > 0;
-
-  // Quick "Copy Reading" — copies the full AI interpretation to the clipboard
-  const handleCopyReading = async () => {
-    if (!kundliData) return;
-    const text = kundliData.interpretation || INTERPRETATION_FALLBACK;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Clipboard API unavailable (e.g. insecure context) — legacy fallback
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    setCopied(true);
-    trackEvent('kundali_reading_copied');
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   // Build ReportData for the client-side iframe print-to-PDF
   const reportData: ReportData | null = kundliData ? {
@@ -600,10 +509,17 @@ export default function KundaliPage() {
       .filter(([domain]) => ['career', 'marriage', 'wealth', 'health', 'finance', 'education'].includes(domain))
       .map(([domain, insight]) => {
         const milestones: RichMilestone[] = insight.milestones ?? [];
+        // Pull the deep AI narrative straight from the dedicated rich-prediction
+        // call (kundliData.richPredictions) instead of the merged lifeDomains.
+        // Only career/wealth/marriage/health have a rich narrative; finance and
+        // education have no richPredictions field, so they fall back to ''.
+        const richNarrative =
+          domain === 'career' || domain === 'wealth' || domain === 'marriage' || domain === 'health'
+            ? kundliData?.richPredictions?.[domain as 'career' | 'wealth' | 'marriage' | 'health']?.narrative ?? ''
+            : '';
         return {
           domain: domain as 'career' | 'marriage' | 'wealth' | 'health' | 'finance' | 'education',
-          // Rich ~250/200-word AI paragraph when present, else the short overview.
-          prediction: insight.narrative || insight.overview || '',
+          prediction: richNarrative,
           analysis:
             milestones.map((m) => `${m.period}: ${m.event}`).join(' • ') ||
             insight.recommendations?.join('. ') ||
@@ -611,6 +527,9 @@ export default function KundaliPage() {
           timeframe: milestones[0]?.period,
         };
       }),
+    // Six AI Life-Pillar narratives → each renders as its own localized
+    // appendix page in the A4 PDF (skipped entirely when absent).
+    narratives: kundliData.pillars || [],
     northIndianChartSvg: '',
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
@@ -1050,269 +969,6 @@ export default function KundaliPage() {
               degree: '',
             })) || []}
           />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4 sm:space-y-6"
-          >
-            {/* Back Button */}
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-sm text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-700 dark:hover:text-[#F3F4F6] transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {t.kundali.backToForm}
-            </button>
-
-            {/* Header */}
-            <div className="text-center">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
-                {t.kundali.birthChart}
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-                {t.kundali.generatedFor.replace('{name}', kundliData?.name || '')}
-              </p>
-              {timeUnknown && (
-                <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
-                  <Info className="w-3 h-3 shrink-0" />
-                  {t.kundali.noonReferenceBadge}
-                </p>
-              )}
-            </div>
-
-            {/* Summary Badge Bar — Lagna / Rashi / Sun Sign / Birth Nakshatra */}
-            {/* Bound directly to the flat chartData keys (English + Hindi fallbacks) */}
-            {kundliData && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {[
-                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSignClean(kundliData.chartData?.lagna || kundliData.chartData?.ascendant || kundliData.ascendant, selectedLanguage) || '--' },
-                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSignClean(kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign, selectedLanguage) || '--' },
-                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSignClean(kundliData.chartData?.sunSign || kundliData.sunSign, selectedLanguage) || '--' },
-                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData.chartData?.nakshatra || kundliData.nakshatra, selectedLanguage) || '--' },
-                ].map((badge) => (
-                  <div key={badge.label} className="glass-card rounded-xl p-3 flex items-center gap-2.5">
-                    <span className="inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/15 dark:to-[#E0A96D]/10 text-violet-700 dark:text-[#FFD166]">
-                      {badge.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide truncate">{badge.label}</p>
-                      <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate">{badge.value || '--'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Info Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-              {[
-                { label: t.kundali.dateOfBirth, value: kundliData?.dateOfBirth || '--' },
-                { label: t.kundali.timeOfBirth, value: kundliData?.timeOfBirth || '--' },
-                { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth || '--' },
-                { label: t.kundali.coordinates, value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : '--' },
-                { label: t.kundali.timeZone, value: kundliData?.chartData?.timezone || 'IST (+05:30)' },
-                { label: t.kundali.ascendant, value: localizeSignClean(kundliData?.chartData?.lagna || kundliData?.chartData?.ascendant || kundliData?.ascendant, selectedLanguage) || '--' },
-                { label: t.kundali.moonSign, value: localizeSignClean(kundliData?.chartData?.rashi || kundliData?.chartData?.moonSign || kundliData?.moonSign, selectedLanguage) || '--' },
-                { label: t.kundali.sunSign, value: localizeSignClean(kundliData?.chartData?.sunSign || kundliData?.sunSign, selectedLanguage) || '--' },
-                { label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData?.chartData?.nakshatra || kundliData?.nakshatra, selectedLanguage) || '--' },
-              ].map((item) => (
-                <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
-                  <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>
-                  <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">{item.value || '--'}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Chart Type Tab Switcher + North Indian Chart */}
-            {hasPlanets && (
-              <div className="glass-card rounded-xl p-4 sm:p-6">
-                <div className="flex flex-wrap gap-1.5 mb-4 overflow-x-auto">
-                  {(['D1', 'D9', 'BhavChalit', 'D3', 'D4', 'D7', 'D10'] as ChartType[]).map((ct) => (
-                    <button
-                      key={ct}
-                      onClick={() => setActiveChartType(ct)}
-                      className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
-                        activeChartType === ct
-                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] shadow-sunlit-soft'
-                          : 'bg-slate-50/50 dark:bg-white/[0.03] text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-950 dark:hover:text-[#F3F4F6] border border-slate-200/60 dark:border-white/10'
-                      }`}
-                    >
-                      {getChartTypeLabel(ct, selectedLanguage)}
-                    </button>
-                  ))}
-                </div>
-
-                <NorthIndianChart
-                  chartData={{
-                    ascendantSign: signToIndex(kundliData?.ascendant),
-                    ascendantDegree: 15,
-                    // Bound directly to chartData.planets (degree "DD°MM'" → number)
-                    planets: (kundliData?.chartData?.planets ?? []).map((p) => ({
-                      planet: p.name,
-                      sign: signToIndex(p.sign),
-                      degree: parseDegree(p.degree),
-                      retrograde: p.retrograde,
-                      nakshatra: cleanAstroValue(p.nakshatra) || undefined,
-                    })),
-                    // Bound directly to chartData.houses (sign name → 1-12 index)
-                    houses: (kundliData?.chartData?.houses ?? []).map((h) => ({
-                      house: h.house,
-                      sign: signToIndex(h.sign),
-                    })),
-                  }}
-                  type={activeChartType}
-                  language={selectedLanguage}
-                />
-              </div>
-            )}
-
-            {/* Planetary Positions Table */}
-            {hasPlanets && (
-              <PlanetaryPositionsTable
-                planets={(kundliData?.planets ?? []).map((p) => ({
-                  planet: p.name,
-                  sign: signToIndex(p.sign),
-                  degree: p.degree,
-                  house: p.house,
-                  retrograde: p.status === 'Retrograde',
-                  nakshatra: p.nakshatra,
-                }))}
-                ascendantSign={signToIndex(kundliData?.ascendant)}
-                ascendantDegree={15}
-                selectedLanguage={selectedLanguage}
-              />
-            )}
-
-            {/* KP Details Table */}
-            {hasPlanets && (
-              <KPDetailsTable
-                planets={(kundliData?.planets ?? []).map((p) => ({
-                  planet: p.name,
-                  sign: signToIndex(p.sign),
-                  degree: p.degree,
-                  house: p.house,
-                  retrograde: p.status === 'Retrograde',
-                  nakshatra: p.nakshatra,
-                }))}
-                ascendantSign={signToIndex(kundliData?.ascendant)}
-                ascendantDegree={15}
-                selectedLanguage={selectedLanguage}
-                chartType={activeChartType}
-              />
-            )}
-
-            {/* Vimshottari Dasha Timeline */}
-            {kundliData && (
-              <VimshottariDashaTimeline
-                dasha={generateMockDasha(kundliData?.moonSign || '')}
-                selectedLanguage={selectedLanguage}
-              />
-            )}
-
-            {/* AI Interpretation — structured markdown rendering + quick copy */}
-            {kundliData && (
-              <div className="glass-card rounded-xl p-4 sm:p-6">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 min-w-0">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
-                    <span className="truncate">{language === 'hi' ? 'आपकी कुंडली का विश्लेषण' : 'Your Kundali Analysis'}</span>
-                  </h2>
-                  <button
-                    onClick={handleCopyReading}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all shrink-0 ${
-                      copied
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                        : 'border-slate-200/60 dark:border-white/10 text-slate-500 dark:text-[#9CA3AF] hover:border-violet-300 dark:hover:border-[#FFD166]/30 hover:text-indigo-900 dark:hover:text-[#F3F4F6]'
-                    }`}
-                    aria-live="polite"
-                  >
-                    {copied ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {language === 'hi' ? 'कॉपी हो गया!' : 'Copied!'}
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        {language === 'hi' ? 'रीडिंग कॉपी करें' : 'Copy Reading'}
-                      </>
-                    )}
-                  </button>
-                </div>
-                <MarkdownView content={kundliData.interpretation || INTERPRETATION_FALLBACK} />
-              </div>
-            )}
-
-            {/* Report Content (Narratives, Yogas, Dosha Badges) */}
-            {hasPlanets && (
-              <ReportContent
-                data={{
-                  ascendantSign: signToIndex(kundliData?.ascendant),
-                  ascendantDegree: 15,
-                  moonSign: signToIndex(kundliData?.moonSign),
-                  marsSign: signToIndex(kundliData?.planets?.find((p) => p.name === 'Mars')?.sign || 'Aries'),
-                  planets: (kundliData?.planets ?? []).map((p) => ({
-                    planet: p.name,
-                    sign: signToIndex(p.sign),
-                    degree: p.degree,
-                    house: p.house,
-                    retrograde: p.status === 'Retrograde',
-                  })),
-                }}
-                selectedLanguage={selectedLanguage}
-              />
-            )}
-
-            {/* Remedies (Gemstones + Rudraksha) */}
-            {hasPlanets && (
-              <Remedies
-                data={{
-                  ascendantSign: signToIndex(kundliData?.ascendant),
-                  ascendantDegree: 15,
-                  moonSign: signToIndex(kundliData?.moonSign),
-                  planets: (kundliData?.planets ?? []).map((p) => ({
-                    planet: p.name,
-                    sign: signToIndex(p.sign),
-                    degree: p.degree,
-                    house: p.house,
-                    retrograde: p.status === 'Retrograde',
-                  })),
-                  hasManglik: false,
-                  hasKaalSarp: false,
-                  sadeSatiActive: false,
-                }}
-                selectedLanguage={selectedLanguage}
-              />
-            )}
-
-            {/* PDF + Share Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 pt-2">
-              <button
-                onClick={() => setShowShare(true)}
-                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-violet-300/60 dark:border-[#FFD166]/30 text-indigo-950 dark:text-[#FFD166] text-sm sm:text-base font-medium rounded-xl hover:bg-violet-50 dark:hover:bg-[#FFD166]/10 hover:shadow-glow-gold transition-all"
-              >
-                <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                {language === 'hi' ? 'मेरी कॉस्मिक प्रोफ़ाइल साझा करें' : 'Share My Cosmic Profile'}
-              </button>
-            </div>
-
-            {kundliData && (
-              <ShareCard
-                open={showShare}
-                onClose={() => setShowShare(false)}
-                mode="kundali"
-                lang={language}
-                data={{
-                  name: kundliData.name,
-                  sunSign: kundliData.sunSign,
-                  moonSign: kundliData.moonSign,
-                  ascendant: kundliData.ascendant,
-                  nakshatra: kundliData.nakshatra,
-                }}
-              />
-            )}
-
-          </motion.div>
           </ReportContainer>
           </>
           )}

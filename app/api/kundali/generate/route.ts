@@ -809,7 +809,7 @@ export async function POST(req: NextRequest) {
       if (!current) continue;
       const narrative: string | undefined = richPredictions?.[key]?.narrative;
       const finalText =
-        countWords(narrative) > 200
+        countWords(narrative) > 80
           ? narrative!.trim()
           : countWords(current.overview) > 200
             ? current.overview.trim()
@@ -824,10 +824,11 @@ export async function POST(req: NextRequest) {
       interpretation,
       freeTier,
       paidTier,
+      richPredictions,
       calculations,
       pillars,
       aiSource,
-    } as FullKundliReportData & { pillars: LifePillarConfig[]; aiSource: boolean });
+    } as FullKundliReportData & { pillars: LifePillarConfig[]; aiSource: boolean; richPredictions: RichPredictionReport | null });
   } catch (error) {
     console.error("Kundali generation failed:", error);
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });
