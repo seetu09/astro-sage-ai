@@ -17,6 +17,8 @@ import {
   Moon,
   Star,
   ArrowUp,
+  Lock,
+  Download,
 } from 'lucide-react';
 import ShareCard from '@/app/components/ShareCard';
 import NorthIndianChart from '@/app/components/NorthIndianChart';
@@ -311,6 +313,9 @@ function extractSarvashtakavarga(src: unknown): ReportData['sarvashtakavarga'] {
 export default function KundaliPage() {
   const { language, t } = useLanguage();
   const { selectedLanguage, isPaid } = useApp();
+  // State guard: isPaid defaults to false in AppContext; coerce undefined/null to false (locked)
+  const isPaidSafe = !!isPaid;
+  console.log("[PAYWALL] User tier:", isPaid);
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -627,8 +632,8 @@ export default function KundaliPage() {
       ),
     },
     d9Chart: extractD9Chart(kundliData),
-    sarvashtakavarga: extractSarvashtakavarga(kundliData),
-    isPaidTier: isPaid,
+        sarvashtakavarga: extractSarvashtakavarga(kundliData),
+    isPaidTier: isPaidSafe,
   } : null;
 
   return (
@@ -796,19 +801,13 @@ export default function KundaliPage() {
           </motion.div>
         ) : (
           <>
-          {/* ── FREE PREVIEW (basic details + D1 chart preview + locked CTA card) ── */}
-          {!isPaid && kundliData && (
+          {/* ── FREE PREVIEW (basic details + panchang snapshot + D1 preview + locked grid + CTA) ── */}
+          {!isPaidSafe && kundliData && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4 sm:space-y-6"
             >
-              {/* Prominent paywall banner (free tier) — premium upsell */}
-              <KundaliPaywallBanner
-                userEmail={kundliData?.email || email}
-                userName={kundliData?.name || name}
-              />
-
               <div className="text-center">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
                   {t.kundali.birthChart}
@@ -824,99 +823,53 @@ export default function KundaliPage() {
                 )}
               </div>
 
-              {/* Summary Badge Bar — Lagna / Rashi / Sun Sign / Birth Nakshatra */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                {[
-                  { icon: <ArrowUp className="w-4 h-4" />, label: t.kundali.ascendant, value: localizeSignClean(kundliData.chartData?.lagna || kundliData.chartData?.ascendant || kundliData.ascendant, selectedLanguage) || '--' },
-                  { icon: <Moon className="w-4 h-4" />, label: t.kundali.moonSign, value: localizeSignClean(kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign, selectedLanguage) || '--' },
-                  { icon: <Sun className="w-4 h-4" />, label: t.kundali.sunSign, value: localizeSignClean(kundliData.chartData?.sunSign || kundliData.sunSign, selectedLanguage) || '--' },
-                  { icon: <Star className="w-4 h-4" />, label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData.chartData?.nakshatra || kundliData.nakshatra, selectedLanguage) || '--' },
-                ].map((badge) => (
-                  <div key={badge.label} className="glass-card rounded-xl p-3 flex items-center gap-2.5">
-                    <span className="inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/15 dark:to-[#E0A96D]/10 text-violet-700 dark:text-[#FFD166]">
-                      {badge.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide truncate">{badge.label}</p>
-                      <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate">{badge.value || '--'}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Info Cards — basic birth details */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-                {[
-                  { label: t.kundali.dateOfBirth, value: kundliData?.dateOfBirth || '--' },
-                  { label: t.kundali.timeOfBirth, value: kundliData?.timeOfBirth || '--' },
-                  { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth || '--' },
-                  { label: t.kundali.coordinates, value: kundliData?.latitude != null && kundliData?.longitude != null ? `${kundliData.latitude.toFixed(2)}, ${kundliData.longitude.toFixed(2)}` : '--' },
-                  { label: t.kundali.timeZone, value: kundliData?.chartData?.timezone || 'IST (+05:30)' },
-                  { label: t.kundali.ascendant, value: localizeSignClean(kundliData?.chartData?.lagna || kundliData?.chartData?.ascendant || kundliData?.ascendant, selectedLanguage) || '--' },
-                  { label: t.kundali.moonSign, value: localizeSignClean(kundliData?.chartData?.rashi || kundliData?.chartData?.moonSign || kundliData?.moonSign, selectedLanguage) || '--' },
-                  { label: t.kundali.nakshatra, value: localizeNakshatraClean(kundliData?.chartData?.nakshatra || kundliData?.nakshatra, selectedLanguage) || '--' },
-                ].map((item) => (
-                  <div key={item.label} className="glass-card rounded-xl p-2.5 sm:p-3">
-                    <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{item.label}</p>
-                    <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">{item.value || '--'}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Panchang Summary (free tier snapshot — five limbs where data exists) */}
+              {/* Basic Kundli Details card (free tier) */}
               <div className="glass-card rounded-xl p-4 sm:p-6">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 min-w-0">
-                    <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
-                    <span className="truncate">
-                      {selectedLanguage === 'hi' ? 'जन्म पंचांग सारांश' : 'Panchang at Birth'}
-                    </span>
-                  </h2>
-                  <span className="shrink-0 text-[10px] uppercase tracking-wide font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
-                    {selectedLanguage === 'hi' ? 'निःशुल्क' : 'Free'}
+                <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
+                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                  <span className="truncate">
+                    {selectedLanguage === 'hi' ? 'मूल कुंडली विवरण' : 'Basic Kundli Details'}
                   </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {[
                     {
-                      label: selectedLanguage === 'hi' ? 'वार (सप्ताह का दिन)' : 'Vara (Weekday)',
-                      value: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
+                      label: selectedLanguage === 'hi' ? 'नाम' : 'Name',
+                      value: kundliData?.name || '--',
                     },
+                    { label: t.kundali.dateOfBirth, value: kundliData?.dateOfBirth || '--' },
+                    { label: t.kundali.timeOfBirth, value: kundliData?.timeOfBirth || '--' },
+                    { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth || '--' },
                     {
-                      label: selectedLanguage === 'hi' ? 'जन्म नक्षत्र' : 'Birth Nakshatra',
+                      label: t.kundali.coordinates,
                       value:
-                        localizeNakshatraClean(
-                          kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
-                          selectedLanguage
-                        ) || '--',
+                        kundliData?.latitude != null && kundliData?.longitude != null
+                          ? `${kundliData.latitude.toFixed(4)}, ${kundliData.longitude.toFixed(4)}`
+                          : '--',
                     },
                     {
-                      label: selectedLanguage === 'hi' ? 'नक्षत्र स्वामी' : 'Nakshatra Lord',
-                      value:
-                        localizeNakshatraLordClean(
-                          kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
-                          selectedLanguage
-                        ) || '--',
-                    },
-                    {
-                      label: selectedLanguage === 'hi' ? 'चंद्र राशि' : 'Moon Sign (Rashi)',
-                      value:
-                        localizeSignClean(kundliData?.chartData?.rashi || kundliData?.moonSign, selectedLanguage) ||
-                        '--',
-                    },
-                    {
-                      label: selectedLanguage === 'hi' ? 'सूर्य राशि' : 'Sun Sign',
-                      value:
-                        localizeSignClean(kundliData?.chartData?.sunSign || kundliData?.sunSign, selectedLanguage) ||
-                        '--',
-                    },
-                    {
-                      label: selectedLanguage === 'hi' ? 'लग्न' : 'Ascendant (Lagna)',
+                      label: t.kundali.ascendant,
                       value:
                         localizeSignClean(
-                          kundliData?.chartData?.lagna ||
-                            kundliData?.chartData?.ascendant ||
-                            kundliData?.ascendant,
+                          kundliData.chartData?.lagna ||
+                            kundliData.chartData?.ascendant ||
+                            kundliData.ascendant,
+                          selectedLanguage
+                        ) || '--',
+                    },
+                    {
+                      label: t.kundali.moonSign,
+                      value:
+                        localizeSignClean(
+                          kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign,
+                          selectedLanguage
+                        ) || '--',
+                    },
+                    {
+                      label: t.kundali.nakshatra,
+                      value:
+                        localizeNakshatraClean(
+                          kundliData.chartData?.nakshatra || kundliData.nakshatra,
                           selectedLanguage
                         ) || '--',
                     },
@@ -929,19 +882,64 @@ export default function KundaliPage() {
                         {item.label}
                       </p>
                       <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">
-                        {item.value}
+                        {item.value || '--'}
                       </p>
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-400 dark:text-[#6B7280] mt-3">
-                  {selectedLanguage === 'hi'
-                    ? 'तिथि, योग और करण विवरण प्रीमियम रिपोर्ट में शामिल हैं।'
-                    : 'Tithi, Yoga and Karana details are included in the premium report.'}
-                </p>
               </div>
 
-              {/* D1 Birth Chart Preview (free tier — divisional charts are premium) */}
+              {/* Panchang Snapshot card (free tier — Tithi/Yoga/Karana populate in premium) */}
+              <div className="glass-card rounded-xl p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
+                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                  <span className="truncate">
+                    {selectedLanguage === 'hi' ? 'पंचांग स्नैपशॉट' : 'Panchang Snapshot'}
+                  </span>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+                  {[
+                    {
+                      label: selectedLanguage === 'hi' ? 'तिथि' : 'Tithi',
+                      value: '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'वार (दिन)' : 'Vara (Day)',
+                      value: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
+                    },
+                    {
+                      label: t.kundali.nakshatra,
+                      value:
+                        localizeNakshatraClean(
+                          kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
+                          selectedLanguage
+                        ) || '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'योग' : 'Yoga',
+                      value: '--',
+                    },
+                    {
+                      label: selectedLanguage === 'hi' ? 'करण' : 'Karana',
+                      value: '--',
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-xl p-2.5 sm:p-3 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10"
+                    >
+                      <p className="text-[10px] uppercase tracking-wide text-slate-400 dark:text-[#6B7280] truncate">
+                        {item.label}
+                      </p>
+                      <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5 truncate">
+                        {item.value || '--'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* D1 Lagna Chart preview (free tier — capped 300px, non-downloadable; D9/D10/D60 premium) */}
               {hasPlanets && (
                 <div className="glass-card rounded-xl p-4 sm:p-6">
                   <div className="flex items-center justify-between gap-3 mb-4">
@@ -949,41 +947,78 @@ export default function KundaliPage() {
                       <Sparkles className="w-4 h-4 text-violet-600 dark:text-[#FFD166] shrink-0" />
                       <span className="truncate">{getChartTypeLabel('D1', selectedLanguage)}</span>
                     </span>
-                    <span className="shrink-0 text-[10px] uppercase tracking-wide font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
-                      {selectedLanguage === 'hi' ? 'पूर्वावलोकन' : 'Preview'}
-                    </span>
+                    <Lock className="w-4 h-4 text-slate-400 dark:text-[#6B7280] shrink-0" />
                   </div>
 
-                  <NorthIndianChart
-                    chartData={{
-                      ascendantSign: signToIndex(kundliData?.ascendant),
-                      ascendantDegree: 15,
-                      planets: (kundliData?.chartData?.planets ?? []).map((p) => ({
-                        planet: p.name,
-                        sign: signToIndex(p.sign),
-                        degree: parseDegree(p.degree),
-                        retrograde: p.retrograde,
-                        nakshatra: cleanAstroValue(p.nakshatra) || undefined,
-                      })),
-                      houses: (kundliData?.chartData?.houses ?? []).map((h) => ({
-                        house: h.house,
-                        sign: signToIndex(h.sign),
-                      })),
-                    }}
-                    type="D1"
-                    language={selectedLanguage}
-                  />
+                  {/* Non-downloadable preview: interaction disabled, height capped at 300px */}
+                  <div className="max-h-[300px] overflow-hidden pointer-events-none select-none">
+                    <NorthIndianChart
+                      chartData={{
+                        ascendantSign: signToIndex(kundliData?.ascendant),
+                        ascendantDegree: 15,
+                        planets: (kundliData?.chartData?.planets ?? []).map((p) => ({
+                          planet: p.name,
+                          sign: signToIndex(p.sign),
+                          degree: parseDegree(p.degree),
+                          retrograde: p.retrograde,
+                          nakshatra: cleanAstroValue(p.nakshatra) || undefined,
+                        })),
+                        houses: (kundliData?.chartData?.houses ?? []).map((h) => ({
+                          house: h.house,
+                          sign: signToIndex(h.sign),
+                        })),
+                      }}
+                      type="D1"
+                      language={selectedLanguage}
+                    />
+                  </div>
+
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-[#9CA3AF] text-center mt-3">
+                    {selectedLanguage === 'hi'
+                      ? 'पूर्वावलोकन — D9, D10, D60 चार्ट के लिए अनलॉक करें'
+                      : 'Preview - Unlock for D9, D10, D60 charts'}
+                  </p>
                 </div>
               )}
 
-              {/* Bottom paywall banner (free tier) — final upsell before footer */}
+              {/* Locked life-domain grid (free tier) — Career/Marriage/Wealth/Health/Education/Family */}
+              <div className="glass-card rounded-xl p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                  <span className="truncate">
+                    {selectedLanguage === 'hi' ? 'प्रीमियम भविष्यवाणियाँ' : 'Premium Predictions'}
+                  </span>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                  {(selectedLanguage === 'hi'
+                    ? ['करियर', 'विवाह', 'धन', 'स्वास्थ्य', 'शिक्षा', 'परिवार']
+                    : ['Career', 'Marriage', 'Wealth', 'Health', 'Education', 'Family']
+                  ).map((domain) => (
+                    <div
+                      key={domain}
+                      className="rounded-xl p-3 sm:p-4 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 opacity-60 flex flex-col items-center justify-center gap-1.5 text-center"
+                    >
+                      <Lock className="w-4 h-4 text-slate-400 dark:text-[#6B7280]" />
+                      <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate w-full">
+                        {domain}
+                      </p>
+                      <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">
+                        {selectedLanguage === 'hi' ? 'प्रीमियम रिपोर्ट में उपलब्ध' : 'Available in Premium Report'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Prominent CTA banner (free tier) — Unlock Full 25-Page Kundli Report ₹49 */}
               <KundaliPaywallBanner
                 userEmail={kundliData?.email || email}
                 userName={kundliData?.name || name}
               />
             </motion.div>
           )}
-          {isPaid && (
+          {isPaidSafe && (
+            <>
             <ReportContainer
               userEmail={kundliData?.email || email}
               userName={kundliData?.name || name}
@@ -1280,6 +1315,31 @@ export default function KundaliPage() {
 
           </motion.div>
           </ReportContainer>
+
+          {/* Sticky bottom download bar (paid tier) — TODO(Batch 6): wire PDF generation endpoint handlers */}
+          <div className="sticky bottom-0 z-40 -mx-4 sm:-mx-4 lg:-mx-6 px-4 sm:px-4 lg:px-6 py-3 bg-[#F8F7FC]/90 dark:bg-[#080811]/90 backdrop-blur-md border-t border-slate-200/60 dark:border-white/10">
+            <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-2 sm:gap-3">
+              {/* TODO(Batch 6): POST /api/report/pdf?lang=en */}
+              <button
+                disabled
+                title={selectedLanguage === 'hi' ? 'जल्द आ रहा है' : 'PDF download coming soon'}
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl opacity-50 cursor-not-allowed transition-all"
+              >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                Download PDF (English)
+              </button>
+              {/* TODO(Batch 6): POST /api/report/pdf?lang=hi */}
+              <button
+                disabled
+                title={selectedLanguage === 'hi' ? 'जल्द आ रहा है' : 'PDF download coming soon'}
+                className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl opacity-50 cursor-not-allowed transition-all"
+              >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                डाउनलोड PDF (हिंदी)
+              </button>
+            </div>
+          </div>
+          </>
           )}
           </>
         )}
