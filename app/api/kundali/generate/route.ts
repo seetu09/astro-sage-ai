@@ -655,18 +655,7 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
 
 export async function POST(req: NextRequest) {
   try {
-    // --- Paywall gate ---------------------------------------------------------
-    // Paid fields (paidTier, pillars, calculations) are only returned when a
-    // valid unlock token is presented. Tokens are minted server-side after a
-    // verified payment; without one, callers get ONLY free-tier data.
     const body = await req.json();
-    const providedToken =
-      (typeof body?.unlockToken === "string" && body.unlockToken) ||
-      req.headers.get("x-unlock-token") ||
-      "";
-    const expectedSecret = process.env.UNLOCK_SECRET;
-    const isUnlocked =
-      !!expectedSecret && !!providedToken && providedToken === expectedSecret;
 
     const rawLang = typeof body.lang === "string" ? body.lang.trim().toLowerCase() : "en";
     const lang: "en" | "hi" = rawLang === "hi" ? "hi" : "en";
@@ -828,17 +817,6 @@ export async function POST(req: NextRequest) {
       paidTier.lifeDomains![key] = { ...current, overview: finalText };
     }
 
-
-    // SECURITY: paid data is stripped unless a valid UNLOCK_SECRET token was
-    // presented. Free responses contain NO paidTier, NO pillars, NO calculations.
-    if (!isUnlocked) {
-      return NextResponse.json({
-        success: true,
-        chartData,
-        interpretation,
-        freeTier,
-      });
-    }
 
     return NextResponse.json({
       success: true,
