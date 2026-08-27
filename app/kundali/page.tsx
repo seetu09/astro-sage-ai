@@ -772,7 +772,7 @@ export default function KundaliPage() {
                   {translate('kundali.birthChart', language)}
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-                  {translate('kundali.generatedFor', language).replace('{name}', kundliData?.name || '')}
+                  {translate('kundali.sections.generatedFor', language).replace('{name}', kundliData?.name || '')}
                 </p>
                 {timeUnknown && (
                   <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">

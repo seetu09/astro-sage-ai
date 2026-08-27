@@ -253,7 +253,7 @@ export default function Preview({
         icon={
           <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
         }
-        title="Basic Details"
+        title={t('kundali.sections.basicDetails')}
       >
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <DetailCell label={t('preview.lagna')} value={chart.lagna || '--'} />
@@ -330,7 +330,7 @@ export default function Preview({
         icon={
           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
         }
-        title="Detailed Insights"
+        title={t('preview.detailedInsights')}
       >
         <div className="space-y-4 sm:space-y-5">
           {DOMAIN_KEYS.map((domain) => (
@@ -363,7 +363,8 @@ export default function Preview({
         <button
           type="button"
           onClick={handleUnlockClick}
-          className="inline-flex items-center justify-center gap-2 w-full max-w-lg mx-auto sm:w-auto px-8 py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 active:scale-[0.98] transition-all text-white text-sm sm:text-base font-semibold shadow-lg shadow-violet-600/20 cursor-pointer"
+          className="hidden"
+          aria-hidden="true"
         >
           <Sparkles className="w-4 h-4" />
           {t('preview.unlockButton')}
