@@ -793,9 +793,8 @@ const severityLabel = (count: number): keyof typeof LABEL.hi => {
   return "severityNone";
 };
 
+// Returns "" when there is no yoga content to render.
 const severityLabel = (count: number): keyof typeof LABEL.hi => {
- * Returns "" when there is no yoga content to render.
- */
 const buildYogasDoshasPage = (
   data: ReportData,
   lang: "hi" | "en",
