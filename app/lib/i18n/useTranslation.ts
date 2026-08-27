@@ -2,20 +2,20 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { t } from "@/app/lib/i18n";
 import {
+  getTranslation,
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
   SUPPORTED_LANGUAGES,
   toLanguage,
   type Language,
-} from "@/app/lib/i18n";
+} from "@/lib/i18n";
 
 interface UseTranslationValue {
   /** Currently active language. */
   lang: Language;
   /** Translate a dotted key in the active language. */
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, any>) => string;
   /** Persist the user's language choice for future sessions. */
   setLang: (lang: Language) => void;
   /** Supported language codes, useful for a switcher UI. */
@@ -68,7 +68,7 @@ export function useTranslation(): UseTranslationValue {
 
   return {
     lang,
-    t: (key: string) => t(key, lang),
+    t: (key: string, params?: Record<string, any>) => getTranslation(lang, key, params),
     setLang,
     supportedLanguages: SUPPORTED_LANGUAGES,
   };

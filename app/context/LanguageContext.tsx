@@ -1,18 +1,19 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, getTranslation, Translations } from '@/data/translations';
+import { Language, getTranslation, translations, type Translations } from '@/lib/i18n';
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  /** Translations object for the active language (e.g. `t.nav.home`). */
   t: Translations;
   /**
    * Function-style translation using a dotted key path, e.g.
-   * translate('kundali.title', language) -> 'Kundli'.
+   * translate('kundali.sections.generatedFor', 'en', { name: 'Rahul' }) -> 'Generated for Rahul'.
    * Falls back to the default language, then the key itself.
    */
-  translate: (key: string, lang?: Language) => string;
+  translate: (key: string, lang?: Language, params?: Record<string, any>) => string;
 }
 
 // FIX: Provide a default value instead of undefined
@@ -24,21 +25,6 @@ const defaultValue: LanguageContextType = {
 };
 
 const LanguageContext = createContext<LanguageContextType>(defaultValue);
-
-/**
- * Resolve a dotted key path against a Translations object, e.g. "kundali.tabs.overview".
- */
-function lookup(root: unknown, key: string): unknown {
-  let node: unknown = root;
-  for (const segment of key.split('.')) {
-    if (node && typeof node === 'object' && segment in node) {
-      node = (node as Record<string, unknown>)[segment];
-    } else {
-      return undefined;
-    }
-  }
-  return node;
-}
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('en');
@@ -57,15 +43,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('astroveda-language', lang);
   };
 
-  const t = getTranslation(language);
+  const t = translations[language];
 
-  const translate = (key: string, lang?: Language): string => {
+  const translate = (key: string, lang?: Language, params?: Record<string, any>): string => {
     const target = lang ?? language;
-    const value = lookup(getTranslation(target), key);
-    if (typeof value === 'string') return value;
-    // Fallback: default language, then the raw key.
-    const fallback = lookup(getTranslation('en'), key);
-    return typeof fallback === 'string' ? fallback : key;
+    return getTranslation(target, key, params);
   };
 
   return (
