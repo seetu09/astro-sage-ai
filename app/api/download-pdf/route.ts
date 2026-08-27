@@ -15,8 +15,8 @@ const chromiumRuntime = chromium as unknown as {
 };
 
 export async function POST(req: NextRequest) {
-  try {
-    const { reportData, lang, unlockToken } = await req.json();
+    try {
+    const { reportData, language, lang, unlockToken } = await req.json();
 
     // Payment verification
     if (!unlockToken || unlockToken !== process.env.UNLOCK_SECRET) {
@@ -27,8 +27,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing report data" }, { status: 400 });
     }
 
+    // Language — prefer the canonical `language` field; fall back to the
+    // legacy `lang` key for backwards compatibility with older clients.
+    const resolvedLang: "en" | "hi" =
+      typeof language === "string" && language.trim().toLowerCase() === "hi"
+        ? "hi"
+        : typeof lang === "string" && lang.trim().toLowerCase() === "hi"
+          ? "hi"
+          : "en";
+
     // Generate HTML
-    const html = generateReportHtml(reportData as ReportData, lang === "hi" ? "hi" : "en");
+    const html = generateReportHtml(reportData as ReportData, resolvedLang);
 
     // Launch browser with Vercel-compatible settings
     const browser = await puppeteer.launch({
@@ -79,7 +88,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="Kundli-Report-${encodeURIComponent(
             reportData.clientName || "User"
-          ).replace(/%20/g, "-")}.pdf"`,
+          ).replace(/%20/g, "-")}${resolvedLang === "hi" ? "-Hindi" : "-English"}.pdf"`,
           "Cache-Control": "no-cache",
         },
       }

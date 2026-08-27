@@ -19,6 +19,7 @@ import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import ReportContainer from '@/app/components/ReportContainer';
 import KundaliView from '@/app/components/KundaliView';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
+import Preview from './components/Preview';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
 import { useToast } from '@/app/components/ToastProvider';
@@ -34,7 +35,8 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { resolveBirthTime } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 import { trackEvent } from '@/lib/analytics';
-import { FreeTierData, PaidTierData, type KundliCalculations, type RichMilestone, type RichPredictionReport } from '@/types/kundali';
+import { FreeTierData, PaidTierData, DashaRoadmapEntry, type KundliCalculations, type RichMilestone, type RichPredictionReport } from '@/types/kundali';
+import type { PreviewBirthData } from './components/Preview';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 
@@ -248,7 +250,7 @@ function extractSarvashtakavarga(src: unknown): ReportData['sarvashtakavarga'] {
 
 
 export default function KundaliPage() {
-  const { language, t } = useLanguage();
+  const { language, translate } = useLanguage();
   const { selectedLanguage, isPaid } = useApp();
   // State guard: isPaid defaults to false in AppContext; coerce undefined/null to false (locked)
   const isPaidSafe = !!isPaid;
@@ -288,18 +290,17 @@ export default function KundaliPage() {
     e.preventDefault();
 
     // ── Client-side validation (before hitting the API) ──
-    const langIsHi = language === 'hi';
 
     const dateTaken = dateOfBirth.trim();
     if (!dateTaken) {
       setErrorKind('generic');
-      setError(langIsHi ? 'कृपया जन्म तिथि चुनें।' : 'Please select your date of birth.');
+      setError(translate('kundali.errors.selectDate', language));
       return;
     }
     const parsedDate = new Date(dateTaken);
     if (Number.isNaN(parsedDate.getTime())) {
       setErrorKind('generic');
-      setError(langIsHi ? 'कृपया मान्य जन्म तिथि दर्ज करें।' : 'Please enter a valid date of birth.');
+      setError(translate('kundali.errors.invalidDate', language));
       return;
     }
     // Reject future birth dates.
@@ -307,19 +308,19 @@ export default function KundaliPage() {
     today.setHours(0, 0, 0, 0);
     if (parsedDate > today) {
       setErrorKind('generic');
-      setError(langIsHi ? 'जन्म तिथि भविष्य में नहीं हो सकती।' : 'Date of birth cannot be in the future.');
+      setError(translate('kundali.errors.futureDate', language));
       return;
     }
 
     if (!timeUnknown && !timeOfBirth.trim()) {
       setErrorKind('generic');
-      setError(langIsHi ? 'कृपया जन्म समय चुनें या "समय अज्ञात" चुनें।' : 'Please select your time of birth, or tick "time unknown".');
+      setError(translate('kundali.errors.selectTime', language));
       return;
     }
 
     if (!placeOfBirth.trim()) {
       setErrorKind('generic');
-      setError(langIsHi ? 'कृपया जन्म स्थान दर्ज करें।' : 'Please enter your place of birth.');
+      setError(translate('kundali.errors.enterPlace', language));
       return;
     }
 
@@ -327,11 +328,7 @@ export default function KundaliPage() {
     // Graceful guard: geocoded coordinates are required for accurate computation
     if (latitude == null || longitude == null) {
       setErrorKind('geocode');
-      setError(
-        langIsHi
-          ? 'कृपया सुझावों में से अपना जन्म स्थान चुनें ताकि सही निर्देशांक मिल सकें।'
-          : 'Please pick your birth place from the suggestions so we get accurate coordinates.'
-      );
+      setError(translate('kundali.errors.geocodePlace', language));
       return;
     }
 
@@ -349,6 +346,7 @@ export default function KundaliPage() {
           latitude,
           longitude,
           timezoneOffset: timezone || '+05:30',
+          language,
         }),
       });
 
@@ -439,11 +437,7 @@ export default function KundaliPage() {
 
       setKundliData(data);
       setShowResult(true);
-      toast.success(
-        language === 'hi'
-          ? 'आपकी कुंडली सफलतापूर्वक तैयार हो गई है! ✨'
-          : 'Your Kundli has been generated successfully! ✨'
-      );
+      toast.success(translate('kundali.errors.success', language));
 
       // Persist birth details for reuse across Kundali, Matchmaking & Chat
       saveProfile({
@@ -481,12 +475,8 @@ export default function KundaliPage() {
       const isNetworkError = err instanceof TypeError;
       setErrorKind(isNetworkError ? 'network' : 'generic');
       const errorMsg = isNetworkError
-        ? language === 'hi'
-          ? 'नेटवर्क कनेक्शन उपलब्ध नहीं है। कृपया अपना इंटरनेट जांचें और पुनः प्रयास करें।'
-          : 'Network request failed. Please check your connection and try again.'
-        : language === 'hi'
-          ? 'कुंडली बनाने में त्रुटि हुई। कृपया पुनः प्रयास करें।'
-          : 'Failed to generate kundali. Please try again.';
+        ? translate('kundali.errors.network', language)
+        : translate('kundali.errors.generic', language);
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -502,7 +492,7 @@ export default function KundaliPage() {
   // Build ReportData for the client-side iframe print-to-PDF
   const reportData: ReportData | null = kundliData ? {
     clientName: kundliData?.name || name,
-    chartType: selectedLanguage === 'hi' ? 'उत्तर भारतीय' : 'North Indian',
+    chartType: translate('kundali.northIndian', language),
     birthDetails: {
       date: kundliData?.dateOfBirth || '',
       time: kundliData?.timeOfBirth || '',
@@ -539,31 +529,23 @@ export default function KundaliPage() {
       })),
       // Rich AI remedy kit — daily mantras + gemstone digest.
       ...(kundliData?.paidTier?.remedyKit?.dailyMantras ?? []).map((m) => ({
-        category: selectedLanguage === 'hi' ? 'दैनिक मंत्र' : 'Daily Mantra',
+        category: translate('kundali.dailyMantra', language),
         description: m,
       })),
       ...((kundliData?.paidTier?.remedyKit?.gemstones ?? []).length
         ? [{
-            category: selectedLanguage === 'hi' ? 'रत्न सुझाव' : 'Gemstone Suggestion',
+            category: translate('kundali.gemstoneSuggestion', language),
             description: (kundliData?.paidTier?.remedyKit?.gemstones ?? []).join(' · '),
           }]
         : []),
     ],
     domainInsights: Object.entries(kundliData?.paidTier?.lifeDomains ?? {})
-      .filter(([domain]) => ['career', 'marriage', 'wealth', 'health', 'finance', 'education'].includes(domain))
+      .filter(([domain]) => ['career', 'wealth', 'marriage', 'health'].includes(domain))
       .map(([domain, insight]) => {
         const milestones: RichMilestone[] = insight.milestones ?? [];
-        // Pull the deep AI narrative straight from the dedicated rich-prediction
-        // call (kundliData.richPredictions) instead of the merged lifeDomains.
-        // Only career/wealth/marriage/health have a rich narrative; finance and
-        // education have no richPredictions field, so they fall back to ''.
-        const richNarrative =
-          domain === 'career' || domain === 'wealth' || domain === 'marriage' || domain === 'health'
-            ? kundliData?.richPredictions?.[domain as 'career' | 'wealth' | 'marriage' | 'health']?.narrative ?? ''
-            : '';
         return {
-          domain: domain as 'career' | 'marriage' | 'wealth' | 'health' | 'finance' | 'education',
-          prediction: richNarrative,
+          domain: domain as 'career' | 'wealth' | 'marriage' | 'health',
+          prediction: kundliData?.richPredictions?.[domain as 'career' | 'wealth' | 'marriage' | 'health']?.narrative || insight.overview || '',
           analysis:
             milestones.map((m) => `${m.period}: ${m.event}`).join(' • ') ||
             insight.recommendations?.join('. ') ||
@@ -573,7 +555,7 @@ export default function KundaliPage() {
       }),
     // Six AI Life-Pillar narratives → each renders as its own localized
     // appendix page in the A4 PDF (skipped entirely when absent).
-    narratives: kundliData.pillars || [],
+    narratives: kundliData?.pillars || [],
     northIndianChartSvg: '',
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
@@ -598,6 +580,21 @@ export default function KundaliPage() {
     isPaidTier: isPaidSafe,
   } : null;
 
+  // Raw birth details handed to the free-tier <Preview> for its client-side
+  // Lagna/Moon/Sun computation and the /api/kundali/generate yoga fetch.
+  const previewBirthData: PreviewBirthData | null = kundliData &&
+    kundliData.latitude != null && kundliData.longitude != null
+    ? {
+        dateOfBirth: kundliData.dateOfBirth,
+        timeOfBirth: kundliData.timeOfBirth,
+        latitude: kundliData.latitude,
+        longitude: kundliData.longitude,
+        timezoneOffset: timezone || '+05:30',
+      }
+    : null;
+  const runningDashaEntry: DashaRoadmapEntry | null =
+    kundliData?.paidTier?.dashaRoadmap?.find((d) => d.lord) ?? null;
+
   return (
     <div className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-[#F8F7FC] dark:bg-[#080811]">
       <div className="max-w-4xl mx-auto px-4 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
@@ -617,33 +614,33 @@ export default function KundaliPage() {
                 <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-violet-700 dark:text-[#FFD166]" />
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
-                {t.kundali.generateTitle}
+                {translate('kundali.generateTitle', language)}
               </h1>
               <p className="text-sm sm:text-base text-slate-500 dark:text-[#9CA3AF] px-2">
-                {t.kundali.subtitle}
+                {translate('kundali.subtitle', language)}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 glass-card p-4 sm:p-6 lg:p-8">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.fullName}</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{translate('kundali.fullName', language)}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder={t.kundali.namePlaceholder}
+                  placeholder={translate('kundali.namePlaceholder', language)}
                   className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.email}</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{translate('kundali.email', language)}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t.kundali.emailPlaceholder}
+                  placeholder={translate('kundali.emailPlaceholder', language)}
                   className="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                   required
                 />
@@ -651,7 +648,7 @@ export default function KundaliPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.dateOfBirth}</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{translate('kundali.dateOfBirth', language)}</label>
                   <input
                     type="date"
                     value={dateOfBirth}
@@ -661,7 +658,7 @@ export default function KundaliPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.timeOfBirth}</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{translate('kundali.timeOfBirth', language)}</label>
                   <input
                     type="time"
                     value={timeUnknown ? '12:00' : timeOfBirth}
@@ -679,19 +676,19 @@ export default function KundaliPage() {
                       }}
                       className="w-4 h-4 rounded border-slate-300 dark:border-white/20 bg-white dark:bg-white/5 accent-violet-600 dark:accent-[#FFD166]"
                     />
-                    {t.kundali.timeUnknown}
+                    {translate('kundali.timeUnknown', language)}
                   </label>
                   {timeUnknown && (
                     <p className="mt-2 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
                       <Info className="w-3 h-3 shrink-0" />
-                      {t.kundali.noonReferenceBadge}
+                      {translate('kundali.noonReferenceBadge', language)}
                     </p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{t.kundali.placeOfBirth}</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-500 dark:text-[#9CA3AF] mb-1">{translate('kundali.placeOfBirth', language)}</label>
                 <div className="relative">
                   <PlaceAutocomplete
                     value={placeOfBirth}
@@ -710,7 +707,7 @@ export default function KundaliPage() {
                     longitude={longitude}
                     onLatitudeChange={setLatitude}
                     onLongitudeChange={setLongitude}
-                    placeholder={language === 'hi' ? 'शहर, कस्बा या पिन कोड दर्ज करें...' : 'Enter city, town, or PIN code...'}
+                    placeholder={translate('kundali.placePlaceholder', language)}
                     inputClassName="w-full astro-input py-2.5 sm:py-3 px-3 sm:px-4 text-sm"
                     required
                   />
@@ -737,7 +734,7 @@ export default function KundaliPage() {
                   <button
                     type="button"
                     onClick={() => setError('')}
-                    aria-label="Dismiss error"
+                    aria-label={translate('kundali.dismissError', language)}
                     className="ml-auto shrink-0 rounded-md p-0.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
                   >
                     <X className="w-4 h-4" />
@@ -753,10 +750,10 @@ export default function KundaliPage() {
                 {isLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                    {language === 'hi' ? 'कुंडली बनाई जा रही है...' : 'Generating your kundali...'}
+                    {translate('kundali.generating', language)}
                   </span>
                 ) : (
-                  t.kundali.generateButton
+                  translate('kundali.generateButton', language)
                 )}
               </button>
             </form>
@@ -772,45 +769,58 @@ export default function KundaliPage() {
             >
               <div className="text-center">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
-                  {t.kundali.birthChart}
+                  {translate('kundali.birthChart', language)}
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-                  {t.kundali.generatedFor.replace('{name}', kundliData?.name || '')}
+                  {translate('kundali.generatedFor', language).replace('{name}', kundliData?.name || '')}
                 </p>
                 {timeUnknown && (
                   <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-1">
                     <Info className="w-3 h-3 shrink-0" />
-                    {t.kundali.noonReferenceBadge}
+                    {translate('kundali.noonReferenceBadge', language)}
                   </p>
                 )}
               </div>
+
+              {/* Real-data wired preview: Lagna/Moon/Sun (client-side Lahiri),
+                  Dasha, yogas fetched from the generate API, 50-char locked
+                  teasers over real narratives, blur gating, /payment CTA */}
+              {previewBirthData && (
+                <Preview
+                  birthData={previewBirthData}
+                  dasha={runningDashaEntry}
+                  paidTier={kundliData.paidTier}
+                  richPredictions={kundliData.richPredictions}
+                  showHeader={false}
+                />
+              )}
 
               {/* Basic Kundli Details card (free tier) */}
               <div className="glass-card rounded-xl p-4 sm:p-6">
                 <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
                   <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
                   <span className="truncate">
-                    {selectedLanguage === 'hi' ? 'मूल कुंडली विवरण' : 'Basic Kundli Details'}
+                    {translate('kundali.basicDetails', language)}
                   </span>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {[
                     {
-                      label: selectedLanguage === 'hi' ? 'नाम' : 'Name',
+                      label: translate('kundali.name', language),
                       value: kundliData?.name || '--',
                     },
-                    { label: t.kundali.dateOfBirth, value: kundliData?.dateOfBirth || '--' },
-                    { label: t.kundali.timeOfBirth, value: kundliData?.timeOfBirth || '--' },
-                    { label: t.kundali.placeOfBirth, value: kundliData?.placeOfBirth || '--' },
+                    { label: translate('kundali.dateOfBirth', language), value: kundliData?.dateOfBirth || '--' },
+                    { label: translate('kundali.timeOfBirth', language), value: kundliData?.timeOfBirth || '--' },
+                    { label: translate('kundali.placeOfBirth', language), value: kundliData?.placeOfBirth || '--' },
                     {
-                      label: t.kundali.coordinates,
+                      label: translate('kundali.coordinates', language),
                       value:
                         kundliData?.latitude != null && kundliData?.longitude != null
                           ? `${kundliData.latitude.toFixed(4)}, ${kundliData.longitude.toFixed(4)}`
                           : '--',
                     },
                     {
-                      label: t.kundali.ascendant,
+                      label: translate('kundali.ascendant', language),
                       value:
                         localizeSignClean(
                           kundliData.chartData?.lagna ||
@@ -820,7 +830,7 @@ export default function KundaliPage() {
                         ) || '--',
                     },
                     {
-                      label: t.kundali.moonSign,
+                      label: translate('kundali.moonSign', language),
                       value:
                         localizeSignClean(
                           kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign,
@@ -828,7 +838,7 @@ export default function KundaliPage() {
                         ) || '--',
                     },
                     {
-                      label: t.kundali.nakshatra,
+                      label: translate('kundali.nakshatra', language),
                       value:
                         localizeNakshatraClean(
                           kundliData.chartData?.nakshatra || kundliData.nakshatra,
@@ -856,21 +866,21 @@ export default function KundaliPage() {
                 <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
                   <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
                   <span className="truncate">
-                    {selectedLanguage === 'hi' ? 'पंचांग स्नैपशॉट' : 'Panchang Snapshot'}
+                    {translate('kundali.panchangSnapshot', language)}
                   </span>
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                   {[
                     {
-                      label: selectedLanguage === 'hi' ? 'तिथि' : 'Tithi',
+                      label: translate('kundali.tithi', language),
                       value: '--',
                     },
                     {
-                      label: selectedLanguage === 'hi' ? 'वार (दिन)' : 'Vara (Day)',
+                      label: translate('kundali.vara', language),
                       value: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
                     },
                     {
-                      label: t.kundali.nakshatra,
+                      label: translate('kundali.nakshatra', language),
                       value:
                         localizeNakshatraClean(
                           kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
@@ -878,11 +888,11 @@ export default function KundaliPage() {
                         ) || '--',
                     },
                     {
-                      label: selectedLanguage === 'hi' ? 'योग' : 'Yoga',
+                      label: translate('kundali.yoga', language),
                       value: '--',
                     },
                     {
-                      label: selectedLanguage === 'hi' ? 'करण' : 'Karana',
+                      label: translate('kundali.karana', language),
                       value: '--',
                     },
                   ].map((item) => (
@@ -936,9 +946,7 @@ export default function KundaliPage() {
                   </div>
 
                   <p className="text-[11px] sm:text-xs text-slate-500 dark:text-[#9CA3AF] text-center mt-3">
-                    {selectedLanguage === 'hi'
-                      ? 'पूर्वावलोकन — D9, D10, D60 चार्ट के लिए अनलॉक करें'
-                      : 'Preview - Unlock for D9, D10, D60 charts'}
+                    {translate('kundali.unlockCharts', language)}
                   </p>
                 </div>
               )}
@@ -948,24 +956,21 @@ export default function KundaliPage() {
                 <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
                   <span className="truncate">
-                    {selectedLanguage === 'hi' ? 'प्रीमियम भविष्यवाणियाँ' : 'Premium Predictions'}
+                    {translate('kundali.premiumPredictions', language)}
                   </span>
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                  {(selectedLanguage === 'hi'
-                    ? ['करियर', 'विवाह', 'धन', 'स्वास्थ्य', 'शिक्षा', 'परिवार']
-                    : ['Career', 'Marriage', 'Wealth', 'Health', 'Education', 'Family']
-                  ).map((domain) => (
+                  {([ 'career', 'marriage', 'wealth', 'health', 'education', 'family' ] as const).map((domainKey) => (
                     <div
-                      key={domain}
+                      key={domainKey}
                       className="rounded-xl p-3 sm:p-4 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 opacity-60 flex flex-col items-center justify-center gap-1.5 text-center"
                     >
                       <Lock className="w-4 h-4 text-slate-400 dark:text-[#6B7280]" />
                       <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate w-full">
-                        {domain}
+                        {translate(`kundali.${domainKey}`, language)}
                       </p>
                       <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">
-                        {selectedLanguage === 'hi' ? 'प्रीमियम रिपोर्ट में उपलब्ध' : 'Available in Premium Report'}
+                        {translate('kundali.availableInPremium', language)}
                       </p>
                     </div>
                   ))}

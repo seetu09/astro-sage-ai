@@ -54,13 +54,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       // Dev-mode guard: clear stale localStorage so it doesn't poison tests.
       if (process.env.NODE_ENV === 'development') {
-        localStorage.removeItem(IS_PAID_STORAGE_KEY);
         localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
         setIsPaid(false);
         setUnlockToken(null);
         return;
       }
-      if (localStorage.getItem(IS_PAID_STORAGE_KEY) === 'true') {
+      if (sessionStorage.getItem(IS_PAID_STORAGE_KEY) === 'true') {
         setIsPaid(true);
       }
       const savedToken = localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
@@ -74,7 +73,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const markAsPaid = useCallback((details?: PaymentSuccessDetails) => {
     try {
-      localStorage.setItem(IS_PAID_STORAGE_KEY, 'true');
+      sessionStorage.setItem(IS_PAID_STORAGE_KEY, 'true');
       if (details?.unlockToken) {
         localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, details.unlockToken);
       }
@@ -89,7 +88,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetPayment = useCallback(() => {
     try {
-      localStorage.removeItem(IS_PAID_STORAGE_KEY);
       localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
     } catch {
       // ignore

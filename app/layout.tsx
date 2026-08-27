@@ -52,83 +52,92 @@ export const viewport: Viewport = {
   themeColor: "#4F46E5",
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://astro-sage-ai.vercel.app"),
-  title: {
-    default: "AstroVeda - AI-Powered Vedic Astrology & Kundli Generator",
-    template: "%s | AstroVeda",
-  },
-  description: "Generate your free Vedic Kundli, get daily horoscope predictions, Kundali matching for marriage, and AI-powered astrology guidance. Accurate birth chart analysis in Hindi & English.",
-  keywords: ["kundli", "kundali", "horoscope", "vedic astrology", "birth chart", "kundali matching", "daily horoscope", "astroveda", "jatakam", "rashifal"],
-  authors: [{ name: "AstroVeda" }],
-  creator: "AstroVeda",
-  publisher: "AstroVeda",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export function generateMetadata({ params }: { params: { lang?: string } }): Metadata {
+  const lang = params?.lang === "hi" ? "hi" : "en";
+  const isHindi = lang === "hi";
+
+  const title = isHindi
+    ? "AstroVeda - AI-संचालित वैदिक ज्योतिष और कुंडली जनरेटर"
+    : "AstroVeda - AI-Powered Vedic Astrology & Kundli Generator";
+  const description = isHindi
+    ? "अपनी मुफ्त वैदिक कुंडली बनाएं, दैनिक राशिफल और कुंडली मिलान प्राप्त करें। सटीक जन्म कुंडली विश्लेषण हिंदी और अंग्रेजी में।"
+    : "Generate your free Vedic Kundli, get daily horoscope predictions, Kundali matching for marriage, and AI-powered astrology guidance. Accurate birth chart analysis in Hindi & English.";
+
+  return {
+    metadataBase: new URL("https://astro-sage-ai.vercel.app"),
+    title: {
+      default: title,
+      template: "%s | AstroVeda",
+    },
+    description,
+    keywords: ["kundli", "kundali", "horoscope", "vedic astrology", "birth chart", "kundali matching", "daily horoscope", "astroveda", "jatakam", "rashifal"],
+    authors: [{ name: "AstroVeda" }],
+    creator: "AstroVeda",
+    publisher: "AstroVeda",
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_IN",
-    url: "https://astro-sage-ai.vercel.app",
-    siteName: "AstroVeda",
-    title: "AstroVeda - AI-Powered Vedic Astrology",
-    description: "Generate your free Vedic Kundli, daily horoscope & Kundali matching. AI astrology guidance in Hindi & English.",
-    images: [
-      {
-        url: "/opengraph-image",
-        width: 1200,
-        height: 630,
-        alt: "AstroVeda - AI Vedic Astrology Platform",
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
       },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "AstroVeda - AI-Powered Vedic Astrology",
-    description: "Free Kundli generator, daily horoscope & Kundali matching with AI guidance.",
-    images: ["/opengraph-image"],
-    creator: "@astroveda",
-  },
-  verification: {
-    google: "your-google-verification-code",
-  },
-  category: "astrology",
-  
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "AstroSage",
-  },
-  icons: {
-    icon: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512" },
-    ],
-    apple: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192" },
-    ],
-  },
-  other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "application-name": "AstroSage",
-    "apple-mobile-web-app-title": "AstroSage",
-    "msapplication-TileColor": "#4F46E5",
-    "msapplication-TileImage": "/icons/icon-192x192.png",
-  },
-};
+    },
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      type: "website",
+      locale: isHindi ? "hi_IN" : "en_IN",
+      url: "https://astro-sage-ai.vercel.app",
+      siteName: "AstroVeda",
+      title: isHindi ? "AstroVeda - AI-संचालित वैदिक ज्योतिष" : "AstroVeda - AI-Powered Vedic Astrology",
+      description,
+      images: [
+        {
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: "AstroVeda - AI Vedic Astrology Platform",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: isHindi ? "AstroVeda - AI वैदिक ज्योतिष" : "AstroVeda - AI-Powered Vedic Astrology",
+      description,
+      images: ["/opengraph-image"],
+      creator: "@astroveda",
+    },
+    verification: {
+      google: "your-google-verification-code",
+    },
+    category: "astrology",
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "AstroSage",
+    },
+    icons: {
+      icon: [
+        { url: "/icons/icon-192x192.png", sizes: "192x192" },
+        { url: "/icons/icon-512x512.png", sizes: "512x512" },
+      ],
+      apple: [{ url: "/icons/icon-192x192.png", sizes: "192x192" }],
+    },
+    other: {
+      "mobile-web-app-capable": "yes",
+      "apple-mobile-web-app-capable": "yes",
+      "application-name": "AstroSage",
+      "apple-mobile-web-app-title": "AstroSage",
+      "msapplication-TileColor": "#4F46E5",
+      "msapplication-TileImage": "/icons/icon-192x192.png",
+    },
+  };
+}
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -145,11 +154,14 @@ const structuredData = {
 
 export default function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params?: { lang?: string };
 }>) {
+  const lang = params?.lang === "hi" ? "hi" : "en";
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"

@@ -215,6 +215,62 @@ interface TranslationShape {
     retrograde: string;
     direct: string;
     downloadPDF: string;
+    title: string;
+    previewSection: string;
+    tabs: {
+      overview: string;
+      charts: string;
+      planets: string;
+      dashas: string;
+      predictions: string;
+      remedies: string;
+    };
+    generating: string;
+    dismissError: string;
+    basicDetails: string;
+    name: string;
+    panchangSnapshot: string;
+    tithi: string;
+    vara: string;
+    yoga: string;
+    karana: string;
+    unlockCharts: string;
+    premiumPredictions: string;
+    availableInPremium: string;
+    career: string;
+    marriage: string;
+    wealth: string;
+    health: string;
+    education: string;
+    family: string;
+    dailyMantra: string;
+    gemstoneSuggestion: string;
+    northIndian: string;
+    preview: {
+      title: string;
+      subtitle: string;
+      lagna: string;
+      moonSign: string;
+      sunSign: string;
+      nakshatra: string;
+      currentDasha: string;
+      yogas: string;
+      yogaPlaceholder: string;
+      lockedTitle: string;
+      ctaUnlock: string;
+      ctaProcessing: string;
+    };
+    errors: {
+      selectDate: string;
+      invalidDate: string;
+      futureDate: string;
+      selectTime: string;
+      enterPlace: string;
+      geocodePlace: string;
+      network: string;
+      generic: string;
+      success: string;
+    };
   };
   matchmaking: {
     badge: string;
@@ -598,6 +654,62 @@ export const translations: Record<Language, TranslationShape> = {
       retrograde: 'Retrograde',
       direct: 'Direct',
       downloadPDF: 'Download PDF Report',
+      title: 'Kundli',
+      previewSection: 'Preview',
+      tabs: {
+        overview: 'Overview',
+        charts: 'Charts',
+        planets: 'Planets',
+        dashas: 'Dashas',
+        predictions: 'Predictions',
+        remedies: 'Remedies',
+      },
+      generating: 'Generating your kundali...',
+      dismissError: 'Dismiss error',
+      basicDetails: 'Basic Kundli Details',
+      name: 'Name',
+      panchangSnapshot: 'Panchang Snapshot',
+      tithi: 'Tithi',
+      vara: 'Vara (Day)',
+      yoga: 'Yoga',
+      karana: 'Karana',
+      unlockCharts: 'Preview - Unlock for D9, D10, D60 charts',
+      premiumPredictions: 'Premium Predictions',
+      availableInPremium: 'Available in Premium Report',
+      career: 'Career',
+      marriage: 'Marriage',
+      wealth: 'Wealth',
+      health: 'Health',
+      education: 'Education',
+      family: 'Family',
+      dailyMantra: 'Daily Mantra',
+      gemstoneSuggestion: 'Gemstone Suggestion',
+            northIndian: 'North Indian',
+      preview: {
+        title: 'Limited Free Preview',
+        subtitle: 'Key chart points and yogas — unlock full AI predictions',
+        lagna: 'Lagna',
+        moonSign: 'Moon Sign',
+        sunSign: 'Sun Sign',
+        nakshatra: 'Nakshatra',
+        currentDasha: 'Current Dasha',
+        yogas: 'Key Yogas',
+        yogaPlaceholder: 'No major yogas detected.',
+        lockedTitle: 'Unlock Full Prediction',
+        ctaUnlock: '🔓 Unlock Full Kundali with AI Predictions - ₹99',
+        ctaProcessing: 'Processing payment…',
+      },
+      errors: {
+        selectDate: 'Please select your date of birth.',
+        invalidDate: 'Please enter a valid date of birth.',
+        futureDate: 'Date of birth cannot be in the future.',
+        selectTime: 'Please select your time of birth, or tick "time unknown".',
+        enterPlace: 'Please enter your place of birth.',
+        geocodePlace: 'Please pick your birth place from the suggestions so we get accurate coordinates.',
+        network: 'Network request failed. Please check your connection and try again.',
+        generic: 'Failed to generate kundali. Please try again.',
+        success: 'Your Kundli has been generated successfully! ✨',
+      },
     },
     matchmaking: {
       badge: 'Kundali Milan · Ashtakoot Guna Milan',
@@ -979,6 +1091,62 @@ export const translations: Record<Language, TranslationShape> = {
       retrograde: 'वक्री',
       direct: 'सीधा',
       downloadPDF: 'PDF रिपोर्ट डाउनलोड करें',
+      title: 'कुंडली',
+      previewSection: 'पूर्वावलोकन',
+      tabs: {
+        overview: 'अवलोकन',
+        charts: 'चार्ट',
+        planets: 'ग्रह',
+        dashas: 'दशा',
+        predictions: 'भविष्यवाणियां',
+        remedies: 'उपाय',
+      },
+      generating: 'कुंडली बनाई जा रही है...',
+      dismissError: 'त्रुटि बंद करें',
+      basicDetails: 'मूल कुंडली विवरण',
+      name: 'नाम',
+      panchangSnapshot: 'पंचांग स्नैपशॉट',
+      tithi: 'तिथि',
+      vara: 'वार (दिन)',
+      yoga: 'योग',
+      karana: 'करण',
+      unlockCharts: 'पूर्वावलोकन — D9, D10, D60 चार्ट के लिए अनलॉक करें',
+      premiumPredictions: 'प्रीमियम भविष्यवाणियाँ',
+      availableInPremium: 'प्रीमियम रिपोर्ट में उपलब्ध',
+      career: 'करियर',
+      marriage: 'विवाह',
+      wealth: 'धन',
+      health: 'स्वास्थ्य',
+      education: 'शिक्षा',
+      family: 'परिवार',
+      dailyMantra: 'दैनिक मंत्र',
+      gemstoneSuggestion: 'रत्न सुझाव',
+            northIndian: 'उत्तर भारतीय',
+      preview: {
+        title: 'सीमित मुफ़्त पूर्वावलोकन',
+        subtitle: 'मुख्य चार्ट बिंदु और योग — पूरी एआई भविष्यवाणी अनलॉक करें',
+        lagna: 'लग्न',
+        moonSign: 'चंद्र राशि',
+        sunSign: 'सूर्य राशि',
+        nakshatra: 'नक्षत्र',
+        currentDasha: 'वर्तमान दशा',
+        yogas: 'प्रमुख योग',
+        yogaPlaceholder: 'कोई प्रमुख योग नहीं पाया गया।',
+        lockedTitle: 'पूरी भविष्यवाणी अनलॉक करें',
+        ctaUnlock: '🔓 पूरी कुंडली एआई भविष्यवाणी अनलॉक करें - ₹99',
+        ctaProcessing: 'भुगतान संसाधित हो रहा है...',
+      },
+      errors: {
+        selectDate: 'कृपया जन्म तिथि चुनें।',
+        invalidDate: 'कृपया मान्य जन्म तिथि दर्ज करें।',
+        futureDate: 'जन्म तिथि भविष्य में नहीं हो सकती।',
+        selectTime: 'कृपया जन्म समय चुनें या "समय अज्ञात" चुनें।',
+        enterPlace: 'कृपया जन्म स्थान दर्ज करें।',
+        geocodePlace: 'कृपया सुझावों में से अपना जन्म स्थान चुनें ताकि सही निर्देशांक मिल सकें।',
+        network: 'नेटवर्क कनेक्शन उपलब्ध नहीं है। कृपया अपना इंटरनेट जांचें और पुनः प्रयास करें।',
+        generic: 'कुंडली बनाने में त्रुटि हुई। कृपया पुनः प्रयास करें।',
+        success: 'आपकी कुंडली सफलतापूर्वक तैयार हो गई है! ✨',
+      },
     },
     matchmaking: {
       badge: 'कुंडली मिलान · अष्टकूट गुण मिलान',

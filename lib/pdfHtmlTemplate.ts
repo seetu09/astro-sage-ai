@@ -68,6 +68,7 @@ const LABEL = {
     clientName: "क्लाइंट नाम",
     chartType: "चार्ट प्रकार",
     birthDetails: "जन्म विवरण",
+    birthDetailsShort: "जन्म विवरण",
     planetaryPositions: "ग्रह स्थिति",
     houseCusps: "घर कस्स",
     dashaPeriods: "दशा अवधि",
@@ -80,12 +81,100 @@ const LABEL = {
     southIndian: "दक्षिण भारतीय",
     paid: "प्रीमियम रिपोर्ट",
     basic: "मूलभूत रिपोर्ट",
+    latLong: "अक्षांश / द्राघिमांश",
+    bodyCol: "ग्रह",
+    signCol: "राशि",
+    degreeCol: "डिग्री",
+    houseCol: "घर",
+    retroCol: "रीत्रो",
+    mahaDashaCol: "महादशा",
+    startCol: "प्रारंभ",
+    endCol: "समाप्ति",
+    subPeriodCol: "उप-अवधि",
+    panchang: "जन्म पंचांग",
+    lagnaD1Chart: "लग्न कुंडली (D1)",
+    navamsaD9Chart: "नवांश (D9) चार्ट",
+    sarvashtakavarga: "सर्वाष्टकवर्ग बिंदु",
+    strongHouses: "प्रबल भाव",
+    dashasYogasRemedies: "दशा, योग एवं उपाय",
+    housesNavamsaAshtakavarga: "भाव, नवांश एवं अष्टकवर्ग",
+    lifeDomains: "जीवन क्षेत्र विश्लेषण",
+    references: "कल्पुरुश पुस्तक / स्रोत",
+    parameter: "पैरामीटर",
+    score: "स्कोर",
+    period: "अवधि",
+    influence: "प्रभाव",
+    event: "घटना",
+    note: "टिप्पणी",
+    notAvailable: "उपलब्ध नहीं",
+    generatedOn: "onDate को जनरेट किया गया",
+    appendix: "परिशिष्ट — जीवन स्तंभ",
+    milestones: "प्रमुख मील के पत्थर",
+    aiNote: "यह अध्याय AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन पर आधारित है।",
+
+    // ── Yogas & Doshas detail page ──
+    yogDoshTitle: "योग एवं दोष विश्लेषण",
+    doshaSection: "दोष विवरण",
+    manglik: "मांगलिक",
+    manglikDosha: "मांगलिक दोष",
+    manglikYes: "हाँ — दोष उपस्थित है",
+    manglikNo: "नहीं — दोष उपस्थित नहीं है",
+    doshaSeverity: "दोष तीव्रता",
+    severityHigh: "उच्च",
+    severityMedium: "मध्यम",
+    severityMild: "हल्का",
+    severityNone: "कोई नहीं",
+    sadeSati: "साढ़े साती",
+    satiPhase1: "साढ़े साती — प्रथम चरण (मंगल अ/शनि के 12वें)",
+    satiPhase2: "साढ़े साती — द्वितीय चरण (शनि राशि में)",
+    satiPhase3: "साढ़े साती — तृतीय चरण (द्वितीय)",
+    noSadeSati: "वर्तमान में साढ़े साती सक्रिय नहीं है",
+
+    // ── Gemstone / Rudraksha prescription page ──
+    gemRudhSection: "रत्न एवं रुद्राक्ष विधान",
+    primaryFortifyingPlanet: "प्राथमिक सुधार ग्रह",
+    recommendedGemstone: "अनुशंसित रत्न",
+    recommendedRudraksha: "अनुशंसित रुद्राक्ष",
+    wearingDay: "धारण का दिन",
+    gemMantra: "जप मंत्र",
+    gemmtGoal: "उद्देश्य",
+    planet: "ग्रह",
+    gemReason: "सुधार हेतु",
+    noRemedyData: "उपाय विवरण उपलब्ध नहीं",
+
+    // ── Current Dasha deep dive page ──
+    currDashaTitle: "वर्तमान दशा — गहन अध्ययन",
+    currMahaDasha: "वर्तमान महादशा",
+    currAntardasha: "वर्तमान अंतर्दशा",
+    activeWindow: "सक्रिय अवधि",
+    currentRemark: "वर्तमान में चल रही दशा उपरोक्त कालखंड में सक्रिय है।",
+    onDashaNow: "अभी सक्रिय",
+    upcomingNext: "आगामी",
+    dashaCycle: "दशा क्रम",
+
+    // ── Manglik / Sade Sati tracker page ──
+    manglikSadeTitle: "मंगल एवं साढ़े साती ट्रैकर",
+    manglikTracker: "मांगलिक ट्रैकर",
+    satiTracker: "साढ़े साती ट्रैकर",
+    maleficKarm: "कोष",
+    activePhase: "सक्रिय चरण",
+    phaseStart: "प्रारंभ",
+    phaseEnd: "समाप्ति",
+
+    // ── 120-year Dasha master table ──
+    dashaMasterTitle: "120 वर्ष महादशा तालिका",
+    vimshottari: "विमशोत्तरी",
+    seqNo: "अनु",
+    mahaYears: "वर्ष",
+    fromYear: "प्रारंभ",
+    toYear: "समाप्ति",
   },
   en: {
     title: "Birth Chart Detailed Analysis",
     clientName: "Client Name",
     chartType: "Chart Type",
     birthDetails: "Birth Details",
+    birthDetailsShort: "Birth Details",
     planetaryPositions: "Planetary Positions",
     houseCusps: "House Cusps",
     dashaPeriods: "Dasha Periods",
@@ -98,6 +187,93 @@ const LABEL = {
     southIndian: "South Indian",
     paid: "Premium Report",
     basic: "Basic Report",
+    latLong: "Lat / Long",
+    bodyCol: "Body",
+    signCol: "Sign",
+    degreeCol: "Degree",
+    houseCol: "House",
+    retroCol: "Retro",
+    mahaDashaCol: "Maha Dasha",
+    startCol: "Start",
+    endCol: "End",
+    subPeriodCol: "Sub Period",
+    panchang: "Panchang at Birth",
+    lagnaD1Chart: "Lagna (D1) Chart",
+    navamsaD9Chart: "Navamsa (D9) Chart",
+    sarvashtakavarga: "Sarvashtakavarga Bindus",
+    strongHouses: "Strong houses",
+    dashasYogasRemedies: "Dashas, Yogas & Remedies",
+    housesNavamsaAshtakavarga: "Houses, Navamsa & Ashtakavarga",
+    lifeDomains: "Life Domains Analysis",
+    references: "References / Sources",
+    parameter: "Parameter",
+    score: "Score",
+    period: "Period",
+    influence: "Influence",
+    event: "Event",
+    note: "Note",
+    notAvailable: "Not available",
+    generatedOn: "Generated for onDate",
+    appendix: "Appendix — Life Pillars",
+    milestones: "Key Milestones",
+    aiNote: "This chapter is based on AI-assisted Vedic astrology guidance.",
+
+    // ── Yogas & Doshas detail page ──
+    yogDoshTitle: "Yogas & Doshas Analysis",
+    doshaSection: "Doshas",
+    manglik: "Manglik",
+    manglikDosha: "Manglik Dosha",
+    manglikYes: "Yes — dosha present",
+    manglikNo: "No — dosha not present",
+    doshaSeverity: "Dosha Severity",
+    severityHigh: "High",
+    severityMedium: "Medium",
+    severityMild: "Mild",
+    severityNone: "None",
+    sadeSati: "Sade Sati",
+    satiPhase1: "Sade Sati — Phase 1 (Moon in 12th from Saturn)",
+    satiPhase2: "Sade Sati — Phase 2 (Moon in Saturn's sign)",
+    satiPhase3: "Sade Sati — Phase 3 (2nd from Saturn)",
+    noSadeSati: "Sade Sati is not active at present",
+
+    // ── Gemstone / Rudraksha prescription page ──
+    gemRudhSection: "Gemstone & Rudraksha Prescription",
+    primaryFortifyingPlanet: "Primary fortifying planet",
+    recommendedGemstone: "Recommended Gemstone",
+    recommendedRudraksha: "Recommended Rudraksha",
+    wearingDay: "Wearing Day",
+    gemMantra: "Japa Mantra",
+    gemmtGoal: "Objective",
+    planet: "Planet",
+    gemReason: "Purpose",
+    noRemedyData: "Remedy details not available",
+
+    // ── Current Dasha deep dive page ──
+    currDashaTitle: "Current Dasha — Deep Dive",
+    currMahaDasha: "Current Maha Dasha",
+    currAntardasha: "Current Antardasha",
+    activeWindow: "Active Window",
+    currentRemark: "The currently running dasha is active within the above window.",
+    onDashaNow: "Active now",
+    upcomingNext: "Upcoming",
+    dashaCycle: "Dasha Sequence",
+
+    // ── Manglik / Sade Sati tracker page ──
+    manglikSadeTitle: "Mars & Sade Sati Tracker",
+    manglikTracker: "Manglik Tracker",
+    satiTracker: "Sade Sati Tracker",
+    maleficKarm: "Cause",
+    activePhase: "Active Phase",
+    phaseStart: "Start",
+    phaseEnd: "End",
+
+    // ── 120-year Dasha master table ──
+    dashaMasterTitle: "120-Year Maha Dasha Master Table",
+    vimshottari: "Vimshottari",
+    seqNo: "No.",
+    mahaYears: "Years",
+    fromYear: "From",
+    toYear: "To",
   },
 };
 
@@ -212,6 +388,31 @@ html, body { overflow: hidden; }
 .mini-table th, .mini-table td { border: 0.5pt solid #bbb; padding: 2mm 4px; text-align: left; font-size: 8.5pt; }
 .mini-table th { background: #f0f0f0; }
 .domain-divider { border-top: 0.6pt solid rgba(0, 0, 0, 0.1); margin: 4mm 0; }
+
+/* ── New premium sections: dosha verdict card, remedy grid, dasha deep-dive,
+   Sade Sati tracker and the 120-year master table ── */
+.verdict-card { border: 1pt solid #cbd5e1; border-left: 3pt solid #3b82f6; border-radius: 3px; padding: 2mm 3mm; margin-bottom: 0.25cm; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.verdict-card .status-badge { font-size: 8pt; font-weight: 700; padding: 1pt 5px; border-radius: 3px; }
+.status-ok { background: #dcfce7; color: #166534; }
+.status-warn { background: #fef3c7; color: #92400e; }
+.prescript-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 0.25cm; }
+.prescript-card { border: 0.5pt solid #bbb; border-radius: 3px; padding: 3mm; }
+.prescript-k { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.03em; }
+.prescript-v { font-size: 10.5pt; font-weight: 700; margin-top: 1pt; }
+.dasha-focus-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.25cm; }
+.dasha-focus { border: 1pt solid #d1d5db; border-radius: 3px; padding: 2mm 3mm; flex: 1 1 30%; min-width: 55mm; }
+.dasha-focus.active { background: #eff6ff; border-color: #2563eb; }
+.dasha-focus .k { font-size: 7.5pt; color: #666; text-transform: uppercase; letter-spacing: 0.03em; }
+.dasha-focus .v { font-size: 11pt; font-weight: 700; margin-top: 0.05cm; }
+.dasha-cycle { list-style: none; margin: 0; padding: 0; }
+.dasha-cycle li { display: flex; justify-content: space-between; border-bottom: 0.4pt dashed #ddd; padding: 1.5mm 0; font-size: 8.5pt; }
+.dasha-cycle li.active { font-weight: 700; color: #1d4ed8; }
+.tracker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; align-items: stretch; }
+.tracker-box { border: 0.5pt solid #bbb; border-radius: 3px; padding: 3mm; }
+.tracker-box .tracker-title { font-size: 10.5pt; font-weight: 700; margin-bottom: 0.12cm; color: #333; }
+.tracker-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+.tracker-table th, .tracker-table td { border: 0.4pt solid #ccc; padding: 1.5mm 2mm; text-align: left; }
+.tracker-table th { background: #f0f0f0; }
 `;
 
 const PAGE_CHROME = (title: string, lang: "hi" | "en", pageNumber: number, data: Pick<ReportData, "clientName" | "isPaidTier">): string => `<div class="page-container">
@@ -320,7 +521,7 @@ const buildNativityPanchangChartPage = (
 <tr><th>${L("birthDetails", lang)}</th><td>${escapeHTML(bd.date)} · ${escapeHTML(
         bd.time
       )}</td><th>TZ</th><td>${escapeHTML(bd.timezone)}</td></tr>
-<tr><th>Lat / Long</th><td colspan="3">${escapeHTML(bd.latitude)}${
+<tr><th>${L("latLong", lang)}</th><td colspan="3">${escapeHTML(bd.latitude)}${
         bd.longitude ? `, ${escapeHTML(bd.longitude)}` : ""
       }</td></tr>
 </table>`
@@ -344,17 +545,17 @@ ${PAGE_CHROME(L("title", lang), lang, pageNumber, data)}
   }</span></div>
 ${nativityTable}
 ${panchangGrid ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${lang === "hi" ? "जन्म पंचांग" : "Panchang at Birth"}</h2>
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("panchang", lang)}</h2>
 ${panchangGrid}
 </div>` : ""}
 <div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${lang === "hi" ? "लग्न कुंडली (D1)" : "Lagna (D1) Chart"}</h2>
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("lagnaD1Chart", lang)}</h2>
 <div class="chart-container chart-sm">${renderChartSvg(data, lang, "north")}</div>
 </div>
 <div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("planetaryPositions", lang)}</h2>
 <table class="table-0">
-<tr><th>ग्रह/Body</th><th>राशि/Sign</th><th>डिग्री/Degree</th><th>घर/House</th><th>रीत्रो/Retro</th></tr>
+<tr><th>${L("bodyCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th><th>${L("houseCol", lang)}</th><th>${L("retroCol", lang)}</th></tr>
 ${data.planetaryPositions.map(p => `<tr><td>${escapeHTML(p.body)}</td><td>${escapeHTML(p.sign)}</td><td>${escapeHTML(p.degree)}</td><td>${escapeHTML(p.house)}</td><td>${p.retro ? "✓" : "-"}</td></tr>`).join("")}
 </table>
 </div>
@@ -400,19 +601,19 @@ const buildHousesNavamsaAshtakavargaPage = (
 </div>`
     : `<p class="note">${lang === "hi" ? "भाव डेटा उपलब्ध नहीं।" : "House data unavailable."}</p>`;
   return `
-${PAGE_CHROME(lang === "hi" ? "भाव, नवांश एवं अष्टकवर्ग" : "Houses, Navamsa & Ashtakavarga", lang, pageNumber, data)}
+${PAGE_CHROME(L("housesNavamsaAshtakavarga", lang), lang, pageNumber, data)}
 <div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("houseCusps", lang)}</h2>
 ${houseCols}
 </div>
 <div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${lang === "hi" ? "नवांश (D9) चार्ट" : "Navamsa (D9) Chart"}</h2>
-${d9Svg ? `<div class="chart-container chart-sm">${d9Svg}</div>` : `<p class="note">${lang === "hi" ? "नवांश डेटा उपलब्ध नहीं।" : "Navamsa data unavailable."}</p>`}
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("navamsaD9Chart", lang)}</h2>
+${d9Svg ? `<div class="chart-container chart-sm">${d9Svg}</div>` : `<p class="note">${L("notAvailable", lang)}</p>`}
 </div>
 ${sav ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${lang === "hi" ? "सर्वाष्टकवर्ग बिंदु" : "Sarvashtakavarga Bindus"}</h2>
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("sarvashtakavarga", lang)}</h2>
 <div class="av-grid">${avCells}</div>
-${sav.beneficialHouses?.length ? `<p class="note">${lang === "hi" ? "प्रबल भाव: " : "Strong houses: "}${sav.beneficialHouses.join(", ")}</p>` : ""}
+${sav.beneficialHouses?.length ? `<p class="note">${L("strongHouses", lang)}: ${sav.beneficialHouses.join(", ")}</p>` : ""}
 </div>` : ""}
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
@@ -439,11 +640,11 @@ const buildDashaYogasRemediesPage = (
     .join("");
   if (!dashaRows && !yogaItems && !remedyItems) return "";
   return `
-${PAGE_CHROME(lang === "hi" ? "दशा, योग एवं उपाय" : "Dashas, Yogas & Remedies", lang, pageNumber, data)}
+${PAGE_CHROME(L("dashasYogasRemedies", lang), lang, pageNumber, data)}
 ${dashaRows ? `<div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("dashaPeriods", lang)}</h2>
 <table class="table-0">
-<tr><th>महादशा/Maha Dasha</th><th>Start</th><th>End</th><th>Sub Period</th></tr>
+<tr><th>${L("mahaDashaCol", lang)}</th><th>${L("startCol", lang)}</th><th>${L("endCol", lang)}</th><th>${L("subPeriodCol", lang)}</th></tr>
 ${dashaRows}
 </table>
 </div>` : ""}
@@ -512,20 +713,20 @@ const buildLifeDomainsPage = (
         .slice(0, 2);
       const milestoneRows = upcomingWindows.length
         ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([d.mahaDasha, d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
-        : `<tr><td>—</td><td>${lang === "hi" ? "उपलब्ध नहीं" : "Not available"}</td></tr>`;
+                : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
       return `<div class="domain-half">
 <h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
 <div class="domain-badges">${badges.map((b) => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
 <p class="domain-narrative ${lang === "en" ? "en" : ""}">${narrative}</p>
 <table class="mini-table">
-<tr><th>${lang === "hi" ? "अवधि" : "Period"}</th><th>${lang === "hi" ? "प्रभाव" : "Influence"}</th></tr>
+<tr><th>${L("period", lang)}</th><th>${L("influence", lang)}</th></tr>
 ${milestoneRows}
 </table>
 </div>`;
     })
     .join(`<div class="domain-divider"></div>`);
   return `
-${PAGE_CHROME(lang === "hi" ? "जीवन क्षेत्र विश्लेषण" : "Life Domains Analysis", lang, pageNumber, data)}
+${PAGE_CHROME(L("lifeDomains", lang), lang, pageNumber, data)}
 <div class="dual-domain-grid">
 ${sectionHtml}
 </div>
@@ -534,6 +735,274 @@ ${PAGE_FOOTER(pageNumber, lang)}
 };
 
 
+// ─── Vimshottari + dosha derivation used by the new premium pages ─────────────
+const VIMSHOTTARI_YEARS: [string, number][] = [
+  ["Ketu", 7], ["Venus", 20], ["Sun", 6], ["Moon", 10],
+  ["Mars", 7], ["Rahu", 18], ["Jupiter", 16], ["Saturn", 19], ["Mercury", 17],
+];
+const CANON: Record<string, string> = {
+  sun: "Sun", moon: "Moon", mars: "Mars", mercury: "Mercury", rahu: "Rahu",
+  jupiter: "Jupiter", saturn: "Saturn", venus: "Venus", ketu: "Ketu",
+  lagna: "Lagna", ascendant: "Lagna",
+};
+const canonPlanet = (name: string): string =>
+  CANON[name.trim().toLowerCase()] || name.trim();
+const findPlanet = (data: ReportData, name: string) =>
+  (data.planetaryPositions || []).find((p) => canonPlanet(p.body) === canonPlanet(name));
+const houseNum = (p?: { house?: string | number }): number => {
+  const n = parseInt(String(p?.house ?? "0"), 10);
+  return Number.isNaN(n) ? 0 : n;
+};
+
+/** Which dasha period (ReportData span) covers `year`, if any. */
+const activeDasha = (data: ReportData, year: number) =>
+  (data.dashaPeriods || []).find((d) => {
+    const s = parseInt(String(d.startYear), 10);
+    const e = parseInt(String(d.endYear), 10);
+    return !Number.isNaN(s) && !Number.isNaN(e) && year >= s && year <= e;
+  });
+
+/** Canonical name of the currently running Maha Dasha ("" if unknown). */
+const currentDashaName = (data: ReportData, year: number): string =>
+  canonPlanet(activeDasha(data, year)?.mahaDasha || "");
+
+/** Full Vimshottari cycle with year spans (uses exact periods when available). */
+const vimshottariCycle = (data: ReportData, year: number) => {
+  const exact = (data.dashaPeriods || []).map((d) => ({
+    name: canonPlanet(d.mahaDasha),
+    years: VIMSHOTTARI_YEARS.find(([n]) => n === canonPlanet(d.mahaDasha))?.[1] ?? 0,
+    from: parseInt(String(d.startYear), 10),
+    to: parseInt(String(d.endYear), 10),
+  }));
+  if (exact.length >= 9 && exact.every((e) => !Number.isNaN(e.from) && !Number.isNaN(e.to))) {
+    return exact;
+  }
+  const base = parseInt(String(data.dashaPeriods?.[0]?.startYear), 10) || year;
+  let acc = 0;
+  return VIMSHOTTARI_YEARS.map(([name, yrs]) => {
+    const from = base + acc;
+    acc += yrs;
+    return { name, years: yrs, from, to: from + yrs - 1 };
+  });
+};
+
+const severityLabel = (count: number): keyof typeof LABEL.hi => {
+  if (count >= 3) return "severityHigh";
+  if (count === 2) return "severityMedium";
+  if (count === 1) return "severityMild";
+  return "severityNone";
+};
+
+const severityLabel = (count: number): keyof typeof LABEL.hi => {
+ * Returns "" when there is no yoga content to render.
+ */
+const buildYogasDoshasPage = (
+  data: ReportData,
+  lang: "hi" | "en",
+  pageNumber: number
+): string => {
+  const yogaItems = (data.yogas || [])
+    .map((y) => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(y.description || "-")}</p></div>`)
+    .join("");
+  if (!yogaItems) return "";
+
+  const mars = findPlanet(data, "Mars");
+  const moon = findPlanet(data, "Moon");
+  const sat = findPlanet(data, "Saturn");
+  const manglikHouses = mars ? [1, 2, 4, 7, 8, 12].filter((h) => houseNum(mars) === h) : [];
+  const mangLik = manglikHouses.length > 0;
+  const manglikCard = mars
+    ? `<div class="verdict-card"><span class="status-badge ${mangLik ? "status-warn" : "status-ok"}">${L("manglik", lang)}</span><span>${mangLik ? L("manglikYes", lang) : L("manglikNo", lang)}</span><span>· ${L("doshaSeverity", lang)}: ${L(severityLabel(manglikHouses.length), lang)}</span></div>`
+    : "";
+  const satiPhase = (() => {
+    if (!moon || !sat) return -1;
+    const m = houseNum(moon);
+    const s = houseNum(sat);
+    if (m === s) return 2;
+    if (m === (s % 12) + 1) return 3;
+    if (m === ((s + 10) % 12) + 1) return 1;
+    return -1;
+  })();
+  const satiCard = moon && sat
+    ? `<div class="verdict-card"><span class="status-badge ${satiPhase >= 0 ? "status-warn" : "status-ok"}">${L("sadeSati", lang)}</span><span>${satiPhase >= 0 ? L(`satiPhase${satiPhase}` as keyof typeof LABEL.hi, lang) : L("noSadeSati", lang)}</span></div>`
+    : "";
+  const doshaHtml = (manglikCard || satiCard)
+    ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("doshaSection", lang)}</h2>${manglikCard}${satiCard}</div>`
+    : "";
+
+  return `
+${PAGE_CHROME(L("yogDoshTitle", lang), lang, pageNumber, data)}
+<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("yogas", lang)}</h2><div class="two-col">${yogaItems}</div></div>
+${doshaHtml}
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+};
+
+/** Canonical gemstone / rudraksha / mantra mapping per strengthening planet. */
+const GEM_PRESCRIPT: Record<string, { gem: string; mukhi: string; day: string; mantra: string; goal: string }> = {
+  Sun:      { gem: "Ruby",                          mukhi: "1 Mukhi",  day: "Sunday",    mantra: "Om Suryaya Namaha",        goal: "Confidence & authority" },
+  Moon:     { gem: "Pearl",                         mukhi: "2 Mukhi",  day: "Monday",   mantra: "Om Somaya Namaha",          goal: "Emotional peace" },
+  Mars:     { gem: "Red Coral",                     mukhi: "3 Mukhi",  day: "Tuesday",  mantra: "Om Mangalaya Namaha",       goal: "Strength & courage" },
+  Mercury:  { gem: "Emerald",                       mukhi: "4 Mukhi",  day: "Wednesday", mantra: "Om Budhaya Namaha",        goal: "Intellect & speech" },
+  Jupiter:  { gem: "Yellow Sapphire",               mukhi: "5 Mukhi",  day: "Thursday", mantra: "Om Guru Devaya Namaha",    goal: "Fortune & wisdom" },
+  Venus:    { gem: "Diamond",                       mukhi: "6 Mukhi",  day: "Friday",   mantra: "Om Shukraya Namaha",        goal: "Relationships & harmony" },
+  Saturn:   { gem: "Blue Sapphire",                 mukhi: "7 Mukhi",  day: "Saturday", mantra: "Om Shanaischaraya Namaha", goal: "Discipline & karma" },
+  Rahu:     { gem: "Hessonite (Gomed)",             mukhi: "10 Mukhi", day: "Saturday", mantra: "Om Rahave Namaha",         goal: "Ambition & clarity" },
+  Ketu:     { gem: "Cat's Eye",                     mukhi: "9 Mukhi",  day: "Tuesday",  mantra: "Om Ketave Namaha",         goal: "Spiritual intuition" },
+};
+
+/**
+ * PAGE — Gemstone / Rudraksha prescription. Renders rows only when the remedy
+ * data actually describes gem or rudraksha material.
+ */
+const buildRemedyPrescriptPage = (
+  data: ReportData,
+  lang: "hi" | "en",
+  pageNumber: number
+): string => {
+  const rows = (data.remedies || [])
+    .filter((r) => /gem|rudraksh|ratna|रत्न|रुद्राक्ष|ruby|pearl|sapphire|gemstone/i.test(`${r.category} ${r.description}`))
+    .slice(0, 6)
+    .map((r) =>
+      `<div class="prescript-card"><div class="prescript-k">${escapeHTML(r.category || L("gemRudhSection", lang))}</div>${r.description ? `<div class="prescript-v">${escapeHTML(r.description)}</div>` : ""}</div>`
+    )
+    .join("");
+  if (!rows) return "";
+
+  return `
+${PAGE_CHROME(L("gemRudhSection", lang), lang, pageNumber, data)}
+<div class="prescript-grid">${rows}</div>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+};
+
+/**
+ * PAGE — Current Dasha deep dive: highlights the running Maha Dasha window and
+ * the remaining Vimshottari cycle. Returns "" when no dasha data exists.
+ */
+const buildCurrentDashaPage = (
+  data: ReportData,
+  lang: "hi" | "en",
+  pageNumber: number
+): string => {
+  if (!(data.dashaPeriods || []).length) return "";
+  const year = new Date().getFullYear();
+  const active = activeDasha(data, year);
+  const cycle = vimshottariCycle(data, year);
+  const current = currentDashaName(data, year);
+  const focusCards = cycle
+    .map((c) => {
+      const on = c.name.toLowerCase() === current.toLowerCase();
+      return `<div class="dasha-focus${on ? " active" : ""}"><div class="k">${escapeHTML(c.name)}</div><div class="v">${c.from}–${c.to}</div>${on ? ` <span class="status-badge status-warn">${L("onDashaNow", lang)}</span>` : ""}</div>`;
+    })
+    .join("");
+  const sub = active?.subPeriod
+    ? `<p class="p"><span class="section-title">${L("currAntardasha", lang)}:</span> ${escapeHTML(active.subPeriod)} · ${L("activeWindow", lang)}: ${active.startYear}–${active.endYear}</p>`
+    : "";
+
+  return `
+${PAGE_CHROME(L("currDashaTitle", lang), lang, pageNumber, data)}
+<div class="dasha-focus-row">${focusCards}</div>
+${sub}
+<p class="note">${escapeHTML(L("currentRemark", lang))}</p>
+<div class="divider"></div>
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("dashaCycle", lang)}</h2>
+<ul class="dasha-cycle">${cycle.map((c) => `<li${c.name.toLowerCase() === current.toLowerCase() ? " class=\"active\"" : ""}><span>${escapeHTML(c.name)}</span><span>${c.from}–${c.to}</span></li>`).join("")}</ul>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+};
+
+/**
+ * PAGE — Manglik / Sade Sati tracker: two side-by-side trackers with the active
+ * phase highlighted and house-by-house Mars placement. Returns "" when neither
+ * Mars nor Moon data exists.
+ */
+const buildManglikSadeTrackerPage = (
+  data: ReportData,
+  lang: "hi" | "en",
+  pageNumber: number
+): string => {
+  const mars = findPlanet(data, "Mars");
+  const moon = findPlanet(data, "Moon");
+  const sat = findPlanet(data, "Saturn");
+  if (!mars && !moon) return "";
+
+  const doshaHouses = [1, 2, 4, 7, 8, 12];
+  const manglikHouse = mars && doshaHouses.includes(houseNum(mars)) ? houseNum(mars) : 0;
+  const manglik = manglikHouse > 0;
+  const manglikRows = doshaHouses
+    .map((h) => {
+      const placing = (data.planetaryPositions || []).filter((p) => houseNum(p) === h);
+      const hasMars = placing.some((p) => canonPlanet(p.body) === canonPlanet("Mars"));
+      return `<tr${hasMars ? " style=\"background:#fef3c7\"" : ""}><td>${h}</td><td>${placing.map((p) => escapeHTML(p.body)).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
+    })
+    .join("");
+
+  const satiPhaseIndex = ((): -1 | 0 | 1 | 2 => {
+    if (!moon || !sat) return -1;
+    const m = houseNum(moon);
+    const s = houseNum(sat);
+    if (m === s) return 1;              // Phase 2
+    if (m === (s % 12) + 1) return 2;   // Phase 3 (2nd from Saturn)
+    if (m === ((s + 10) % 12) + 1) return 0; // Phase 1 (12th from Saturn)
+    return -1;
+  })();
+  const satiPhaseLabels: (keyof typeof LABEL.hi)[] = [
+    "satiPhase1", "satiPhase2", "satiPhase3",
+  ];
+  const satiPhaseLabel = (idx: -1 | 0 | 1 | 2): keyof typeof LABEL.hi | undefined =>
+    idx >= 0 ? satiPhaseLabels[idx] : undefined;
+  const satiActiveLabel = satiPhaseLabel(satiPhaseIndex);
+  const satiRows = satiPhaseIndex >= 0 && satiActiveLabel
+    ? `<tr style="background:#eff6ff"><td>${escapeHTML(L(satiActiveLabel, lang))}</td><td>${L("activePhase", lang)}</td></tr>`
+    : "";
+
+  return `
+${PAGE_CHROME(L("manglikSadeTitle", lang), lang, pageNumber, data)}
+<p class="p">${escapeHTML(L("manglik", lang))}: <strong>${manglik ? `${L("manglikYes", lang)} (भाव ${manglikHouse})` : L("manglikNo", lang)}</strong> · ${L("sadeSati", lang)}: ${satiActiveLabel ? L(satiActiveLabel, lang) : L("noSadeSati", lang)}</p>
+<div class="tracker-grid">
+  <div class="tracker-box">
+    <div class="tracker-title">${L("manglikTracker", lang)}</div>
+    <table class="tracker-table"><tr><th>${L("maleficKarm", lang)}</th><th>${L("planet", lang)}</th><th>●</th></tr>${manglikRows}</table>
+  </div>
+  <div class="tracker-box">
+    <div class="tracker-title">${L("satiTracker", lang)}</div>
+    <table class="tracker-table"><tr><th>${L("sadeSati", lang)}</th><th>${L("phaseStart", lang)}</th></tr>${satiRows}</table>
+  </div>
+</div>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+};
+
+/**
+ * PAGE — 120-Year Vimshottari Maha Dasha master table. Renders the full 9-period
+ * cycle with year spans; returns "" when there is no dasha data at all.
+ */
+const buildDashaMasterPage = (
+  data: ReportData,
+  lang: "hi" | "en",
+  pageNumber: number
+): string => {
+  if (!(data.dashaPeriods || []).length) return "";
+  const year = new Date().getFullYear();
+  const cycle = vimshottariCycle(data, year);
+  const current = currentDashaName(data, year);
+  const rows = cycle
+    .map((c, i) => {
+      const on = c.name.toLowerCase() === current.toLowerCase();
+      return `<tr${on ? " style=\"background:#eff6ff\"" : ""}><td>${i + 1}</td><td>${escapeHTML(c.name)}</td><td>${c.years}</td><td>${c.from}</td><td>${c.to}</td>${on ? `<td>${L("onDashaNow", lang)}</td>` : ""}</tr>`;
+    })
+    .join("");
+  return `
+${PAGE_CHROME(L("dashaMasterTitle", lang), lang, pageNumber, data)}
+<p class="note">${escapeHTML(L("vimshottari", lang))} · ${escapeHTML(L("dashaMasterTitle", lang))}</p>
+<table class="table-0">
+<tr><th>${L("seqNo", lang)}</th><th>${L("mahaDashaCol", lang)}</th><th>${L("mahaYears", lang)}</th><th>${L("fromYear", lang)}</th><th>${L("toYear", lang)}</th><th></th></tr>
+${rows}
+</table>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+};
 /**
  * FINAL SHEET — guarded appendix: Phal-Deepika references + scorecard + a
  * one-line closing note. Omitted entirely when neither dataset exists,
@@ -548,21 +1017,19 @@ const buildAppendixSummaryPage = (
   const score = data.scorecard || [];
   if (!refs.length && !score.length) return "";
   return `
-${PAGE_CHROME(lang === "hi" ? "संदर्भ एवं सारांश" : "References & Summary", lang, pageNumber, data)}
+${PAGE_CHROME(L("references", lang), lang, pageNumber, data)}
 ${refs.length ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">कल्पुरुश पुस्तक / Sources</h2>
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("references", lang)}</h2>
 ${refs.map(ref => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(ref.verse)}</span><p class="p en">${escapeHTML(ref.interpretation)}</p></div>`).join("")}
 </div>` : ""}
 ${score.length ? `<div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("scorecard", lang)}</h2>
 <table class="table-0">
-<tr><th>Parameter</th><th>Score</th><th></th></tr>
+<tr><th>${L("parameter", lang)}</th><th>${L("score", lang)}</th><th></th></tr>
 ${score.map(s => `<tr><td>${escapeHTML(s.parameter)}</td><td><span class="score-text">${s.score}/${s.maxScore}</span></td><td><div class="score-bar"><div class="score-fill" style="width:${Math.min(100, Math.max(0, (s.score / s.maxScore) * 100))}%"></div></div></td></tr>`).join("")}
 </table>
 </div>` : ""}
-<p class="note">${lang === "hi"
-    ? `${escapeHTML(data.clientName)} के लिए ${new Date().toLocaleDateString("hi-IN")} को जनरेट किया गया।`
-    : `Generated for ${escapeHTML(data.clientName)} on ${new Date().toLocaleDateString("en-US")}.`}</p>
+<p class="note">${escapeHTML(L("generatedOn", lang).replace("onDate", new Date().toLocaleDateString(lang === "hi" ? "hi-IN" : "en-US"))) }</p>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -571,19 +1038,6 @@ ${PAGE_FOOTER(pageNumber, lang)}
 // Each narrative becomes its own localized A4 page appended after the
 // deterministic Summary. With all six pillars present the report reaches the
 // full "25-page" edition (20 base + up to 6 appendix pages).
-const NARRATIVE_LABEL = {
-  hi: {
-    appendix: "परिशिष्ट — जीवन स्तंभ",
-    milestones: "प्रमुख मील के पत्थर",
-    aiNote: "यह अध्याय AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन पर आधारित है।",
-  },
-  en: {
-    appendix: "Appendix — Life Pillars",
-    milestones: "Key Milestones",
-    aiNote: "This chapter is based on AI-assisted Vedic astrology guidance.",
-  },
-} as const;
-
 const OUTCOME_TAG_COLOR: Record<string, string> = {
   positive: "#059669",
   neutral: "#6b7280",
@@ -596,9 +1050,8 @@ const buildNarrativePage = (
   lang: "hi" | "en",
   pageNumber: number
 ): string => {
-  const title = lang === "hi" ? n.titleHi || n.titleEn : n.titleEn || n.titleHi;
+        const title = lang === "hi" ? n.titleHi || n.titleEn : n.titleEn || n.titleHi;
   const narrative = lang === "hi" ? n.narrativeHi || n.narrativeEn : n.narrativeEn || n.narrativeHi;
-  const label = NARRATIVE_LABEL[lang];
   const badges = n.badges || {};
   const badgeCells = [
     badges.score,
@@ -608,19 +1061,19 @@ const buildNarrativePage = (
 
   return `
 ${PAGE_CHROME(title, lang, pageNumber, data)}
-<p class="note">${escapeHTML(label.appendix)}</p>
+<p class="note">${escapeHTML(L("appendix", lang))}</p>
 <h1 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(title)}</h1>
 ${badgeCells.length ? `<p class="p"><span class="tag paid">${badgeCells.map(b => escapeHTML(b)).join("</span> <span class=\"tag paid\">")}</span></p>` : ""}
 <h2 class="${lang === 'en' ? 'en' : ''}">${L("domainInsights", lang)}</h2>
 <p class="p${lang === "en" ? " en" : ""}" style="font-size:10pt;">${escapeHTML(narrative)}</p>
 ${(n.milestones && n.milestones.length) ? `
 <div class="divider"></div>
-<h2 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(label.milestones)}</h2>
+<h2 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(L("milestones", lang))}</h2>
 <table class="table-0">
-<tr><th>${lang === "hi" ? "अवधि" : "Period"}</th><th>${lang === "hi" ? "घटना" : "Event"}</th><th>${lang === "hi" ? "टिप्पणी" : "Note"}</th></tr>
+<tr><th>${L("period", lang)}</th><th>${L("event", lang)}</th><th>${L("note", lang)}</th></tr>
 ${n.milestones.map(m => `<tr><td>${escapeHTML(m.period)}</td><td>${escapeHTML(m.event)}${m.outcome ? ` <span style="color:${OUTCOME_TAG_COLOR[m.outcome] || "#6b7280"};font-weight:700;">●</span>` : ""}</td><td>${escapeHTML(m.note || "-")}</td></tr>`).join("")}
 </table>` : ""}
-<p class="note">${escapeHTML(label.aiNote)}</p>
+<p class="note">${escapeHTML(L("aiNote", lang))}</p>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -667,6 +1120,12 @@ export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): s
       );
     }
   });
+  // ── New premium detail pages (only rendered when their data exists) ──
+  push(buildYogasDoshasPage(reportData, lang, ++pageNo));
+  push(buildRemedyPrescriptPage(reportData, lang, ++pageNo));
+  push(buildCurrentDashaPage(reportData, lang, ++pageNo));
+  push(buildManglikSadeTrackerPage(reportData, lang, ++pageNo));
+  push(buildDashaMasterPage(reportData, lang, ++pageNo));
   // Guarded appendix — references + scorecard + closing summary on one sheet.
   const appendix = buildAppendixSummaryPage(reportData, lang, pageNo + 1);
   if (appendix) {

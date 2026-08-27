@@ -183,6 +183,8 @@ ${digest}
 
 ${langRule}
 
+LANGUAGE: Generate response in ${lang === "hi" ? "Hindi" : "English"} language.
+
 Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
 {
   "interpretation": "3-4 paragraph warm markdown narrative covering: Ascendant/Lagna, Moon sign + nakshatra, Sun sign, key planetary placements (house+sign+retrograde), notable yogas, and practical guidance. Must be complete — no truncation.",
@@ -657,7 +659,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const rawLang = typeof body.lang === "string" ? body.lang.trim().toLowerCase() : "en";
+    const { language = 'en' } = body;
+    const rawLang = typeof language === "string" ? language.trim().toLowerCase() : "en";
     const lang: "en" | "hi" = rawLang === "hi" ? "hi" : "en";
 
     const details: BirthDetails = {
@@ -796,7 +799,7 @@ export async function POST(req: NextRequest) {
 
     // --- Word-count quality gate on life-domain narratives --------------------
     // A domain's visible text must come from EITHER a rich-prediction narrative
-    // (>200 words) OR a substantive paid-tier overview (>200 words). Anything
+    // (>80 words) OR a substantive paid-tier overview (>80 words). Anything
     // shorter would render as a cheap one-line card in the PDF, so it is set to
     // "" (never dummy text) — the pdf/frontend template detects empty strings
     // and renders its red-bordered "Generating detailed analysis..." retry
@@ -811,7 +814,7 @@ export async function POST(req: NextRequest) {
       const finalText =
         countWords(narrative) > 80
           ? narrative!.trim()
-          : countWords(current.overview) > 200
+          : countWords(current.overview) > 80
             ? current.overview.trim()
             : "";
       paidTier.lifeDomains![key] = { ...current, overview: finalText };
@@ -820,6 +823,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      language: lang,
       chartData,
       interpretation,
       freeTier,
