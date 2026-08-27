@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { Sun, Moon, Sparkles, Lock, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import {
@@ -216,7 +215,6 @@ export default function Preview({
   showHeader = true,
 }: PreviewProps) {
   const { t } = useTranslation();
-  const router = useRouter();
 
   // 1) Real chart points computed in-browser from the passed birth data.
   const chart = useChartPoints(birthData);
@@ -231,8 +229,6 @@ export default function Preview({
     marriage: marriageTeaser,
     health: healthTeaser,
   };
-
-  const handleUnlockClick = () => router.push('/payment');
 
   return (
     <div className="space-y-4 sm:space-y-6" aria-label="Kundali preview">
@@ -358,17 +354,8 @@ export default function Preview({
         </div>
       </Card>
 
-      {/* ── Unlock CTA ── */}
+      {/* ── Unlock CTA (handled by KundaliPaywallBanner on the parent page) ── */}
       <div className="text-center pt-2">
-        <button
-          type="button"
-          onClick={handleUnlockClick}
-          className="hidden"
-          aria-hidden="true"
-        >
-          <Sparkles className="w-4 h-4" />
-          {t('preview.unlockButton')}
-        </button>
         <p className="mt-3 text-[11px] text-slate-400 dark:text-[#6B7280]">
           Secure payment · Instant unlock
         </p>

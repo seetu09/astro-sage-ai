@@ -251,7 +251,7 @@ function extractSarvashtakavarga(src: unknown): ReportData['sarvashtakavarga'] {
 
 
 export default function KundaliPage() {
-  const { language, translate } = useLanguage();
+  const { language } = useLanguage();
   const { t } = useTranslation();
   const { selectedLanguage, isPaid } = useApp();
   // State guard: isPaid defaults to false in AppContext; coerce undefined/null to false (locked)
