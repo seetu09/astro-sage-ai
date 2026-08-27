@@ -73,6 +73,10 @@ body {
   background-image: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(217, 119, 6, 0.08), rgba(255, 255, 255, 0));
   background-attachment: fixed;
   min-height: 100vh;
+  /* Prevent accidental horizontal scroll on narrow screens */
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
 }
 
 .dark body {

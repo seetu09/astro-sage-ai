@@ -7,6 +7,7 @@ import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib
 import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
 import type { KundaliHistoryEntry } from '@/types/user';
 import { useApp } from '@/app/context/AppContext';
+import { useToast } from '@/app/components/ToastProvider';
 import { trackEvent } from '@/lib/analytics';
 
 interface KundliPdfButtonProps {
@@ -338,6 +339,7 @@ export default function KundliPdfButton({
   compact = false,
 }: KundliPdfButtonProps) {
   const { unlockToken } = useApp();
+  const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'rebuilding' | 'rendering'>('idle');
   const [error, setError] = useState('');
@@ -390,20 +392,31 @@ export default function KundliPdfButton({
           });
           trackEvent('kundli_pdf_server_success', { lang: language });
           setModalOpen(false);
+          toast.success(
+            language === 'hi'
+              ? 'पूर्ण कुंडली PDF डाउनलोड हो गई है! 🎉'
+              : 'Your full Kundli PDF has been downloaded! 🎉'
+          );
         } catch (err) {
           const code = err instanceof Error ? err.message : 'UNKNOWN';
           if (code === 'PDF_SERVICE_402' || code === 'PDF_SERVICE_401' || code === 'PDF_SERVICE_403') {
             // Server refused the payment — never fall back to the client-side
             // print leak; surface the lock and ask for payment instead.
             trackEvent('kundli_pdf_paywall_blocked', { lang: language });
-            setError(
-              'This report is locked. Complete payment to unlock the full PDF. / यह रिपोर्ट लॉक है — पूर्ण PDF अनलॉक करने के लिए भुगतान करें।'
-            );
+            const paywallMsg =
+              'This report is locked. Complete payment to unlock the full PDF. / यह रिपोर्ट लॉक है — पूर्ण PDF अनलॉक करने के लिए भुगतान करें।';
+            setError(paywallMsg);
+            toast.error(paywallMsg);
           } else {
             // Any other server failure → zero-cost client fallback.
             trackEvent('kundli_pdf_server_failed', { lang: language });
             printReportHtml(generateReportHtml(payload.reportData, language));
             setModalOpen(false);
+            toast.error(
+              language === 'hi'
+                ? 'PDF सर्वर विफल — प्रिंट विकल्प खोला गया।'
+                : 'PDF server failed — opened the print fallback.'
+            );
           }
         }
       } catch (err) {
@@ -422,7 +435,7 @@ export default function KundliPdfButton({
         inFlight.current = false;
       }
     },
-    [reportData, pillars, historyEntry, unlockToken]
+    [reportData, pillars, historyEntry, unlockToken, toast]
   );
 
   const displayLabel = label || DEFAULT_LABEL;

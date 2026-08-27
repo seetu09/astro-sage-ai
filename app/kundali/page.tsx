@@ -21,6 +21,7 @@ import KundaliView from '@/app/components/KundaliView';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useApp } from '@/app/context/AppContext';
+import { useToast } from '@/app/components/ToastProvider';
 import {
   localizePlanet,
   localizeSign,
@@ -253,6 +254,7 @@ export default function KundaliPage() {
   const isPaidSafe = !!isPaid;
   console.log("[PAYWALL] User tier:", isPaid);
   const { user } = useAuth();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -284,12 +286,49 @@ export default function KundaliPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Client-side validation (before hitting the API) ──
+    const langIsHi = language === 'hi';
+
+    const dateTaken = dateOfBirth.trim();
+    if (!dateTaken) {
+      setErrorKind('generic');
+      setError(langIsHi ? 'कृपया जन्म तिथि चुनें।' : 'Please select your date of birth.');
+      return;
+    }
+    const parsedDate = new Date(dateTaken);
+    if (Number.isNaN(parsedDate.getTime())) {
+      setErrorKind('generic');
+      setError(langIsHi ? 'कृपया मान्य जन्म तिथि दर्ज करें।' : 'Please enter a valid date of birth.');
+      return;
+    }
+    // Reject future birth dates.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (parsedDate > today) {
+      setErrorKind('generic');
+      setError(langIsHi ? 'जन्म तिथि भविष्य में नहीं हो सकती।' : 'Date of birth cannot be in the future.');
+      return;
+    }
+
+    if (!timeUnknown && !timeOfBirth.trim()) {
+      setErrorKind('generic');
+      setError(langIsHi ? 'कृपया जन्म समय चुनें या "समय अज्ञात" चुनें।' : 'Please select your time of birth, or tick "time unknown".');
+      return;
+    }
+
+    if (!placeOfBirth.trim()) {
+      setErrorKind('generic');
+      setError(langIsHi ? 'कृपया जन्म स्थान दर्ज करें।' : 'Please enter your place of birth.');
+      return;
+    }
+
     trackEvent('kundali_generated', { has_birth_time: !timeUnknown });
     // Graceful guard: geocoded coordinates are required for accurate computation
     if (latitude == null || longitude == null) {
       setErrorKind('geocode');
       setError(
-        language === 'hi'
+        langIsHi
           ? 'कृपया सुझावों में से अपना जन्म स्थान चुनें ताकि सही निर्देशांक मिल सकें।'
           : 'Please pick your birth place from the suggestions so we get accurate coordinates.'
       );
@@ -400,6 +439,11 @@ export default function KundaliPage() {
 
       setKundliData(data);
       setShowResult(true);
+      toast.success(
+        language === 'hi'
+          ? 'आपकी कुंडली सफलतापूर्वक तैयार हो गई है! ✨'
+          : 'Your Kundli has been generated successfully! ✨'
+      );
 
       // Persist birth details for reuse across Kundali, Matchmaking & Chat
       saveProfile({
@@ -436,15 +480,15 @@ export default function KundaliPage() {
       // Network failures surface as TypeError from fetch — show a friendlier banner
       const isNetworkError = err instanceof TypeError;
       setErrorKind(isNetworkError ? 'network' : 'generic');
-      setError(
-        isNetworkError
-          ? language === 'hi'
-            ? 'नेटवर्क कनेक्शन उपलब्ध नहीं है। कृपया अपना इंटरनेट जांचें और पुनः प्रयास करें।'
-            : 'Network request failed. Please check your connection and try again.'
-          : language === 'hi'
-            ? 'कुंडली बनाने में त्रुटि हुई। कृपया पुनः प्रयास करें।'
-            : 'Failed to generate kundali. Please try again.'
-      );
+      const errorMsg = isNetworkError
+        ? language === 'hi'
+          ? 'नेटवर्क कनेक्शन उपलब्ध नहीं है। कृपया अपना इंटरनेट जांचें और पुनः प्रयास करें।'
+          : 'Network request failed. Please check your connection and try again.'
+        : language === 'hi'
+          ? 'कुंडली बनाने में त्रुटि हुई। कृपया पुनः प्रयास करें।'
+          : 'Failed to generate kundali. Please try again.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }

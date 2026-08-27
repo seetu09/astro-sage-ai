@@ -242,7 +242,7 @@ ${t.milestones.map(t=>`<tr><td>${m(t.period)}</td><td>${m(t.event)}${t.outcome?`
 </table>`:""}
 <p class="note">${m(o.aiNote)}</p>
 ${b(i,a)}
-`};function H(t,e){let a=0,i=[],n=t=>{t&&t.trim()&&i.push(t)};n(w(t,e,++a)),n(k(t,e,++a));let s=z(t,e,a+1);s&&(a+=1,i.push(s)),[["career","wealth"],["marriage","health"],["education","family"]].forEach(([i,s])=>{let o=t.domainInsights.find(t=>t.domain===i),r=t.domainInsights.find(t=>t.domain===s);((o?.prediction?.length??0)>50||(r?.prediction?.length??0)>50)&&n(S([o,r].filter(t=>!!t),t,e,++a))});let o=N(t,e,a+1);return o&&(a+=1,i.push(o)),(t.narratives||[]).forEach(n=>i.push(C(n,t,e,++a))),`
+`};function H(t,e){let a=0,i=[],n=t=>{t&&t.trim()&&i.push(t)};n(w(t,e,++a)),n(k(t,e,++a));let s=z(t,e,a+1);s&&(a+=1,i.push(s)),[["career","wealth"],["marriage","health"],["education","family"]].forEach(([i,s])=>{let o=t.domainInsights.find(t=>t.domain===i),r=t.domainInsights.find(t=>t.domain===s);((o?.prediction?.length??0)>20||(r?.prediction?.length??0)>20)&&n(S([o,r].filter(t=>!!t),t,e,++a))});let o=N(t,e,a+1);return o&&(a+=1,i.push(o)),(t.narratives||[]).forEach(n=>i.push(C(n,t,e,++a))),`
 <!DOCTYPE html>
 <html lang="${e}">
 <head>

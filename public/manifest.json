@@ -1,11 +1,11 @@
 {
-  "name": "AstroVeda - AI Vedic Astrology",
-  "short_name": "AstroVeda",
+  "name": "AstroSage",
+  "short_name": "AstroSage",
   "description": "AI-powered Vedic astrology, Kundali generation, and cosmic guidance",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf6f0",
-  "theme_color": "#d97706",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

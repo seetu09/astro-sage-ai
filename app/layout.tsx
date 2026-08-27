@@ -20,6 +20,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import CosmicBackground from "./components/CosmicBackground";
 import WarmGlow from "./components/WarmGlow";
 import InstallBanner from "./components/InstallBanner";
+import { ToastProvider } from "./components/ToastProvider";
 import TopUpModal from "./components/TopUpModal";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -48,7 +49,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#080811",
+  themeColor: "#4F46E5",
 };
 
 export const metadata: Metadata = {
@@ -108,7 +109,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "AstroVeda",
+    title: "AstroSage",
   },
   icons: {
     icon: [
@@ -122,9 +123,9 @@ export const metadata: Metadata = {
   other: {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
-    "application-name": "AstroVeda",
-    "apple-mobile-web-app-title": "AstroVeda",
-    "msapplication-TileColor": "#080811",
+    "application-name": "AstroSage",
+    "apple-mobile-web-app-title": "AstroSage",
+    "msapplication-TileColor": "#4F46E5",
     "msapplication-TileImage": "/icons/icon-192x192.png",
   },
 };
@@ -176,6 +177,7 @@ export default function RootLayout({
         )}
         <ThemeProvider>
           <ErrorBoundary>
+            <ToastProvider>
             <LanguageProvider>
               <AppProvider>
                 <AuthProvider>
@@ -190,6 +192,7 @@ export default function RootLayout({
                 </AuthProvider>
               </AppProvider>
             </LanguageProvider>
+            </ToastProvider>
           </ErrorBoundary>
           <InstallBanner />
         </ThemeProvider>

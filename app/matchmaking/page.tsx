@@ -15,6 +15,7 @@ import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
 import ShareCard from "@/app/components/ShareCard";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useToast } from "@/app/components/ToastProvider";
 
 // ─── Venus / Mars Relationship Profiles (by Rashi index 0-11) ──────────────
 const VENUS_PROFILES_EN = [
@@ -123,6 +124,7 @@ const inputClass =
 export default function MatchmakingPage() {
   const { language, t } = useLanguage();
   const { profile, saveProfile } = useUserProfile();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "results">("form");
   const [male, setMale] = useState<PersonForm>(emptyPerson);
   const [female, setFemale] = useState<PersonForm>(emptyPerson);
@@ -171,6 +173,41 @@ export default function MatchmakingPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // ── Client-side validation ──
+    const hi = language === "hi";
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const persons: Array<{ label: string; p: PersonForm }> = [
+      { label: hi ? "साथी 1" : "Partner 1", p: male },
+      { label: hi ? "साथी 2" : "Partner 2", p: female },
+    ];
+    for (const { label, p } of persons) {
+      if (p.dateOfBirth.trim()) {
+        const d = new Date(p.dateOfBirth);
+        if (Number.isNaN(d.getTime())) {
+          toast.error(`${label}: ${hi ? "कृपया मान्य जन्म तिथि चुनें।" : "Please enter a valid birth date."}`);
+          setLoading(false);
+          return;
+        }
+        if (d > today) {
+          toast.error(`${label}: ${hi ? "जन्म तिथि भविष्य में नहीं हो सकती।" : "Birth date cannot be in the future."}`);
+          setLoading(false);
+          return;
+        }
+        if (!p.timeUnknown && !p.timeOfBirth.trim()) {
+          toast.error(`${label}: ${hi ? "कृपया जन्म समय चुनें या \"समय अज्ञात\" चुनें।" : "Please select birth time or tick \"time unknown\"."}`);
+          setLoading(false);
+          return;
+        }
+        if (!p.placeOfBirth.trim()) {
+          toast.error(`${label}: ${hi ? "कृपया जन्म स्थान दर्ज करें।" : "Please enter the place of birth."}`);
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
     setLoading(true);
 
     // Simulate calculation delay for UX
@@ -220,6 +257,11 @@ export default function MatchmakingPage() {
 
       setLoading(false);
       setActiveTab("results");
+      toast.success(
+        language === "hi"
+          ? "मिलान सफलतापूर्वक तैयार हो गया! ❤️"
+          : "Matchmaking calculated successfully! ❤️"
+      );
     }, 800);
   };
 

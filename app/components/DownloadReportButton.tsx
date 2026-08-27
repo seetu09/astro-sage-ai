@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { useApp } from '@/app/context/AppContext';
+import { useToast } from '@/app/components/ToastProvider';
 import { getUILabel } from '@/lib/astrologyDictionary';
 import { generateReportHtml, ReportData } from '@/lib/pdfHtmlTemplate';
 import { trackEvent } from '@/lib/analytics';
@@ -14,6 +15,7 @@ interface DownloadReportButtonProps {
 
 export default function DownloadReportButton({ reportData, userName = 'User' }: DownloadReportButtonProps) {
   const { selectedLanguage } = useApp();
+  const toast = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const lang = selectedLanguage === 'hi' ? 'hi' : 'en';
@@ -75,11 +77,21 @@ export default function DownloadReportButton({ reportData, userName = 'User' }: 
       a.remove();
       window.URL.revokeObjectURL(url);
       trackEvent('download_pdf_success', { lang: selectedLanguage });
+      toast.success(
+        selectedLanguage === 'hi'
+          ? 'आपकी रिपोर्ट PDF डाउनलोड हो गई है!'
+          : 'Your PDF report has been downloaded!'
+      );
     } catch (err) {
       console.error('PDF download failed:', err);
       // Final fallback: never show error alert, always try to print
       const htmlContent = generateReportHtml(reportData, lang);
       fallbackPrint(htmlContent);
+      toast.error(
+        selectedLanguage === 'hi'
+          ? 'PDF डाउनलोड विफल — प्रिंट विकल्प खोला गया।'
+          : 'PDF download failed — opened print fallback.'
+      );
     } finally {
       setIsGenerating(false);
     }
