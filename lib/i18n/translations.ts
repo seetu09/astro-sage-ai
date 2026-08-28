@@ -194,6 +194,31 @@ export interface Translations {
       premium: string;
       free: string;
     };
+    planets: {
+      jupiter: string;
+      saturn: string;
+      mars: string;
+      mercury: string;
+      venus: string;
+      moon: string;
+      sun: string;
+      rahu: string;
+      ketu: string;
+    };
+    signs: {
+      aquarius: string;
+      scorpio: string;
+      pisces: string;
+      aries: string;
+      taurus: string;
+      gemini: string;
+      cancer: string;
+      leo: string;
+      virgo: string;
+      libra: string;
+      sagittarius: string;
+      capricorn: string;
+    };
     generatedFor: string;
     basicDetails: string;
     currentDasha: string;
@@ -284,6 +309,57 @@ export interface Translations {
       oneTimePayment: string;
       premiumPredictions: string;
       availableInPremium: string;
+      lagna: string;
+      moonSign: string;
+      sunSign: string;
+      mahadasha: string;
+      antardasha: string;
+      period: string;
+      active: string;
+      yoga: string;
+      dosha: string;
+      nakshatra: string;
+      ascendant: string;
+      coordinates: string;
+      place: string;
+      dob: string;
+      tob: string;
+      tithi: string;
+      vara: string;
+      yogaPanchang: string;
+      karana: string;
+      dashaSequence: string;
+      planetPositions: string;
+      basicKundliDetails: string;
+      previewAriaLabel: string;
+      previewTitle: string;
+      currentPlanetaryPeriod: string;
+      dashaInFullReport: string;
+      readingChart: string;
+      noYogasDetected: string;
+      planetaryYoga: string;
+      freePreview: string;
+      corePersonality: string;
+      topCareers: string;
+      wealthType: string;
+      runningDasha: string;
+      viewMode: string;
+      tabbedView: string;
+      fullA4Report: string;
+      reportLockedHint: string;
+      sectionLocked: string;
+      gemstonesDailyMantras: string;
+      careerTimings: string;
+      marriageDynamics: string;
+      wealthAllocation: string;
+      dashaRoadmap: string;
+      favorablePeriods: string;
+      challengingPeriods: string;
+      strengths: string;
+      challenges: string;
+      favorableTiming: string;
+      southIndian: string;
+      unlockReportDownload: string;
       planetaryPositions: string;
       houseCusps: string;
       dashaPeriods: string;
@@ -747,6 +823,31 @@ export const translations: Record<Language, Translations> = {
         premium: 'Premium',
         free: 'Free',
       },
+      planets: {
+        jupiter: 'Jupiter',
+        saturn: 'Saturn',
+        mars: 'Mars',
+        mercury: 'Mercury',
+        venus: 'Venus',
+        moon: 'Moon',
+        sun: 'Sun',
+        rahu: 'Rahu',
+        ketu: 'Ketu',
+      },
+      signs: {
+        aquarius: 'Aquarius',
+        scorpio: 'Scorpio',
+        pisces: 'Pisces',
+        aries: 'Aries',
+        taurus: 'Taurus',
+        gemini: 'Gemini',
+        cancer: 'Cancer',
+        leo: 'Leo',
+        virgo: 'Virgo',
+        libra: 'Libra',
+        sagittarius: 'Sagittarius',
+        capricorn: 'Capricorn',
+      },
       generatedFor: 'Generated for {name}',
       basicDetails: 'Basic Details',
       currentDasha: 'Current Dasha',
@@ -837,6 +938,57 @@ export const translations: Record<Language, Translations> = {
         oneTimePayment: 'One-time payment · Instant unlock · PDF download included',
         premiumPredictions: 'Premium Predictions',
         availableInPremium: 'Available in Premium Report',
+        lagna: 'Lagna',
+        moonSign: 'Moon Sign',
+        sunSign: 'Sun Sign',
+        mahadasha: 'Mahadasha',
+        antardasha: 'Antardasha',
+        period: 'Period',
+        active: 'Active',
+        yoga: 'Yoga',
+        dosha: 'Dosha',
+        nakshatra: 'Nakshatra',
+        ascendant: 'Ascendant',
+        coordinates: 'Coordinates',
+        place: 'Place',
+        dob: 'Date of Birth',
+        tob: 'Time of Birth',
+        tithi: 'Tithi',
+        vara: 'Vara (Day)',
+        yogaPanchang: 'Yoga',
+        karana: 'Karana',
+        dashaSequence: 'Dasha Sequence',
+        planetPositions: 'Planet Positions',
+        basicKundliDetails: 'Basic Kundli Details',
+        previewAriaLabel: 'Free Kundli Preview',
+        previewTitle: 'Limited Free Preview',
+        currentPlanetaryPeriod: 'Current planetary period',
+        dashaInFullReport: 'The complete dasha timeline is available in the full report.',
+        readingChart: 'Reading chart...',
+        noYogasDetected: 'No major yogas detected.',
+        planetaryYoga: 'Planetary Yoga',
+        freePreview: 'Free Preview',
+        corePersonality: 'Your Core Personality',
+        topCareers: 'Top 3 Careers',
+        wealthType: 'Wealth Type',
+        runningDasha: 'Running Dasha',
+        viewMode: 'View Mode',
+        tabbedView: 'Tabbed View',
+        fullA4Report: 'Full A4 Report',
+        reportLockedHint: 'The full A4 report unlocks after payment.',
+        sectionLocked: 'This section is locked',
+        gemstonesDailyMantras: 'Gemstones & Daily Mantras',
+        careerTimings: 'Career Timings',
+        marriageDynamics: 'Marriage Dynamics',
+        wealthAllocation: 'Wealth Allocation',
+        dashaRoadmap: '10-Year Dasha Roadmap',
+        favorablePeriods: 'Favorable Periods',
+        challengingPeriods: 'Challenging Periods',
+        strengths: 'Strengths',
+        challenges: 'Challenges',
+        favorableTiming: 'Favorable Timing',
+        southIndian: 'South Indian',
+        unlockReportDownload: 'Unlock Full 20-Page Report & Download PDF',
         planetaryPositions: 'Planetary Positions',
         houseCusps: 'House Cusps',
         dashaPeriods: 'Dasha Periods',
@@ -1298,6 +1450,31 @@ export const translations: Record<Language, Translations> = {
         premium: 'प्रीमियम',
         free: 'निःशुल्क',
       },
+      planets: {
+        jupiter: 'गुरु',
+        saturn: 'शनि',
+        mars: 'मंगल',
+        mercury: 'बुध',
+        venus: 'शुक्र',
+        moon: 'चंद्र',
+        sun: 'सूर्य',
+        rahu: 'राहु',
+        ketu: 'केतु',
+      },
+      signs: {
+        aquarius: 'कुंभ',
+        scorpio: 'वृश्चिक',
+        pisces: 'मीन',
+        aries: 'मेष',
+        taurus: 'वृषभ',
+        gemini: 'मिथुन',
+        cancer: 'कर्क',
+        leo: 'सिंह',
+        virgo: 'कन्या',
+        libra: 'तुला',
+        sagittarius: 'धनु',
+        capricorn: 'मकर',
+      },
       generatedFor: '{name} के लिए बनाई गई',
       basicDetails: 'मूल विवरण',
       currentDasha: 'वर्तमान दशा',
@@ -1388,6 +1565,57 @@ export const translations: Record<Language, Translations> = {
         oneTimePayment: 'एक बार का भुगतान · तत्काल अनलॉक · पीडीएफ डाउनलोड शामिल',
         premiumPredictions: 'प्रीमियम भविष्यवाणियाँ',
         availableInPremium: 'प्रीमियम रिपोर्ट में उपलब्ध',
+        lagna: 'लग्न',
+        moonSign: 'चंद्र राशि',
+        sunSign: 'सूर्य राशि',
+        mahadasha: 'महादशा',
+        antardasha: 'अंतर्दशा',
+        period: 'अवधि',
+        active: 'सक्रिय',
+        yoga: 'योग',
+        dosha: 'दोष',
+        nakshatra: 'नक्षत्र',
+        ascendant: 'लग्न',
+        coordinates: 'निर्देशांक',
+        place: 'स्थान',
+        dob: 'जन्म तिथि',
+        tob: 'जन्म समय',
+        tithi: 'तिथि',
+        vara: 'वार (दिन)',
+        yogaPanchang: 'योग',
+        karana: 'करण',
+        dashaSequence: 'दशा क्रम',
+        planetPositions: 'ग्रह स्थिति',
+        basicKundliDetails: 'मूल कुंडली विवरण',
+        previewAriaLabel: 'मुफ्त कुंडली पूर्वावलोकन',
+        previewTitle: 'सीमित मुफ़्त पूर्वावलोकन',
+        currentPlanetaryPeriod: 'वर्तमान ग्रह अवधि',
+        dashaInFullReport: 'पूरी दशा समय-रेखा पूर्ण रिपोर्ट में उपलब्ध है।',
+        readingChart: 'चार्ट पढ़ा जा रहा है...',
+        noYogasDetected: 'कोई प्रमुख योग नहीं पाया गया।',
+        planetaryYoga: 'ग्रह योग',
+        freePreview: 'निःशुल्क अंश',
+        corePersonality: 'आपका कोर व्यक्तित्व',
+        topCareers: 'शीर्ष 3 करियर',
+        wealthType: 'धन प्रकार',
+        runningDasha: 'चल रही दशा',
+        viewMode: 'दृश्य मोड',
+        tabbedView: 'टैब दृश्य',
+        fullA4Report: 'पूर्ण A4 रिपोर्ट',
+        reportLockedHint: 'पूर्ण A4 रिपोर्ट केवल भुगतान के बाद अनलॉक होती है।',
+        sectionLocked: 'यह सेक्शन लॉक है',
+        gemstonesDailyMantras: 'रत्न एवं दैनिक मंत्र',
+        careerTimings: 'करियर समय-रेखा',
+        marriageDynamics: 'विवाह गतिशीलता',
+        wealthAllocation: 'धन आवंटन',
+        dashaRoadmap: '10-वर्षीय दशा रोडमैप',
+        favorablePeriods: 'अनुकूल अवधि',
+        challengingPeriods: 'चुनौतीपूर्ण अवधि',
+        strengths: 'मज़बूती',
+        challenges: 'चुनौतियाँ',
+        favorableTiming: 'अनुकूल समय',
+        southIndian: 'दक्षिण भारतीय',
+        unlockReportDownload: 'पूरी 20-पेज रिपोर्ट अनलॉक करें और PDF डाउनलोड करें',
         planetaryPositions: 'ग्रहों की स्थिति',
         houseCusps: 'भाव कुंप',
         dashaPeriods: 'दशा अवधि',

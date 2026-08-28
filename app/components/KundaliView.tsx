@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 
 import { useLanguage } from '@/app/context/LanguageContext';
+import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
 import DownloadReportButton from '@/app/components/DownloadReportButton';
@@ -60,12 +61,31 @@ interface KundaliViewProps {
 
 type TabKey = 'career' | 'marriage' | 'wealth' | 'dasha';
 
-const TABS: { key: TabKey; label: string; icon: typeof Briefcase }[] = [
-  { key: 'career', label: 'Career Timings', icon: Briefcase },
-  { key: 'marriage', label: 'Marriage Dynamics', icon: Heart },
-  { key: 'wealth', label: 'Wealth Allocation', icon: Coins },
-  { key: 'dasha', label: '10-Year Dasha Roadmap', icon: CalendarClock },
+const TABS: { key: TabKey; icon: typeof Briefcase }[] = [
+  { key: 'career', icon: Briefcase },
+  { key: 'marriage', icon: Heart },
+  { key: 'wealth', icon: Coins },
+  { key: 'dasha', icon: CalendarClock },
 ];
+
+const TAB_LABEL_KEYS: Record<TabKey, string> = {
+  career: 'careerTimings',
+  marriage: 'marriageDynamics',
+  wealth: 'wealthAllocation',
+  dasha: 'dashaRoadmap',
+};
+
+const PLANET_KEYS: Record<string, string> = {
+  Sun: 'sun',
+  Moon: 'moon',
+  Mars: 'mars',
+  Mercury: 'mercury',
+  Jupiter: 'jupiter',
+  Venus: 'venus',
+  Saturn: 'saturn',
+  Rahu: 'rahu',
+  Ketu: 'ketu',
+};
 
 export default function KundaliView({
   freeTier,
@@ -81,25 +101,21 @@ export default function KundaliView({
   onDownload,
 }: KundaliViewProps) {
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const { isPaid, markAsPaid, selectedLanguage } = useApp();
   const [activeTab, setActiveTab] = useState<TabKey>('career');
   // 'tabs' = existing tabbed preview (default); 'report' = strict-A4 modular report.
   const [viewMode, setViewMode] = useState<'tabs' | 'report'>('tabs');
   const [reportLockHint, setReportLockHint] = useState(false);
 
-  const ctaLabel =
-    language === 'hi'
-      ? 'पूरी 20-पेज रिपोर्ट अनलॉक करें और PDF डाउनलोड करें'
-      : 'Unlock Full 20-Page Report & Download PDF';
+  const ctaLabel = t('kundali.sections.unlockReportDownload');
 
   const unlockPrice = 49;
   const { corePersonality: cp, topCareers, wealthType, runningDashaName } = freeTier;
 
   const reportData: ReportData = {
     clientName: userName,
-    chartType: language === 'hi'
-      ? chartType === 'north-indian' ? 'उत्तर भारतीय' : 'दक्षिण भारतीय'
-      : chartType === 'north-indian' ? 'North Indian' : 'South Indian',
+    chartType: chartType === 'north-indian' ? t('kundali.northIndian') : t('kundali.sections.southIndian'),
     birthDetails,
     planetaryPositions: planets,
     houseCusps,
@@ -120,12 +136,12 @@ export default function KundaliView({
       })),
       // Rich AI remedy kit — daily mantras + gemstone digest.
       ...(paidTier.remedyKit?.dailyMantras ?? []).map((m) => ({
-        category: language === 'hi' ? 'दैनिक मंत्र' : 'Daily Mantra',
+        category: t('kundali.dailyMantra'),
         description: m,
       })),
       ...((paidTier.remedyKit?.gemstones ?? []).length
         ? [{
-            category: language === 'hi' ? 'रत्न सुझाव' : 'Gemstone Suggestion',
+            category: t('kundali.gemstoneSuggestion'),
             description: (paidTier.remedyKit?.gemstones ?? []).join(' · '),
           }]
         : []),
@@ -182,13 +198,13 @@ export default function KundaliView({
         <div className="flex items-center gap-2 mb-4">
           <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2.5 py-1">
             <Sparkles className="w-3 h-3" />
-            {language === 'hi' ? 'निःशुल्क अंश' : 'Free Preview'}
+            {t('kundali.sections.freePreview')}
           </span>
         </div>
 
         {/* Core personality header */}
         <h2 className="text-lg sm:text-xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
-          {language === 'hi' ? 'आपका कोर व्यक्तित्व' : 'Your Core Personality'}
+          {t('kundali.sections.corePersonality')}
         </h2>
         <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-4">
           {cp.summary}
@@ -197,10 +213,10 @@ export default function KundaliView({
         {/* Lagna / Moon / Sun / Nakshatra badges */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
           {[
-            { icon: <ArrowUp className="w-4 h-4" />, label: language === 'hi' ? 'लग्न' : 'Ascendant', value: cp.ascendant },
-            { icon: <Moon className="w-4 h-4" />, label: language === 'hi' ? 'चंद्र राशि' : 'Moon Sign', value: cp.moonSign },
-            { icon: <Sun className="w-4 h-4" />, label: language === 'hi' ? 'सूर्य राशि' : 'Sun Sign', value: cp.sunSign },
-            { icon: <Star className="w-4 h-4" />, label: language === 'hi' ? 'नक्षत्र' : 'Nakshatra', value: cp.nakshatra },
+            { icon: <ArrowUp className="w-4 h-4" />, label: t('kundali.sections.ascendant'), value: cp.ascendant },
+            { icon: <Moon className="w-4 h-4" />, label: t('kundali.sections.moonSign'), value: cp.moonSign },
+            { icon: <Sun className="w-4 h-4" />, label: t('kundali.sections.sunSign'), value: cp.sunSign },
+            { icon: <Star className="w-4 h-4" />, label: t('kundali.sections.nakshatra'), value: cp.nakshatra },
           ].map((badge) => (
             <div key={badge.label} className="rounded-xl p-3 flex items-center gap-2.5 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
               <span className="inline-flex items-center justify-center w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/15 dark:to-[#E0A96D]/10 text-violet-700 dark:text-[#FFD166]">
@@ -217,7 +233,7 @@ export default function KundaliView({
         {/* Top 3 careers */}
         <div className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-[#6B7280] mb-2">
-            {language === 'hi' ? 'शीर्ष 3 करियर' : 'Top 3 Careers'}
+            {t('kundali.sections.topCareers')}
           </p>
           <div className="flex flex-wrap gap-2">
             {topCareers.length ? (
@@ -234,11 +250,11 @@ export default function KundaliView({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-xl p-3 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
-            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{language === 'hi' ? 'धन प्रकार' : 'Wealth Type'}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{t('kundali.sections.wealthType')}</p>
             <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5">{wealthType || '--'}</p>
           </div>
           <div className="rounded-xl p-3 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
-            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{language === 'hi' ? 'चल रही दशा' : 'Running Dasha'}</p>
+            <p className="text-[10px] sm:text-xs text-slate-400 dark:text-[#6B7280] uppercase tracking-wide">{t('kundali.sections.runningDasha')}</p>
             <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6] mt-0.5">{runningDashaName || '--'}</p>
           </div>
         </div>
@@ -247,7 +263,7 @@ export default function KundaliView({
       {/* ─────────────── VIEW MODE TOGGLE ─────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <span className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-[#6B7280] font-medium">
-          {language === 'hi' ? 'दृश्य मोड' : 'View Mode'}
+          {t('kundali.sections.viewMode')}
         </span>
         <div className="flex gap-1 p-1 rounded-xl bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
           <button
@@ -259,7 +275,7 @@ export default function KundaliView({
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
-            {language === 'hi' ? 'टैब दृश्य' : 'Tabbed View'}
+            {t('kundali.sections.tabbedView')}
           </button>
           <button
             onClick={() => {
@@ -277,7 +293,7 @@ export default function KundaliView({
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
-            {language === 'hi' ? 'पूर्ण A4 रिपोर्ट' : 'Full A4 Report'}
+            {t('kundali.sections.fullA4Report')}
           </button>
         </div>
       </div>
@@ -288,9 +304,7 @@ export default function KundaliView({
           <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-300/60 dark:border-[#FFD166]/30 bg-amber-50 dark:bg-[#FFD166]/10 px-3 py-2.5 text-xs sm:text-sm text-amber-800 dark:text-[#FFD166]">
             <Lock className="w-4 h-4 mt-0.5 shrink-0" />
             <span>
-              {language === 'hi'
-                ? 'पूर्ण A4 रिपोर्ट केवल भुगतान के बाद अनलॉक होती है।'
-                : 'The full A4 report unlocks after payment.'}
+              {t('kundali.sections.reportLockedHint')}
             </span>
           </div>
         )}
@@ -319,7 +333,7 @@ export default function KundaliView({
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                {tab.label}
+                {t(`kundali.sections.${TAB_LABEL_KEYS[tab.key]}`)}
               </button>
             );
           })}
@@ -328,13 +342,13 @@ export default function KundaliView({
         <div className="relative">
           {/* Active tab content */}
           <div className={isPaid ? '' : 'blur-[6px] select-none pointer-events-none opacity-70'}>
-            <TabPanel tab={activeTab} paidTier={paidTier} language={language} />
+            <TabPanel tab={activeTab} paidTier={paidTier} />
 
             {/* Rich AI remedy kit — gemstone suggestions + exactly four daily mantras */}
             {(!!paidTier.remedyKit?.gemstones?.length || !!paidTier.remedyKit?.dailyMantras?.length) && (
               <div className="glass-card rounded-xl p-4 mt-4">
                 <h3 className="text-sm sm:text-base font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
-                  {language === 'hi' ? 'रत्न एवं दैनिक मंत्र' : 'Gemstones & Daily Mantras'}
+                  {t('kundali.sections.gemstonesDailyMantras')}
                 </h3>
                 {!!paidTier.remedyKit?.gemstones?.length && (
                   <ul className="space-y-1 mb-3">
@@ -366,7 +380,7 @@ export default function KundaliView({
                   <Lock className="w-6 h-6 text-violet-700 dark:text-[#FFD166]" />
                 </div>
                 <h3 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-3">
-                  {language === 'hi' ? 'पूरी रिपोर्ट लॉक है' : 'This section is locked'}
+                  {t('kundali.sections.sectionLocked')}
                 </h3>
                 <div className="max-w-xs mx-auto">
                   <PaymentButton
@@ -403,22 +417,20 @@ export default function KundaliView({
 function TabPanel({
   tab,
   paidTier,
-  language,
 }: {
   tab: TabKey;
   paidTier: PaidTierData;
-  language: 'en' | 'hi';
 }) {
   // Milestone windows produced by the rich AI layer live on lifeDomains.
   const milestonesFor = (key: 'career' | 'marriage' | 'wealth'): RichMilestone[] =>
     paidTier.lifeDomains?.[key]?.milestones ?? [];
   if (tab === 'career')
-    return <CareerPanel data={paidTier.careerTimings} language={language} milestones={milestonesFor('career')} />;
+    return <CareerPanel data={paidTier.careerTimings} milestones={milestonesFor('career')} />;
   if (tab === 'marriage')
-    return <MarriagePanel data={paidTier.marriageDynamics} language={language} milestones={milestonesFor('marriage')} />;
+    return <MarriagePanel data={paidTier.marriageDynamics} milestones={milestonesFor('marriage')} />;
   if (tab === 'wealth')
-    return <WealthPanel data={paidTier.wealthAllocation} language={language} milestones={milestonesFor('wealth')} />;
-  return <DashaPanel data={paidTier.dashaRoadmap} language={language} />;
+    return <WealthPanel data={paidTier.wealthAllocation} milestones={milestonesFor('wealth')} />;
+  return <DashaPanel data={paidTier.dashaRoadmap} />;
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -447,15 +459,16 @@ function MilestoneChips({ items }: { items?: RichMilestone[] }) {
   );
 }
 
-function CareerPanel({ data, language, milestones = [] }: { data: CareerTimings; language: 'en' | 'hi'; milestones?: RichMilestone[] }) {
+function CareerPanel({ data, milestones = [] }: { data: CareerTimings; milestones?: RichMilestone[] }) {
+  const { t } = useTranslation();
   return (
     <div>
-      <SectionTitle>{language === 'hi' ? 'करियर समय-रेखा' : 'Career Timings'}</SectionTitle>
+      <SectionTitle>{t('kundali.sections.careerTimings')}</SectionTitle>
       <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-3">{data.overview}</p>
       <MilestoneChips items={milestones} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{language === 'hi' ? 'अनुकूल अवधि' : 'Favorable Periods'}</p>
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{t('kundali.sections.favorablePeriods')}</p>
           <ul className="space-y-1.5">
             {(data.favorable || []).map((f, i) => (
               <li key={i} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">
@@ -465,7 +478,7 @@ function CareerPanel({ data, language, milestones = [] }: { data: CareerTimings;
           </ul>
         </div>
         <div>
-          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">{language === 'hi' ? 'चुनौतीपूर्ण अवधि' : 'Challenging Periods'}</p>
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">{t('kundali.sections.challengingPeriods')}</p>
           <ul className="space-y-1.5">
             {(data.challenging || []).map((c, i) => (
               <li key={i} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">
@@ -479,15 +492,16 @@ function CareerPanel({ data, language, milestones = [] }: { data: CareerTimings;
   );
 }
 
-function MarriagePanel({ data, language, milestones = [] }: { data: MarriageDynamics; language: 'en' | 'hi'; milestones?: RichMilestone[] }) {
+function MarriagePanel({ data, milestones = [] }: { data: MarriageDynamics; milestones?: RichMilestone[] }) {
+  const { t } = useTranslation();
   return (
     <div>
-      <SectionTitle>{language === 'hi' ? 'विवाह गतिशीलता' : 'Marriage Dynamics'}</SectionTitle>
+      <SectionTitle>{t('kundali.sections.marriageDynamics')}</SectionTitle>
       <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-3">{data.overview}</p>
       <MilestoneChips items={milestones} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{language === 'hi' ? 'मज़बूती' : 'Strengths'}</p>
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{t('kundali.sections.strengths')}</p>
           <ul className="space-y-1.5">
             {(data.strengths || []).map((s, i) => (
               <li key={i} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">• {s}</li>
@@ -495,7 +509,7 @@ function MarriagePanel({ data, language, milestones = [] }: { data: MarriageDyna
           </ul>
         </div>
         <div>
-          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">{language === 'hi' ? 'चुनौतियाँ' : 'Challenges'}</p>
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">{t('kundali.sections.challenges')}</p>
           <ul className="space-y-1.5">
             {(data.challenges || []).map((c, i) => (
               <li key={i} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">• {c}</li>
@@ -503,7 +517,7 @@ function MarriagePanel({ data, language, milestones = [] }: { data: MarriageDyna
           </ul>
         </div>
         <div>
-          <p className="text-xs font-semibold text-violet-700 dark:text-[#FFD166] mb-1">{language === 'hi' ? 'अनुकूल समय' : 'Favorable Timing'}</p>
+          <p className="text-xs font-semibold text-violet-700 dark:text-[#FFD166] mb-1">{t('kundali.sections.favorableTiming')}</p>
           <ul className="space-y-1.5">
             {(data.favorable || []).map((f, i) => (
               <li key={i} className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF]">
@@ -517,10 +531,11 @@ function MarriagePanel({ data, language, milestones = [] }: { data: MarriageDyna
   );
 }
 
-function WealthPanel({ data, language, milestones = [] }: { data: WealthAllocation; language: 'en' | 'hi'; milestones?: RichMilestone[] }) {
+function WealthPanel({ data, milestones = [] }: { data: WealthAllocation; milestones?: RichMilestone[] }) {
+  const { t } = useTranslation();
   return (
     <div>
-      <SectionTitle>{language === 'hi' ? 'धन आवंटन' : 'Wealth Allocation'}</SectionTitle>
+      <SectionTitle>{t('kundali.sections.wealthAllocation')}</SectionTitle>
       <p className="text-sm text-slate-600 dark:text-[#9CA3AF] leading-relaxed mb-3">{data.overview}</p>
       <MilestoneChips items={milestones} />
       <div className="space-y-2">
@@ -544,19 +559,24 @@ function WealthPanel({ data, language, milestones = [] }: { data: WealthAllocati
   );
 }
 
-function DashaPanel({ data, language }: { data: DashaRoadmapEntry[]; language: 'en' | 'hi' }) {
+function DashaPanel({ data }: { data: DashaRoadmapEntry[] }) {
+  const { t } = useTranslation();
+  const translatePlanet = (name: string): string => {
+    const key = PLANET_KEYS[name.trim()];
+    return key ? t(`kundali.planets.${key}`) : name;
+  };
   if (!data || data.length === 0) {
     return <p className="text-sm text-slate-500 dark:text-[#9CA3AF]">--</p>;
   }
   return (
     <div>
-      <SectionTitle>{language === 'hi' ? '10-वर्षीय दशा रोडमैप' : '10-Year Dasha Roadmap'}</SectionTitle>
+      <SectionTitle>{t('kundali.sections.dashaRoadmap')}</SectionTitle>
       <div className="space-y-2">
         {data.map((entry, i) => (
           <div key={i} className="flex items-center gap-3 rounded-lg p-2.5 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10">
             <div className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 dark:from-[#FFD166] dark:to-[#E0A96D] shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6]">{entry.lord} Mahadasha</p>
+              <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6]">{translatePlanet(entry.lord)} {t('kundali.sections.mahadasha')}</p>
               <p className="text-[11px] text-slate-400 dark:text-[#6B7280]">{entry.startDate} → {entry.endDate}</p>
             </div>
             <p className="text-xs text-slate-500 dark:text-[#9CA3AF] text-right max-w-[40%] truncate">{entry.theme}</p>

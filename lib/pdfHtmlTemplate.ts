@@ -3,7 +3,7 @@ import {
   ChartPlanetInput,
   ChartHouseInput,
 } from "@/lib/kundliChart";
-import { getSignIndex, SIGN_LORDS } from "@/lib/astrologyDictionary";
+import { getSignIndex, SIGN_LORDS, localizePlanet, localizeSign, localizeRashi, canonicalPlanet } from "@/lib/astrologyDictionary";
 
 export interface ReportData {
   clientName: string;
@@ -168,6 +168,19 @@ const LABEL = {
     mahaYears: "वर्ष",
     fromYear: "प्रारंभ",
     toYear: "समाप्ति",
+
+    // ── Localized domain & misc labels ──
+    houseWord: "भाव",
+    lordWord: "स्वामी",
+    houseDataUnavailable: "भाव डेटा उपलब्ध नहीं।",
+    detailedPremiumAnalysis: "विस्तृत {domain} विश्लेषण प्रीमियम रिपोर्ट में शामिल है।",
+    domainCareer: "करियर",
+    domainMarriage: "विवाह",
+    domainWealth: "धन",
+    domainHealth: "स्वास्थ्य",
+    domainFinance: "वित्त",
+    domainEducation: "शिक्षा",
+    domainFamily: "परिवार",
   },
   en: {
     title: "Birth Chart Detailed Analysis",
@@ -274,6 +287,19 @@ const LABEL = {
     mahaYears: "Years",
     fromYear: "From",
     toYear: "To",
+
+    // ── Localized domain & misc labels ──
+    houseWord: "House",
+    lordWord: "Lord",
+    houseDataUnavailable: "House data unavailable.",
+    detailedPremiumAnalysis: "Detailed {domain} analysis is included in the premium report.",
+    domainCareer: "Career",
+    domainMarriage: "Marriage",
+    domainWealth: "Wealth",
+    domainHealth: "Health",
+    domainFinance: "Finance",
+    domainEducation: "Education",
+    domainFamily: "Family",
   },
 };
 
@@ -286,6 +312,27 @@ const escapeHTML = (str: string): string =>
     .replace(/'/g, "&#39;");
 
 const L = (key: keyof typeof LABEL.hi, lang: "hi" | "en"): string => LABEL[lang][key];
+
+/** Localize a planet name (English/Sanskrit/Hindi → target language). */
+const localizePlanetName = (name: string, lang: "hi" | "en"): string =>
+  localizePlanet(canonicalPlanet(name), lang);
+
+/** Localize a sign descriptor (name or 1-12 index → target language). */
+const localizeSignName = (sign: string | number, lang: "hi" | "en"): string => {
+  const idx = getSignIndex(sign);
+  return idx ? localizeRashi(idx, lang) : localizeSign(String(sign), lang);
+};
+
+/** Domain key → localized LABEL lookup key for the life-domain pages. */
+const DOMAIN_LABEL_KEYS: Record<string, keyof typeof LABEL.hi> = {
+  career: "domainCareer",
+  marriage: "domainMarriage",
+  wealth: "domainWealth",
+  health: "domainHealth",
+  finance: "domainFinance",
+  education: "domainEducation",
+  family: "domainFamily",
+};
 
 const CSS = `
 @page { margin: 0; padding: 0; size: A4; }
@@ -530,10 +577,10 @@ const buildNativityPanchangChartPage = (
     ? `<div class="tile-grid">${[
         tile("Vara (Weekday)", "वार", lang, pc.varaWeekday),
         tile("Nakshatra", "नक्षत्र", lang, pc.nakshatra),
-        tile("Nakshatra Lord", "नक्षत्र स्वामी", lang, pc.nakshatraLord),
-        tile("Moon Sign", "चंद्र राशि", lang, pc.moonSign),
-        tile("Sun Sign", "सूर्य राशि", lang, pc.sunSign),
-        tile("Lagna", "लग्न", lang, pc.lagna),
+        tile("Nakshatra Lord", "नक्षत्र स्वामी", lang, pc.nakshatraLord ? localizePlanetName(pc.nakshatraLord, lang) : undefined),
+        tile("Moon Sign", "चंद्र राशि", lang, pc.moonSign ? localizeSignName(pc.moonSign, lang) : undefined),
+        tile("Sun Sign", "सूर्य राशि", lang, pc.sunSign ? localizeSignName(pc.sunSign, lang) : undefined),
+        tile("Lagna", "लग्न", lang, pc.lagna ? localizeSignName(pc.lagna, lang) : undefined),
       ].join("")}</div>`
     : "";
   return `
@@ -556,7 +603,7 @@ ${panchangGrid}
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("planetaryPositions", lang)}</h2>
 <table class="table-0">
 <tr><th>${L("bodyCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th><th>${L("houseCol", lang)}</th><th>${L("retroCol", lang)}</th></tr>
-${data.planetaryPositions.map(p => `<tr><td>${escapeHTML(p.body)}</td><td>${escapeHTML(p.sign)}</td><td>${escapeHTML(p.degree)}</td><td>${escapeHTML(p.house)}</td><td>${p.retro ? "✓" : "-"}</td></tr>`).join("")}
+${data.planetaryPositions.map(p => `<tr><td>${escapeHTML(localizePlanetName(p.body, lang))}</td><td>${escapeHTML(localizeSignName(p.sign, lang))}</td><td>${escapeHTML(p.degree)}</td><td>${escapeHTML(p.house)}</td><td>${p.retro ? "✓" : "-"}</td></tr>`).join("")}
 </table>
 </div>
 ${PAGE_FOOTER(pageNumber, lang)}
@@ -590,16 +637,16 @@ const buildHousesNavamsaAshtakavargaPage = (
         .join("")
     : "";
   const houseRows = data.houseCusps
-    .map(h => `<tr><td>${escapeHTML(String(h.house))}</td><td>${escapeHTML(h.sign)}</td><td>${escapeHTML(h.degree || "-")}</td></tr>`)
+    .map(h => `<tr><td>${escapeHTML(String(h.house))}</td><td>${escapeHTML(localizeSignName(h.sign, lang))}</td><td>${escapeHTML(h.degree || "-")}</td></tr>`)
     .join("");
   // Split the 12 cusps into two side-by-side tables so the block stays compact.
   const half = Math.ceil(data.houseCusps.length / 2) || 6;
   const houseCols = data.houseCusps.length
     ? `<div class="grid-2">
-<table class="table-0"><tr><th>H</th><th>राशि/Sign</th><th>Deg</th></tr>${houseRows.slice(0, half)}</table>
-<table class="table-0"><tr><th>H</th><th>राशि/Sign</th><th>Deg</th></tr>${houseRows.slice(half)}</table>
+<table class="table-0"><tr><th>${L("houseCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th></tr>${houseRows.slice(0, half)}</table>
+<table class="table-0"><tr><th>${L("houseCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th></tr>${houseRows.slice(half)}</table>
 </div>`
-    : `<p class="note">${lang === "hi" ? "भाव डेटा उपलब्ध नहीं।" : "House data unavailable."}</p>`;
+    : `<p class="note">${L("houseDataUnavailable", lang)}</p>`;
   return `
 ${PAGE_CHROME(L("housesNavamsaAshtakavarga", lang), lang, pageNumber, data)}
 <div class="section-block">
@@ -630,7 +677,7 @@ const buildDashaYogasRemediesPage = (
   pageNumber: number
 ): string => {
   const dashaRows = (data.dashaPeriods || [])
-    .map(d => `<tr><td>${escapeHTML(d.mahaDasha)}</td><td>${escapeHTML(d.startYear)}</td><td>${escapeHTML(d.endYear)}</td><td>${escapeHTML(d.subPeriod || "-")}</td></tr>`)
+    .map(d => `<tr><td>${escapeHTML(localizePlanetName(d.mahaDasha, lang))}</td><td>${escapeHTML(d.startYear)}</td><td>${escapeHTML(d.endYear)}</td><td>${escapeHTML(d.subPeriod || "-")}</td></tr>`)
     .join("");
   const yogaItems = (data.yogas || [])
     .map(y => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span> — <span class="p en">${escapeHTML(y.description)}</span></div>`)
@@ -686,7 +733,7 @@ const buildLifeDomainsPage = (
   const currentYear = new Date().getFullYear();
   const sectionHtml = domains
     .map((domain) => {
-      const title = domain.domain.charAt(0).toUpperCase() + domain.domain.slice(1);
+      const title = L(DOMAIN_LABEL_KEYS[domain.domain] ?? "domainCareer", lang);
       const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
       const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
       const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
@@ -694,16 +741,14 @@ const buildLifeDomainsPage = (
         ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
         : domain.timeframe || "—";
       const badges = [
-        `${lang === "hi" ? "भाव" : "House"} ${focusHouse}`,
-        `${lang === "hi" ? "स्वामी" : "Lord"}: ${lord}`,
+        `${L("houseWord", lang)} ${focusHouse}`,
+        `${L("lordWord", lang)}: ${localizePlanetName(lord, lang)}`,
         firstWindow,
       ];
       const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
       const narrative = narrativeParts.length
         ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
-        : lang === "hi"
-          ? "विस्तृत विश्लेषण प्रीमियम रिपोर्ट में शामिल है।"
-          : `Detailed ${escapeHTML(domain.domain)} analysis is included in the premium report.`;
+        : escapeHTML(L("detailedPremiumAnalysis", lang).replace("{domain}", title.toLowerCase()));
       // Milestone table — at most TWO rows, showing only the NEXT upcoming windows.
       const upcomingWindows = (data.dashaPeriods || [])
         .filter((d) => {
@@ -712,7 +757,7 @@ const buildLifeDomainsPage = (
         })
         .slice(0, 2);
       const milestoneRows = upcomingWindows.length
-        ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([d.mahaDasha, d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
+        ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([localizePlanetName(d.mahaDasha, lang), d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
                 : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
       return `<div class="domain-half">
 <h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
@@ -891,7 +936,7 @@ const buildCurrentDashaPage = (
   const focusCards = cycle
     .map((c) => {
       const on = c.name.toLowerCase() === current.toLowerCase();
-      return `<div class="dasha-focus${on ? " active" : ""}"><div class="k">${escapeHTML(c.name)}</div><div class="v">${c.from}–${c.to}</div>${on ? ` <span class="status-badge status-warn">${L("onDashaNow", lang)}</span>` : ""}</div>`;
+      return `<div class="dasha-focus${on ? " active" : ""}"><div class="k">${escapeHTML(localizePlanetName(c.name, lang))}</div><div class="v">${c.from}–${c.to}</div>${on ? ` <span class="status-badge status-warn">${L("onDashaNow", lang)}</span>` : ""}</div>`;
     })
     .join("");
   const sub = active?.subPeriod
@@ -905,7 +950,7 @@ ${sub}
 <p class="note">${escapeHTML(L("currentRemark", lang))}</p>
 <div class="divider"></div>
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("dashaCycle", lang)}</h2>
-<ul class="dasha-cycle">${cycle.map((c) => `<li${c.name.toLowerCase() === current.toLowerCase() ? " class=\"active\"" : ""}><span>${escapeHTML(c.name)}</span><span>${c.from}–${c.to}</span></li>`).join("")}</ul>
+<ul class="dasha-cycle">${cycle.map((c) => `<li${c.name.toLowerCase() === current.toLowerCase() ? " class=\"active\"" : ""}><span>${escapeHTML(localizePlanetName(c.name, lang))}</span><span>${c.from}–${c.to}</span></li>`).join("")}</ul>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -932,7 +977,7 @@ const buildManglikSadeTrackerPage = (
     .map((h) => {
       const placing = (data.planetaryPositions || []).filter((p) => houseNum(p) === h);
       const hasMars = placing.some((p) => canonPlanet(p.body) === canonPlanet("Mars"));
-      return `<tr${hasMars ? " style=\"background:#fef3c7\"" : ""}><td>${h}</td><td>${placing.map((p) => escapeHTML(p.body)).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
+      return `<tr${hasMars ? " style=\"background:#fef3c7\"" : ""}><td>${h}</td><td>${placing.map((p) => escapeHTML(localizePlanetName(p.body, lang))).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
     })
     .join("");
 
@@ -957,7 +1002,7 @@ const buildManglikSadeTrackerPage = (
 
   return `
 ${PAGE_CHROME(L("manglikSadeTitle", lang), lang, pageNumber, data)}
-<p class="p">${escapeHTML(L("manglik", lang))}: <strong>${manglik ? `${L("manglikYes", lang)} (भाव ${manglikHouse})` : L("manglikNo", lang)}</strong> · ${L("sadeSati", lang)}: ${satiActiveLabel ? L(satiActiveLabel, lang) : L("noSadeSati", lang)}</p>
+<p class="p">${escapeHTML(L("manglik", lang))}: <strong>${manglik ? `${L("manglikYes", lang)} (${L("houseWord", lang)} ${manglikHouse})` : L("manglikNo", lang)}</strong> · ${L("sadeSati", lang)}: ${satiActiveLabel ? L(satiActiveLabel, lang) : L("noSadeSati", lang)}</p>
 <div class="tracker-grid">
   <div class="tracker-box">
     <div class="tracker-title">${L("manglikTracker", lang)}</div>
@@ -988,7 +1033,7 @@ const buildDashaMasterPage = (
   const rows = cycle
     .map((c, i) => {
       const on = c.name.toLowerCase() === current.toLowerCase();
-      return `<tr${on ? " style=\"background:#eff6ff\"" : ""}><td>${i + 1}</td><td>${escapeHTML(c.name)}</td><td>${c.years}</td><td>${c.from}</td><td>${c.to}</td>${on ? `<td>${L("onDashaNow", lang)}</td>` : ""}</tr>`;
+      return `<tr${on ? " style=\"background:#eff6ff\"" : ""}><td>${i + 1}</td><td>${escapeHTML(localizePlanetName(c.name, lang))}</td><td>${c.years}</td><td>${c.from}</td><td>${c.to}</td>${on ? `<td>${L("onDashaNow", lang)}</td>` : ""}</tr>`;
     })
     .join("");
   return `
@@ -1076,7 +1121,8 @@ ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
 
-export function generateReportHtml(reportData: ReportData, lang: "hi" | "en"): string {
+export function generateReportHtml(reportData: ReportData, language: "hi" | "en"): string {
+  const lang = language;
   let pageNo = 0;
   const pages: string[] = [];
   // Only non-empty sheets enter the document — blank placeholder pages

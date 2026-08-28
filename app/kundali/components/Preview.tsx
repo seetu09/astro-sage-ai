@@ -216,6 +216,42 @@ export default function Preview({
 }: PreviewProps) {
   const { t } = useTranslation();
 
+  const PLANET_KEYS: Record<string, string> = {
+    Sun: 'sun',
+    Moon: 'moon',
+    Mars: 'mars',
+    Mercury: 'mercury',
+    Jupiter: 'jupiter',
+    Venus: 'venus',
+    Saturn: 'saturn',
+    Rahu: 'rahu',
+    Ketu: 'ketu',
+  };
+  const SIGN_KEYS: Record<string, string> = {
+    Aries: 'aries',
+    Taurus: 'taurus',
+    Gemini: 'gemini',
+    Cancer: 'cancer',
+    Leo: 'leo',
+    Virgo: 'virgo',
+    Libra: 'libra',
+    Scorpio: 'scorpio',
+    Sagittarius: 'sagittarius',
+    Capricorn: 'capricorn',
+    Aquarius: 'aquarius',
+    Pisces: 'pisces',
+  };
+  const translatePlanet = (name?: string): string => {
+    const clean = stripHindiSuffix(name);
+    const key = clean ? PLANET_KEYS[clean] : undefined;
+    return key ? t(`kundali.planets.${key}`) : clean;
+  };
+  const translateSign = (name?: string): string => {
+    const clean = stripHindiSuffix(name);
+    const key = clean ? SIGN_KEYS[clean] : undefined;
+    return key ? t(`kundali.signs.${key}`) : clean;
+  };
+
   // 1) Real chart points computed in-browser from the passed birth data.
   const chart = useChartPoints(birthData);
   // 2) Yogas fetched from /api/kundali/generate (up to 3).
@@ -252,9 +288,9 @@ export default function Preview({
         title={t('kundali.sections.basicDetails')}
       >
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <DetailCell label={t('kundali.sections.lagna')} value={chart.lagna || '--'} />
-          <DetailCell label={t('kundali.sections.moonSign')} value={chart.moonSign || '--'} />
-          <DetailCell label={t('kundali.sections.sunSign')} value={chart.sunSign || '--'} />
+          <DetailCell label={t('kundali.sections.lagna')} value={translateSign(chart.lagna) || '--'} />
+          <DetailCell label={t('kundali.sections.moonSign')} value={translateSign(chart.moonSign) || '--'} />
+          <DetailCell label={t('kundali.sections.sunSign')} value={translateSign(chart.sunSign) || '--'} />
         </div>
       </Card>
 
@@ -269,7 +305,7 @@ export default function Preview({
         <div className="rounded-xl p-3 sm:p-4 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6]">
-              {stripHindiSuffix(dasha.lord) || '--'} {t('kundali.sections.mahadasha')}
+              {translatePlanet(dasha.lord) || '--'} {t('kundali.sections.mahadasha')}
             </p>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF] mt-0.5">
               {dasha.theme || t('kundali.sections.currentPlanetaryPeriod')}

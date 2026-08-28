@@ -26,7 +26,6 @@ import { useApp } from '@/app/context/AppContext';
 import { useToast } from '@/app/components/ToastProvider';
 import {
   localizePlanet,
-  localizeSign,
   getChartTypeLabel,
   NAKSHATRA_NAMES,
   NAKSHATRA_LORDS,
@@ -157,11 +156,6 @@ function extractEnglishPart(value: string | undefined | null): string {
 
 // --- Helper: localize a sign and clean up "Unknown" ---
 // Handles bilingual values like "Aquarius (कुंभ)" by extracting the English part first
-function localizeSignClean(sign: string | undefined | null, locale: 'en' | 'hi'): string {
-  const english = extractEnglishPart(sign);
-  if (!english) return '';
-  return localizeSign(english, locale);
-}
 
 // --- Helper: localize a nakshatra and clean up "Unknown" ---
 // Handles bilingual values like "Shravana (श्रवण)" by extracting the English part first
@@ -254,6 +248,42 @@ export default function KundaliPage() {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const { selectedLanguage, isPaid } = useApp();
+
+  const PLANET_KEYS: Record<string, string> = {
+    Sun: 'sun',
+    Moon: 'moon',
+    Mars: 'mars',
+    Mercury: 'mercury',
+    Jupiter: 'jupiter',
+    Venus: 'venus',
+    Saturn: 'saturn',
+    Rahu: 'rahu',
+    Ketu: 'ketu',
+  };
+  const SIGN_KEYS: Record<string, string> = {
+    Aries: 'aries',
+    Taurus: 'taurus',
+    Gemini: 'gemini',
+    Cancer: 'cancer',
+    Leo: 'leo',
+    Virgo: 'virgo',
+    Libra: 'libra',
+    Scorpio: 'scorpio',
+    Sagittarius: 'sagittarius',
+    Capricorn: 'capricorn',
+    Aquarius: 'aquarius',
+    Pisces: 'pisces',
+  };
+  const translatePlanet = (name: string | null | undefined): string => {
+    const clean = extractEnglishPart(name);
+    const key = clean ? PLANET_KEYS[clean] : undefined;
+    return key ? t(`kundali.planets.${key}`) : (clean || '');
+  };
+  const translateSign = (name: string | null | undefined): string => {
+    const clean = extractEnglishPart(name);
+    const key = clean ? SIGN_KEYS[clean] : undefined;
+    return key ? t(`kundali.signs.${key}`) : (clean || '');
+  };
   // State guard: isPaid defaults to false in AppContext; coerce undefined/null to false (locked)
   const isPaidSafe = !!isPaid;
   console.log("[PAYWALL] User tier:", isPaid);
@@ -503,8 +533,8 @@ export default function KundaliPage() {
       timezone: kundliData?.chartData?.timezone || kundliData?.timezone || '',
     },
     planetaryPositions: (kundliData?.planets ?? []).map((p) => ({
-      body: p.name || '',
-      sign: p.sign || '',
+      body: translatePlanet(p.name) || '',
+      sign: translateSign(p.sign) || '',
       degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
       house: String(p.house || ''),
       retro: p.status === 'Retrograde',
@@ -824,19 +854,17 @@ export default function KundaliPage() {
                     {
                       label: t('kundali.ascendant'),
                       value:
-                        localizeSignClean(
+                        translateSign(
                           kundliData.chartData?.lagna ||
                             kundliData.chartData?.ascendant ||
-                            kundliData.ascendant,
-                          selectedLanguage
+                            kundliData.ascendant
                         ) || '--',
                     },
                     {
                       label: t('kundali.moonSign'),
                       value:
-                        localizeSignClean(
-                          kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign,
-                          selectedLanguage
+                        translateSign(
+                          kundliData.chartData?.rashi || kundliData.chartData?.moonSign || kundliData.moonSign
                         ) || '--',
                     },
                     {
