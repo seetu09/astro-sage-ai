@@ -266,6 +266,24 @@ export interface Translations {
     sections: {
       generatedFor: string;
       basicDetails: string;
+      currentDasha: string;
+      keyYogas: string;
+      detailedInsights: string;
+      panchangSnapshot: string;
+      career: string;
+      marriage: string;
+      health: string;
+      wealth: string;
+      education: string;
+      family: string;
+      locked: string;
+      previewSubtitle: string;
+      unlockFullReport: string;
+      downloadPdf: string;
+      securePayment: string;
+      oneTimePayment: string;
+      premiumPredictions: string;
+      availableInPremium: string;
       planetaryPositions: string;
       houseCusps: string;
       dashaPeriods: string;
@@ -801,6 +819,24 @@ export const translations: Record<Language, Translations> = {
       sections: {
         generatedFor: 'Generated for {name}',
         basicDetails: 'Basic Kundli Details',
+        currentDasha: 'Current Dasha',
+        keyYogas: 'Key Yogas',
+        detailedInsights: 'Detailed Insights',
+        panchangSnapshot: 'Panchang Snapshot',
+        career: 'Career',
+        marriage: 'Marriage',
+        health: 'Health',
+        wealth: 'Wealth',
+        education: 'Education',
+        family: 'Family',
+        locked: 'Locked',
+        previewSubtitle: 'Preview - Unlock for D9, D10, D60 charts',
+        unlockFullReport: 'Unlock Full Report',
+        downloadPdf: 'Download PDF',
+        securePayment: 'Secure payment · Instant unlock',
+        oneTimePayment: 'One-time payment · Instant unlock · PDF download included',
+        premiumPredictions: 'Premium Predictions',
+        availableInPremium: 'Available in Premium Report',
         planetaryPositions: 'Planetary Positions',
         houseCusps: 'House Cusps',
         dashaPeriods: 'Dasha Periods',
@@ -1334,6 +1370,24 @@ export const translations: Record<Language, Translations> = {
       sections: {
         generatedFor: '{name} के लिए बनाई गई',
         basicDetails: 'मूल कुंडली विवरण',
+        currentDasha: 'वर्तमान दशा',
+        keyYogas: 'प्रमुख योग',
+        detailedInsights: 'विस्तृत अंतर्दृष्टि',
+        panchangSnapshot: 'पंचांग स्नैपशॉट',
+        career: 'करियर',
+        marriage: 'विवाह',
+        health: 'स्वास्थ्य',
+        wealth: 'धन',
+        education: 'शिक्षा',
+        family: 'परिवार',
+        locked: 'लॉक किया गया',
+        previewSubtitle: 'पूर्वावलोकन - D9, D10, D60 चार्ट के लिए अनलॉक करें',
+        unlockFullReport: 'पूरी रिपोर्ट अनलॉक करें',
+        downloadPdf: 'पीडीएफ डाउनलोड करें',
+        securePayment: 'सुरक्षित भुगतान · तत्काल अनलॉक',
+        oneTimePayment: 'एक बार का भुगतान · तत्काल अनलॉक · पीडीएफ डाउनलोड शामिल',
+        premiumPredictions: 'प्रीमियम भविष्यवाणियाँ',
+        availableInPremium: 'प्रीमियम रिपोर्ट में उपलब्ध',
         planetaryPositions: 'ग्रहों की स्थिति',
         houseCusps: 'भाव कुंप',
         dashaPeriods: 'दशा अवधि',

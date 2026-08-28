@@ -868,7 +868,7 @@ export default function KundaliPage() {
                 <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
                   <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
                   <span className="truncate">
-                    {t('kundali.panchangSnapshot')}
+                    {t('kundali.sections.panchangSnapshot')}
                   </span>
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
@@ -958,7 +958,7 @@ export default function KundaliPage() {
                 <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
                   <span className="truncate">
-                    {t('kundali.premiumPredictions')}
+                    {t('kundali.sections.premiumPredictions')}
                   </span>
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -969,7 +969,7 @@ export default function KundaliPage() {
                     >
                       <Lock className="w-4 h-4 text-slate-400 dark:text-[#6B7280]" />
                       <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate w-full">
-                        {t(`kundali.${domainKey}`)}
+                        {t(`kundali.sections.${domainKey}`)}
                       </p>
                       <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">
                         {t('kundali.availableInPremium')}

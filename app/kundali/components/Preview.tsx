@@ -231,15 +231,15 @@ export default function Preview({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6" aria-label="Kundali preview">
+    <div className="space-y-4 sm:space-y-6" aria-label={t('kundali.sections.previewAriaLabel')}>
       {/* ── Header ── */}
       {showHeader && (
       <div className="text-center">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-1">
-          {t('preview.title')}
+          {t('kundali.sections.previewTitle')}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF] px-2">
-          A glimpse into your birth chart — unlock the full report below.
+          {t('kundali.sections.previewSubtitle')}
         </p>
       </div>
       )}
@@ -252,9 +252,9 @@ export default function Preview({
         title={t('kundali.sections.basicDetails')}
       >
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <DetailCell label={t('preview.lagna')} value={chart.lagna || '--'} />
-          <DetailCell label={t('preview.moonSign')} value={chart.moonSign || '--'} />
-          <DetailCell label={t('preview.sunSign')} value={chart.sunSign || '--'} />
+          <DetailCell label={t('kundali.sections.lagna')} value={chart.lagna || '--'} />
+          <DetailCell label={t('kundali.sections.moonSign')} value={chart.moonSign || '--'} />
+          <DetailCell label={t('kundali.sections.sunSign')} value={chart.sunSign || '--'} />
         </div>
       </Card>
 
@@ -263,16 +263,16 @@ export default function Preview({
         icon={
           <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
         }
-        title={t('preview.currentDasha')}
+        title={t('kundali.sections.currentDasha')}
       >
         {dasha ? (
         <div className="rounded-xl p-3 sm:p-4 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-sm sm:text-base font-semibold text-indigo-950 dark:text-[#F3F4F6]">
-              {stripHindiSuffix(dasha.lord) || '--'} Mahadasha
+              {stripHindiSuffix(dasha.lord) || '--'} {t('kundali.sections.mahadasha')}
             </p>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF] mt-0.5">
-              {dasha.theme || 'Current planetary period'}
+              {dasha.theme || t('kundali.sections.currentPlanetaryPeriod')}
             </p>
           </div>
           <span className="text-xs px-3 py-1.5 rounded-full bg-violet-100/70 dark:bg-violet-500/10 text-violet-700 dark:text-[#FFD166] whitespace-nowrap">
@@ -281,7 +281,7 @@ export default function Preview({
         </div>
         ) : (
           <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-            Dasha details available in the full report.
+            {t('kundali.sections.dashaInFullReport')}
           </p>
         )}
       </Card>
@@ -291,16 +291,16 @@ export default function Preview({
         icon={
           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
         }
-        title={t('preview.yogas')}
+        title={t('kundali.sections.keyYogas')}
       >
         {yogasLoading ? (
           <div className="flex items-center justify-center gap-2 py-6 text-slate-500 dark:text-[#9CA3AF]">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-xs sm:text-sm">Reading your chart…</span>
+            <span className="text-xs sm:text-sm">{t('kundali.sections.readingChart')}</span>
           </div>
         ) : yogas.length === 0 ? (
           <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-            No major yogas detected in your chart.
+            {t('kundali.sections.noYogasDetected')}
           </p>
         ) : (
           <div className="space-y-3 sm:space-y-4">
@@ -310,7 +310,7 @@ export default function Preview({
               className="rounded-xl p-3 sm:p-4 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10"
             >
               <p className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6]">
-                {stripHindiSuffix(yoga.name) || 'Planetary Yoga'}
+                {stripHindiSuffix(yoga.name) || t('kundali.sections.planetaryYoga')}
               </p>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-[#9CA3AF] mt-1 leading-relaxed">
                 {yoga.description || yoga.impact || ''}
@@ -326,7 +326,7 @@ export default function Preview({
         icon={
           <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
         }
-        title={t('preview.detailedInsights')}
+        title={t('kundali.sections.detailedInsights')}
       >
         <div className="space-y-4 sm:space-y-5">
           {DOMAIN_KEYS.map((domain) => (
@@ -336,7 +336,7 @@ export default function Preview({
             >
               <h3 className="text-sm font-semibold text-indigo-950 dark:text-[#F3F4F6] mb-2 flex items-center gap-2">
                 <Lock className="w-3.5 h-3.5 text-slate-400 dark:text-[#6B7280]" />
-                {domain.charAt(0).toUpperCase() + domain.slice(1)}
+                {t(`kundali.sections.${domain}`)}
               </h3>
               <div className="relative rounded-md overflow-hidden">
                 <div className="blur-[6px] select-none pointer-events-none text-sm sm:text-base text-slate-600 dark:text-[#9CA3AF] leading-relaxed">
@@ -345,7 +345,7 @@ export default function Preview({
                 <div className="absolute inset-0 bg-white/45 dark:bg-[#080811]/55 backdrop-blur-[2px] flex items-center justify-center gap-1.5">
                   <Lock className="w-4 h-4 text-slate-500 dark:text-[#9CA3AF]" />
                   <span className="text-xs font-medium text-slate-500 dark:text-[#9CA3AF]">
-                    Locked
+                    {t('kundali.sections.locked')}
                   </span>
                 </div>
               </div>
@@ -357,7 +357,7 @@ export default function Preview({
       {/* ── Unlock CTA (handled by KundaliPaywallBanner on the parent page) ── */}
       <div className="text-center pt-2">
         <p className="mt-3 text-[11px] text-slate-400 dark:text-[#6B7280]">
-          Secure payment · Instant unlock
+          {t('kundali.sections.securePayment')}
         </p>
       </div>
     </div>

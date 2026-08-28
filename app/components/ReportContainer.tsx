@@ -7,9 +7,8 @@ import PaymentButton from '@/app/components/PaymentButton';
 import DownloadReportButton from '@/app/components/DownloadReportButton';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 import { useApp } from '@/app/context/AppContext';
+import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import {
-  getUILabel,
-  getPdfGeneratingLabel,
   LANGUAGE_DISPLAY_NAMES,
   SUPPORTED_LOCALES,
   LocaleCode,
@@ -54,11 +53,8 @@ export default function ReportContainer({
   children,
 }: ReportContainerProps) {
   const { isPaid, markAsPaid, selectedLanguage, setSelectedLanguage } = useApp();
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const kundliReportLabel = getUILabel('kundliReport', selectedLanguage);
-  const downloadPdfLabel = getUILabel('downloadPdf', selectedLanguage);
-  const generatingLabel = getPdfGeneratingLabel(selectedLanguage);
 
   const handleDownload = async () => {
     if (!onDownload || isGenerating) return;
@@ -78,13 +74,13 @@ export default function ReportContainer({
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
           <h2 className="text-sm sm:text-base font-serif font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-violet-600 dark:text-[#FFD166] shrink-0" />
-            {title || kundliReportLabel}
+            {title || t('kundali.sections.kundliReport')}
           </h2>
 
           {/* Language select — triggers setSelectedLanguage; all labels re-render instantly */}
           <label className="flex items-center gap-1.5 shrink-0">
             <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-[#6B7280]" />
-            <span className="sr-only">Language</span>
+            <span className="sr-only">{t('kundali.sections.language')}</span>
             <select
               value={selectedLanguage}
               onChange={(e) => {
@@ -93,7 +89,7 @@ export default function ReportContainer({
                 setSelectedLanguage(e.target.value as LocaleCode);
               }}
               className="text-xs sm:text-sm font-medium rounded-lg border border-slate-300/70 dark:border-white/15 bg-white dark:bg-white/5 text-indigo-950 dark:text-[#F3F4F6] px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/40"
-              aria-label="Select language"
+              aria-label={t('kundali.sections.selectLanguage')}
             >
               {SUPPORTED_LOCALES.map((locale) => (
                 <option key={locale} value={locale}>
@@ -116,10 +112,10 @@ export default function ReportContainer({
           <div className="glass-card rounded-xl p-4 sm:p-6 relative overflow-hidden">
             <span className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-medium uppercase tracking-wide text-violet-700 dark:text-[#FFD166] bg-violet-100/60 dark:bg-[#FFD166]/10 border border-violet-200/60 dark:border-[#FFD166]/20 rounded-full px-2.5 py-1 mb-3">
               <Lock className="w-3 h-3" />
-              {getUILabel('previewLabel', selectedLanguage)}
+              {t('kundali.sections.preview')}
             </span>
             <p className="text-sm sm:text-base text-slate-600 dark:text-[#9CA3AF] leading-relaxed">
-              {getUILabel('birthDetails', selectedLanguage)} • {kundliReportLabel}
+              {t('kundali.sections.birthDetails')} • {t('kundali.sections.kundliReport')}
             </p>
 
             {/* Blur veil over the preview body */}
@@ -136,14 +132,14 @@ export default function ReportContainer({
               <Lock className="w-6 h-6 text-violet-700 dark:text-[#FFD166]" />
             </div>
             <h3 className="text-lg sm:text-xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
-              {getUILabel('unlockFullReport', selectedLanguage)}
+              {t('kundali.sections.unlockFullReport')}
             </h3>
             <ul className="max-w-xs mx-auto space-y-2 mb-4 text-left">
               {[
-                getUILabel('lockedFeaturePlanets', selectedLanguage),
-                getUILabel('lockedFeatureDosha', selectedLanguage),
-                getUILabel('lockedFeatureRemedies', selectedLanguage),
-                getUILabel('lockedFeatureMahadasha', selectedLanguage),
+                t('kundali.sections.lockedFeaturePlanets'),
+                t('kundali.sections.lockedFeatureDosha'),
+                t('kundali.sections.lockedFeatureRemedies'),
+                t('kundali.sections.lockedFeatureMahadasha'),
               ].map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
                   <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
@@ -152,7 +148,7 @@ export default function ReportContainer({
               ))}
             </ul>
             <p className="text-[11px] sm:text-xs text-slate-400 dark:text-[#6B7280] mb-4">
-              {getUILabel('unlockHint', selectedLanguage)}
+              {t('kundali.sections.unlockHint')}
             </p>
 
             <div className="max-w-sm mx-auto">
@@ -161,7 +157,7 @@ export default function ReportContainer({
                 userEmail={userEmail || 'guest@astroveda.com'}
                 userName={userName}
                 paymentType="kundli_report"
-                buttonText={`Pay ₹${price} — ${getUILabel('unlockFullReport', selectedLanguage)}`}
+                buttonText={`${t('kundali.sections.pay')} ₹${price} — ${t('kundali.sections.unlockFullReport')}`}
                 onSuccess={(details) => {
                   trackEvent('report_unlocked', { order_id: details.orderId });
                   // Post-payment handler → toggles isPaid = true globally & persists
@@ -190,7 +186,7 @@ export default function ReportContainer({
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                      {generatingLabel}
+                      {t('kundali.sections.generatingPdf')}
                       {downloadProgress && (
                         <span className="text-xs opacity-80">
                           {downloadProgress.current}/{downloadProgress.total}
@@ -200,7 +196,7 @@ export default function ReportContainer({
                   ) : (
                     <>
                       <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {downloadPdfLabel}
+                      {t('kundali.sections.downloadPdf')}
                     </>
                   )}
                 </button>
