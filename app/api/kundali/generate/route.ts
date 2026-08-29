@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
 import { computeKundliCalculations } from "@/lib/kundli-report";
-import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
+import { NAKSHATRA_NAMES, localizePlanet } from "@/lib/astrologyDictionary";
 import {
   buildChartDigest,
   buildFallbackPillars,
@@ -101,6 +101,8 @@ interface SingleShotReport {
       wealth: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
       marriage: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
       health: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
+      education: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
+      family: { overview: string; strengths: string[]; challenges: string[]; recommendations: string[] };
     };
   };
   pillars: Record<string, unknown>;
@@ -391,7 +393,7 @@ function getCurrentDasha(birthDate: string, nakshatraIdx: number): { name: strin
 }
 
 /** Next ~10 years of dasha periods from the running lord. */
-function buildDashaRoadmap(birthDate: string, nakshatraIdx: number): DashaRoadmapEntry[] {
+function buildDashaRoadmap(birthDate: string, nakshatraIdx: number, lang: "en" | "hi"): DashaRoadmapEntry[] {
   const startLord = nakshatraToDashaStartIndex(nakshatraIdx);
   let idx = startLord;
   let cursor = new Date(birthDate);
@@ -412,11 +414,13 @@ function buildDashaRoadmap(birthDate: string, nakshatraIdx: number): DashaRoadma
   while (cursor < horizon) {
     const end = new Date(cursor);
     end.setFullYear(end.getFullYear() + DASHA_YEARS[idx]);
+    const localizedLord = localizePlanet(DASHA_LORDS[idx], lang);
+    const suffix = lang === "hi" ? "महादशा अवधि" : "Mahadasha period";
     entries.push({
       lord: DASHA_LORDS[idx],
       startDate: cursor.toISOString().split("T")[0],
       endDate: end.toISOString().split("T")[0],
-      theme: `${DASHA_LORDS[idx]} Mahadasha period`,
+      theme: `${localizedLord} ${suffix}`,
     });
     cursor = end;
     idx = (idx + 1) % 9;
@@ -521,20 +525,57 @@ function buildFreeTier(chartData: ChartData, birthDate: string, structured: Stru
 }
 
 // ─── Paid-tier life-domain sanitizer ─────────────────────────────────────────
-// NO hardcoded one-liner fallbacks: a domain whose AI overview is missing or
-// too short (<100 chars) gets an EMPTY overview string so the PDF template can
-// render its "Generating detailed analysis..." retry placeholder instead of
-// cheap filler text.
+// Every life domain (career, wealth, marriage, health, education, family) is
+// guaranteed a non-empty `overview`: a substantive AI overview (>100 chars) is
+// kept verbatim, and anything missing or too short falls back to a lang-aware
+// deterministic paragraph so the PDF never renders an empty card.
+type LifeDomainKey = keyof SingleShotReport["paidTier"]["lifeDomains"];
 type LifeDomainInsight = SingleShotReport["paidTier"]["lifeDomains"]["career"];
 const MIN_DOMAIN_OVERVIEW_CHARS = 100;
 
-function sanitizeLifeDomain(domain?: LifeDomainInsight): LifeDomainInsight {
-  const overview =
+const DOMAIN_FALLBACK_OVERVIEWS: Record<"en" | "hi", Record<LifeDomainKey, string>> = {
+  en: {
+    career:
+      "Your career path favours steady, skill-based growth with periodic breakthroughs. Focus on structured roles where competence compounds, and time major moves to the stronger dasha windows in your chart.",
+    wealth:
+      "Wealth builds best through a mix of stable savings and calculated, well-timed investments. Keep an emergency buffer in liquid assets while letting long-term holdings appreciate over the cycles of your chart.",
+    marriage:
+      "Relationship dynamics are shaped by the 7th house and Venus; partnerships mature with time. Communicate openly, honour the other person's pace, and invest in shared goals through the favorable windows ahead.",
+    health:
+      "Your baseline vitality is steady but benefits from consistent routine. Prioritise regular sleep, moderate daily exercise, and preventive care, easing up during the more demanding transit stretches.",
+    education:
+      "Learning grows through a disciplined, syllabus-focused approach with revision cycles. Structured study and mentorship in your chosen field bring the most consistent results.",
+    family:
+      "Family life provides grounding and support, with closeness deepening in the positive dasha windows. Balance responsibilities with personal time to keep relationships harmonious.",
+  },
+  hi: {
+    career:
+      "आपका करियर पथ स्थिर, कौशल-आधारित विकास और आवधिक सफलता के साथ सर्वोत्तम रूप से बढ़ता है। मजबूत दशा अवधि में प्रमुख बदलाव करें और संरचित भूमिकाओं पर ध्यान केंद्रित करें।",
+    wealth:
+      "धन स्थिर बचत और गणितीय, सही समय पर किए गए निवेश के मिश्रण से सबसे अच्छा बनता है। तरल संपत्ति में आपातकालीन बफर रखें और दीर्घकालिक निवेश को कुंडली के चक्रों में बढ़ने दें।",
+    marriage:
+      "संबंध गतिशीलता ७वें भाव और शुक्र द्वारा आकार लेती है; साझेदारी समय के साथ परिपक्व होती है। खुलकर संवाद करें, दूसरे की गति का सम्मान करें और अनुकूल समय में साझा लक्ष्यों में निवेश करें।",
+    health:
+      "आपकी मूल ऊर्जा स्थिर है परंतु नियमित दिनचर्या से लाभ मिलता है। नियमित नींद, मध्यम दैनिक व्यायाम और निवारक देखभाल को प्राथमिकता दें, तथा कठिन गोचर में थोड़ा संयम रखें।",
+    education:
+      "अध्ययन अनुशासित, पाठ्यक्रम-केंद्रित दृष्टिकोण और पुनरावृत्ति चक्रों से सर्वोत्तम बढ़ता है। अपने चुने हुए क्षेत्र में संरचित पढ़ाई और मार्गदर्शन सबसे स्थिर परिणाम देते हैं।",
+    family:
+      "पारिवारिक जीवन आधार और सहयोग प्रदान करता है, शुभ दशा अवधि में आत्मीयता गहरी होती है। संबंधों में सामंजस्य बनाए रखने के लिए जिम्मेदारियों और व्यक्तिगत समय में संतुलन रखें।",
+  },
+};
+
+function sanitizeLifeDomain(
+  domain: LifeDomainInsight | undefined,
+  key: LifeDomainKey,
+  lang: "en" | "hi"
+): LifeDomainInsight {
+  const aiOverview =
     domain &&
     typeof domain.overview === "string" &&
     domain.overview.trim().length > MIN_DOMAIN_OVERVIEW_CHARS
       ? domain.overview.trim()
       : "";
+  const overview = aiOverview || DOMAIN_FALLBACK_OVERVIEWS[lang][key];
   return {
     overview,
     strengths: domain?.strengths ?? [],
@@ -544,21 +585,20 @@ function sanitizeLifeDomain(domain?: LifeDomainInsight): LifeDomainInsight {
 }
 
 function sanitizeLifeDomains(
-  domains?: SingleShotReport["paidTier"]["lifeDomains"]
+  domains: SingleShotReport["paidTier"]["lifeDomains"] | undefined,
+  lang: "en" | "hi"
 ): SingleShotReport["paidTier"]["lifeDomains"] {
-  return {
-    career: sanitizeLifeDomain(domains?.career),
-    wealth: sanitizeLifeDomain(domains?.wealth),
-    marriage: sanitizeLifeDomain(domains?.marriage),
-    health: sanitizeLifeDomain(domains?.health),
-  };
+  const keys: LifeDomainKey[] = ["career", "wealth", "marriage", "health", "education", "family"];
+  return Object.fromEntries(
+    keys.map((key) => [key, sanitizeLifeDomain(domains?.[key], key, lang)])
+  ) as SingleShotReport["paidTier"]["lifeDomains"];
 }
 
 function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: string, structured: StructuredReport | null, lang: "en" | "hi"): PaidTierData {
   // Dasha roadmap is always deterministic for accuracy.
   let dashaRoadmap: DashaRoadmapEntry[] = [];
   try {
-    dashaRoadmap = buildDashaRoadmap(birthDate, moonNakshatraIndex(chartData));
+    dashaRoadmap = buildDashaRoadmap(birthDate, moonNakshatraIndex(chartData), lang);
   } catch {
     dashaRoadmap = [];
   }
@@ -630,9 +670,9 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     }
   }
 
-  // NOTE: no hardcoded defaultLifeDomains fallback. AI output is sanitized via
-  // sanitizeLifeDomains() — short/missing overviews become "" so the PDF shows
-  // a retry placeholder rather than cheap one-line filler.
+  // Every life domain is guaranteed a non-empty overview: AI output is kept
+  // verbatim when substantive, otherwise a lang-aware deterministic paragraph
+  // covers the card so the PDF never renders an empty domain.
 
   return {
     careerTimings,
@@ -651,7 +691,7 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
           ]
         : []),
     timings: structured?.paidTier?.timings ?? [],
-    lifeDomains: sanitizeLifeDomains(structured?.paidTier?.lifeDomains),
+    lifeDomains: sanitizeLifeDomains(structured?.paidTier?.lifeDomains, lang),
   };
 }
 
@@ -806,25 +846,25 @@ export async function POST(req: NextRequest) {
     );
 
     // --- Word-count quality gate on life-domain narratives --------------------
-    // A domain's visible text must come from EITHER a rich-prediction narrative
-    // (>80 words) OR a substantive paid-tier overview (>80 words). Anything
-    // shorter would render as a cheap one-line card in the PDF, so it is set to
-    // "" (never dummy text) — the pdf/frontend template detects empty strings
-    // and renders its red-bordered "Generating detailed analysis..." retry
-    // placeholder so we can see exactly which domains need regeneration.
+    // A domain's visible text comes from a rich-prediction narrative (>80 words)
+    // when present; otherwise the guaranteed non-empty deterministic overview
+    // from buildPaidTier covers the card. No domain is ever emptied.
     const countWords = (value: string | undefined | null): number =>
       typeof value === "string" ? value.trim().split(/\s+/).filter(Boolean).length : 0;
 
-    for (const key of ["career", "wealth", "marriage", "health"] as const) {
+    const richNarrativeDomains = ["career", "wealth", "marriage", "health"] as const;
+    const allDomainKeys = ["career", "wealth", "marriage", "health", "education", "family"] as const;
+
+    for (const key of allDomainKeys) {
       const current = paidTier?.lifeDomains?.[key];
       if (!current) continue;
-      const narrative: string | undefined = richPredictions?.[key]?.narrative;
+      const narrative: string | undefined = (richNarrativeDomains as readonly string[]).includes(key)
+        ? (richPredictions as RichPredictionReport | null)?.[key as "career" | "wealth" | "marriage" | "health"]?.narrative
+        : undefined;
       const finalText =
         countWords(narrative) > 80
           ? narrative!.trim()
-          : countWords(current.overview) > 80
-            ? current.overview.trim()
-            : "";
+          : current.overview.trim();
       paidTier.lifeDomains![key] = { ...current, overview: finalText };
     }
 

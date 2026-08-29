@@ -122,6 +122,8 @@ const EMPTY_PAID_TIER: PaidTierData = {
     wealth: { overview: '', strengths: [], challenges: [], recommendations: [] },
     marriage: { overview: '', strengths: [], challenges: [], recommendations: [] },
     health: { overview: '', strengths: [], challenges: [], recommendations: [] },
+    education: { overview: '', strengths: [], challenges: [], recommendations: [] },
+    family: { overview: '', strengths: [], challenges: [], recommendations: [] },
   },
 };
 

@@ -124,6 +124,8 @@ export interface LifeDomains {
   wealth: DomainInsight;
   marriage: DomainInsight;
   health: DomainInsight;
+  education: DomainInsight;
+  family: DomainInsight;
 }
 
 export interface ReportPage {

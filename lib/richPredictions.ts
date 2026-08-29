@@ -72,6 +72,10 @@ export function applyRichPredictions(
     marriage: enrichInsight(paidTier.lifeDomains?.marriage, marriageNarrative, marriageMs),
     wealth: enrichInsight(paidTier.lifeDomains?.wealth, wealthNarrative, wealthMs),
     health: enrichInsight(paidTier.lifeDomains?.health, healthNarrative, []),
+    // No rich narratives exist for these domains — pass the guaranteed
+    // non-empty deterministic overviews through unchanged.
+    education: paidTier.lifeDomains?.education,
+    family: paidTier.lifeDomains?.family,
   };
 
   return {
