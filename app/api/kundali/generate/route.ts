@@ -3,6 +3,7 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
 import { computeKundliCalculations } from "@/lib/kundli-report";
 import { NAKSHATRA_NAMES, localizePlanet } from "@/lib/astrologyDictionary";
+import { getLocalizedYogaName, getLocalizedYogaDescription, getLocalizedDoshaName, getLocalizedDoshaDescription, getDefaultDomainOverview } from "@/lib/localizedData";
 import {
   buildChartDigest,
   buildFallbackPillars,
@@ -559,6 +560,11 @@ function sanitizeLifeDomains(
   };
 }
 
+/** True when an overview has enough text to render meaningfully. */
+function isUsableOverview(value: string | undefined | null): boolean {
+  return typeof value === "string" && value.trim().length >= 20;
+}
+
 function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: string, structured: StructuredReport | null, lang: "en" | "hi"): PaidTierData {
   // Dasha roadmap is always deterministic for accuracy.
   let dashaRoadmap: DashaRoadmapEntry[] = [];
@@ -568,72 +574,72 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     dashaRoadmap = [];
   }
 
-  // Derive a couple of doshas from hard chart facts.
-  const doshas: DoshaItem[] = structured?.paidTier?.doshas ?? [];
-  const mars = chartData.planets?.find((p) => p.name === "Mars");
-  if (mars && [1, 4, 7, 8, 12].includes(mars.house)) {
-    doshas.push({
-      name: lang === "hi" ? "मांगलिक (कुज) दोष" : "Manglik (Kuja) Dosha",
-      description: lang === "hi" ? "मंगल एक संवेदनशील भाव में स्थित है, जो संबंधों में तीव्रता का संकेत देता है।" : "Mars occupies a sensitive house, traditionally indicating intensity in relationships.",
-      severity: "moderate",
-      isNeutralized: false,
-    });
-  }
   const moon = chartData.planets?.find((p) => p.name === "Moon");
   const jupiter = chartData.planets?.find((p) => p.name === "Jupiter");
+
+  // Yogas are built deterministically from chart facts only — AI-provided
+  // yogas are ignored so every report is localized and reproducible.
+  const yogas: YogaItem[] = [];
   if (moon && jupiter) {
     const diff = ((jupiter.house - moon.house) % 12 + 12) % 12;
     if ([0, 3, 6, 9].includes(diff)) {
-      doshas.push({
-        name: lang === "hi" ? "गजकेसरी योग" : "Gajakesari Yoga",
-        description: lang === "hi" ? "गुरु चंद्र के परस्पर केंद्र में है, एक क्लासिक शुभ संयोग।" : "Jupiter sits in a kendra from the Moon, a classic auspicious combination.",
-        severity: "low",
-        isNeutralized: true,
-      });
-    }
-  }
-
-  const careerTimings: CareerTimings =
-    structured?.paidTier?.careerTimings || {
-      overview:
-        interpretation.slice(0, 240) ||
-        (lang === "hi" ? "आपका करियर पथ स्थिर, कौशल-आधारित विकास और आवधिक ब्रेकथ्रू के साथ पसंद करता है।" : "Your career path favours steady, skill-based growth with periodic breakthroughs."),
-      favorable: [],
-      challenging: [],
-    };
-
-  const marriageDynamics: MarriageDynamics =
-    structured?.paidTier?.marriageDynamics || {
-      overview: lang === "hi" ? "संबंध गतिशीलता ७वें भाव और शुक्र द्वारा आकार लेती है; साझेदारी समय के साथ परिपक्व होती है।" : "Relationship dynamics are shaped by the 7th house and Venus; partnerships mature with time.",
-      strengths: [],
-      challenges: [],
-      favorable: [],
-    };
-
-  const wealthAllocation: WealthAllocation =
-    structured?.paidTier?.wealthAllocation || {
-      overview: lang === "hi" ? "धन स्थिर बचत और गणितीय, अच्छे समय वाले निवेश के मिश्रण से सबसे अच्छा बनता है।" : "Wealth builds best through a mix of stable savings and calculated, well-timed investments.",
-      allocation: [
-        { category: lang === "hi" ? "बचत एवं स्थिर आय" : "Savings & Fixed Income", percentage: 40, note: lang === "hi" ? "सुरक्षा का आधार" : "Foundation of security" },
-        { category: lang === "hi" ? "रियल एस्टेट / संपत्ति" : "Real Estate / Property", percentage: 30, note: lang === "hi" ? "दीर्घकालिक बढ़ती संपत्ति" : "Long-term appreciating asset" },
-        { category: lang === "hi" ? "इक्विटीज / विकास" : "Equities / Growth", percentage: 20, note: lang === "hi" ? "धन गुणा" : "Wealth multiplication" },
-        { category: lang === "hi" ? "तरल / आपातकालीन" : "Liquid / Emergency", percentage: 10, note: lang === "hi" ? "लचीलापन बफर" : "Flexibility buffer" },
-      ],
-    };
-
-  const yogas: YogaItem[] = structured?.paidTier?.yogas ?? [];
-  if (!yogas.length && moon && jupiter) {
-    const diff = ((jupiter.house - moon.house) % 12 + 12) % 12;
-    if ([0, 3, 6, 9].includes(diff)) {
+      const description = getLocalizedYogaDescription("Gajakesari Yoga", lang);
       yogas.push({
-        name: lang === "hi" ? "गजकेसरी योग" : "Gajakesari Yoga",
+        name: getLocalizedYogaName("Gajakesari Yoga", lang),
         presence: true,
-        impact: lang === "hi" ? "बुद्धि, धन और प्रसिद्धि लाता है।" : "Brings wisdom, wealth, and fame.",
-        description: lang === "hi" ? "चंद्र और गुरु के परस्पर केंद्र में — बुद्धि, धन और प्रसिद्धि प्राप्त कराता है।" : "Moon and Jupiter in mutual kendras — brings wisdom, wealth, and fame.",
+        impact: description,
+        description,
         benefit: lang === "hi" ? "शक्तिशाली" : "Strong",
       });
     }
   }
+
+  // Doshas are built deterministically from chart facts only — AI-provided
+  // doshas are ignored for the same localization guarantee.
+  const doshas: DoshaItem[] = [];
+  const KUJA_HOUSES = [1, 4, 7, 8, 12];
+  const mars = chartData.planets?.find((p) => p.name === "Mars");
+  if (mars && KUJA_HOUSES.includes(mars.house)) {
+    const afflictedHouses = KUJA_HOUSES.filter((h) => h === mars.house).length;
+    doshas.push({
+      name: getLocalizedDoshaName("Manglik (Kuja) Dosha", lang),
+      description: getLocalizedDoshaDescription("Manglik (Kuja) Dosha", lang),
+      severity: afflictedHouses >= 2 ? "high" : "moderate",
+      isNeutralized: false,
+    });
+  }
+
+  const rawCareerTimings = structured?.paidTier?.careerTimings;
+  const careerTimings: CareerTimings = {
+    overview: rawCareerTimings && isUsableOverview(rawCareerTimings.overview)
+      ? rawCareerTimings.overview.trim()
+      : getDefaultDomainOverview("career", lang),
+    favorable: rawCareerTimings?.favorable ?? [],
+    challenging: rawCareerTimings?.challenging ?? [],
+  };
+
+  const rawMarriageDynamics = structured?.paidTier?.marriageDynamics;
+  const marriageDynamics: MarriageDynamics = {
+    overview: rawMarriageDynamics && isUsableOverview(rawMarriageDynamics.overview)
+      ? rawMarriageDynamics.overview.trim()
+      : getDefaultDomainOverview("marriage", lang),
+    strengths: rawMarriageDynamics?.strengths ?? [],
+    challenges: rawMarriageDynamics?.challenges ?? [],
+    favorable: rawMarriageDynamics?.favorable ?? [],
+  };
+
+  const rawWealthAllocation = structured?.paidTier?.wealthAllocation;
+  const wealthAllocation: WealthAllocation = {
+    overview: rawWealthAllocation && isUsableOverview(rawWealthAllocation.overview)
+      ? rawWealthAllocation.overview.trim()
+      : getDefaultDomainOverview("wealth", lang),
+    allocation: rawWealthAllocation?.allocation ?? [
+      { category: lang === "hi" ? "बचत एवं स्थिर आय" : "Savings & Fixed Income", percentage: 40, note: lang === "hi" ? "सुरक्षा का आधार" : "Foundation of security" },
+      { category: lang === "hi" ? "रियल एस्टेट / संपत्ति" : "Real Estate / Property", percentage: 30, note: lang === "hi" ? "दीर्घकालिक बढ़ती संपत्ति" : "Long-term appreciating asset" },
+      { category: lang === "hi" ? "इक्विटीज / विकास" : "Equities / Growth", percentage: 20, note: lang === "hi" ? "धन गुणा" : "Wealth multiplication" },
+      { category: lang === "hi" ? "तरल / आपातकालीन" : "Liquid / Emergency", percentage: 10, note: lang === "hi" ? "लचीलापन बफर" : "Flexibility buffer" },
+    ],
+  };
 
   const remedies = structured?.paidTier?.remedies ?? [];
   const fullBreakdown =
@@ -646,41 +652,25 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
       : []);
   const timings = structured?.paidTier?.timings ?? [];
 
-  const paidTier: PaidTierData = {
-    careerTimings,
-    marriageDynamics,
-    wealthAllocation,
-    dashaRoadmap,
-    yogas,
-    doshas,
-    remedies,
-    fullBreakdown,
-    timings,
-    lifeDomains: {
-      career: { overview: "", strengths: [], challenges: [], recommendations: [] },
-      wealth: { overview: "", strengths: [], challenges: [], recommendations: [] },
-      marriage: { overview: "", strengths: [], challenges: [], recommendations: [] },
-      health: { overview: "", strengths: [], challenges: [], recommendations: [] },
-      education: { overview: "", strengths: [], challenges: [], recommendations: [] },
-      family: { overview: "", strengths: [], challenges: [], recommendations: [] },
-    },
-  };
-
+  // Guarantee every life domain renders with a usable, localized overview and
+  // well-formed arrays.
   const domains = sanitizeLifeDomains(structured?.paidTier?.lifeDomains);
+  for (const key of ["career", "wealth", "marriage", "health", "education", "family"] as const) {
+    const current = domains[key];
+    domains[key] = {
+      overview: isUsableOverview(current.overview) ? current.overview : getDefaultDomainOverview(key, lang),
+      strengths: current.strengths ?? [],
+      challenges: current.challenges ?? [],
+      recommendations: current.recommendations ?? [],
+    };
+  }
 
-  const defaultOverview = (domain: string) =>
-    lang === "hi"
-      ? `${domain} विश्लेषण विस्तृत रिपोर्ट में शामिल है। कृपया प्रीमियम संस्करण अपग्रेड करें।`
-      : `Detailed ${domain} analysis is included in the premium report. Please upgrade to the premium version.`;
-
-  if (!domains.career?.overview) domains.career = { overview: defaultOverview("career"), strengths: [], challenges: [], recommendations: [] };
-  if (!domains.wealth?.overview) domains.wealth = { overview: defaultOverview("wealth"), strengths: [], challenges: [], recommendations: [] };
-  if (!domains.marriage?.overview) domains.marriage = { overview: defaultOverview("marriage"), strengths: [], challenges: [], recommendations: [] };
-  if (!domains.health?.overview) domains.health = { overview: defaultOverview("health"), strengths: [], challenges: [], recommendations: [] };
-  if (!domains.education?.overview) domains.education = { overview: defaultOverview("education"), strengths: [], challenges: [], recommendations: [] };
-  if (!domains.family?.overview) domains.family = { overview: defaultOverview("family"), strengths: [], challenges: [], recommendations: [] };
-
-  paidTier.lifeDomains = domains;
+  console.log(
+    `[kundali/generate] localized yogas (${lang}):`,
+    JSON.stringify(yogas.map((y) => ({ name: y.name, benefit: y.benefit }))),
+    "| localized doshas:",
+    JSON.stringify(doshas.map((d) => ({ name: d.name, severity: d.severity })))
+  );
 
   return {
     careerTimings,
@@ -692,7 +682,7 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     remedies,
     fullBreakdown,
     timings,
-    lifeDomains: paidTier.lifeDomains,
+    lifeDomains: domains,
   };
 }
 

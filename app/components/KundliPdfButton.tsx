@@ -7,6 +7,7 @@ import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib
 import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
 import type { KundaliHistoryEntry } from '@/types/user';
 import { useApp } from '@/app/context/AppContext';
+import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { useToast } from '@/app/components/ToastProvider';
 import { trackEvent } from '@/lib/analytics';
 
@@ -33,7 +34,7 @@ interface ResolvedPayload {
   pillars?: ReportNarrative[];
 }
 
-const DEFAULT_LABEL = 'Download Full 25-Page Kundli';
+const DEFAULT_LABEL_KEY = 'kundali.sections.downloadFullKundli';
 
 /** Strip a bilingual sign value like "Aquarius (कुंभ)" down to its first part. */
 function cleanAstroValue(value: unknown): string {
@@ -340,6 +341,7 @@ export default function KundliPdfButton({
 }: KundliPdfButtonProps) {
   const { unlockToken } = useApp();
   const toast = useToast();
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   const [phase, setPhase] = useState<'idle' | 'rebuilding' | 'rendering'>('idle');
   const [error, setError] = useState('');
@@ -356,9 +358,7 @@ export default function KundliPdfButton({
 
       try {
         if (!unlockToken) {
-          setError(
-            'This download is locked — complete payment to unlock the full report. / यह डाउनलोड लॉक है — पूरी रिपोर्ट अनलॉक करने के लिए भुगतान पूर्ण करें।'
-          );
+          setError(t('kundali.sections.pdfDownloadLocked'));
           return;
         }
 
@@ -392,19 +392,14 @@ export default function KundliPdfButton({
           });
           trackEvent('kundli_pdf_server_success', { lang: language });
           setModalOpen(false);
-          toast.success(
-            language === 'hi'
-              ? 'पूर्ण कुंडली PDF डाउनलोड हो गई है! 🎉'
-              : 'Your full Kundli PDF has been downloaded! 🎉'
-          );
+          toast.success(t('kundali.sections.pdfDownloadSuccess'));
         } catch (err) {
           const code = err instanceof Error ? err.message : 'UNKNOWN';
           if (code === 'PDF_SERVICE_402' || code === 'PDF_SERVICE_401' || code === 'PDF_SERVICE_403') {
             // Server refused the payment — never fall back to the client-side
             // print leak; surface the lock and ask for payment instead.
             trackEvent('kundli_pdf_paywall_blocked', { lang: language });
-            const paywallMsg =
-              'This report is locked. Complete payment to unlock the full PDF. / यह रिपोर्ट लॉक है — पूर्ण PDF अनलॉक करने के लिए भुगतान करें।';
+            const paywallMsg = t('kundali.sections.pdfReportLocked');
             setError(paywallMsg);
             toast.error(paywallMsg);
           } else {
@@ -412,37 +407,31 @@ export default function KundliPdfButton({
             trackEvent('kundli_pdf_server_failed', { lang: language });
             printReportHtml(generateReportHtml(payload.reportData, language));
             setModalOpen(false);
-            toast.error(
-              language === 'hi'
-                ? 'PDF सर्वर विफल — प्रिंट विकल्प खोला गया।'
-                : 'PDF server failed — opened the print fallback.'
-            );
+            toast.error(t('kundali.sections.pdfServerFailed'));
           }
         }
       } catch (err) {
         const code = err instanceof Error ? err.message : 'UNKNOWN';
         if (code === 'NO_SOURCE') {
-          setError('Nothing to export yet — generate a kundali first. / पहले कुंडली बनाएं।');
+          setError(t('kundali.sections.pdfNothingToExport'));
         } else if (code === 'GENERATE_FAILED') {
-          setError(
-            'Could not rebuild this chart (missing coordinates?). Open it on the Kundali page and try again. / कुंडली दोबारा बनाकर प्रयास करें।'
-          );
+          setError(t('kundali.sections.pdfRebuildFailed'));
         } else {
-          setError('Export failed. Please try again. / निर्यात विफल। कृपया पुनः प्रयास करें।');
+          setError(t('kundali.sections.pdfExportFailed'));
         }
       } finally {
         setPhase('idle');
         inFlight.current = false;
       }
     },
-    [reportData, pillars, historyEntry, unlockToken, toast]
+    [reportData, pillars, historyEntry, unlockToken, toast, t]
   );
 
-  const displayLabel = label || DEFAULT_LABEL;
+  const displayLabel = label || t(DEFAULT_LABEL_KEY);
   const busyMessage =
     phase === 'rebuilding'
-      ? 'Rebuilding your full chart… / कुंडली तैयार हो रही है…'
-      : 'Rendering your 25-page PDF… / PDF बनाई जा रही है…';
+      ? t('kundali.sections.pdfRebuilding')
+      : t('kundali.sections.pdfRendering');
 
   return (
     <>
@@ -458,7 +447,7 @@ export default function KundliPdfButton({
             ? 'inline-flex items-center gap-1.5 rounded-lg border border-amber-300/70 bg-white px-3 py-2 text-xs font-semibold text-amber-800 transition hover:border-amber-500 hover:bg-amber-50 disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-[#FFD166] dark:hover:bg-white/10'
             : 'flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all disabled:opacity-60 disabled:cursor-not-allowed'
         }
-        aria-label={`${displayLabel} (choose English or Hindi)`}
+        aria-label={`${displayLabel} — ${t('kundali.sections.chooseLanguage')}`}
       >
         {busy ? (
           <Loader2 className={compact ? 'h-3.5 w-3.5 animate-spin' : 'h-4 w-4 sm:h-5 sm:w-5 animate-spin'} />

@@ -1,21 +1,18 @@
 'use client';
 
-import { useLanguage } from '@/app/context/LanguageContext';
+import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { motion } from 'framer-motion';
 import { Sparkles, Star } from 'lucide-react';
 import Link from 'next/link';
 import KundaliChart from './KundaliChart';
 
 export default function KundaliPreview() {
-  const { language } = useLanguage();
+  const { t } = useTranslation();
 
-  const title = language === 'en' ? 'Your Kundali Awaits' : 'आपकी कुंडली इंतज़ार कर रही है';
-  const subtitle =
-    language === 'en'
-      ? 'Discover your planetary positions, dasha periods, and auspicious yogas.'
-      : 'अपनी ग्रहों की स्थिति, दशा काल और शुभ योगों की खोज करें।';
-  const cta = language === 'en' ? 'Generate Your Full Kundali' : 'अपनी पूरी कुंडली बनाएं';
-  const hint = language === 'en' ? 'Free • Takes 30 seconds' : 'मुफ्त • 30 सेकंड लगते हैं';
+  const title = t('preview.kundaliAwaitsTitle');
+  const subtitle = t('preview.kundaliAwaitsSubtitle');
+  const cta = t('preview.kundaliAwaitsCta');
+  const hint = t('preview.kundaliAwaitsHint');
 
   return (
     <section className="w-full py-20 px-4 md:px-8">
@@ -33,7 +30,7 @@ export default function KundaliPreview() {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-[#FFD166]/10 border border-amber-200/60 dark:border-[#FFD166]/20 mb-4">
                 <Star className="w-3 h-3 text-amber-700 dark:text-[#FFD166]" />
                 <span className="text-xs font-medium text-amber-700 dark:text-[#FFD166]">
-                  {language === 'en' ? 'Kundali Generator' : 'कुंडली जनरेटर'}
+                  {t('preview.kundaliAwaitsBadge')}
                 </span>
               </div>
 
@@ -46,10 +43,10 @@ export default function KundaliPreview() {
 
               <ul className="space-y-3 mb-8">
                 {[
-                  language === 'en' ? 'Planetary positions (Graha Sthiti)' : 'ग्रहों की स्थिति (ग्रह स्थिति)',
-                  language === 'en' ? 'Dasha & Antardasha periods' : 'दशा और अंतर्दशा काल',
-                  language === 'en' ? 'Auspicious yogas & doshas' : 'शुभ योग और दोष',
-                  language === 'en' ? 'PDF download & share' : 'PDF डाउनलोड और साझा करें',
+                  t('preview.kundaliAwaitsFeaturePlanets'),
+                  t('preview.kundaliAwaitsFeatureDasha'),
+                  t('preview.kundaliAwaitsFeatureYogas'),
+                  t('preview.kundaliAwaitsFeaturePdf'),
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm text-amber-800/70 dark:text-[#9CA3AF]">
                     <div className="w-5 h-5 rounded-full bg-amber-50 dark:bg-[#FFD166]/20 flex items-center justify-center flex-shrink-0">

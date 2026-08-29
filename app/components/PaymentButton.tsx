@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Script from "next/script";
 import { Loader2, Lock, AlertCircle } from "lucide-react";
+import { useTranslation } from "@/app/lib/i18n/useTranslation";
 
 export interface PaymentSuccessDetails {
   orderId: string;
@@ -30,7 +31,7 @@ export default function PaymentButton({
   userEmail,
   userName = "User",
   paymentType = "kundli_report",
-  buttonText = "Pay Rs. 49",
+  buttonText,
   onSuccess,
   onFailure,
   className = "",
@@ -38,6 +39,7 @@ export default function PaymentButton({
   verifyEndpoint = "/api/payment/verify",
   disabled = false,
 }: PaymentButtonProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,12 +61,12 @@ export default function PaymentButton({
     setError(null);
     
     if (!scriptLoaded) {
-      setError("Payment system is still loading. Please wait a moment and try again.");
+      setError(t("payment.messages.loadingSystem"));
       return;
     }
 
     if (!userEmail) {
-      setError("Please enter your email first.");
+      setError(t("payment.messages.enterEmail"));
       return;
     }
 
@@ -128,13 +130,13 @@ export default function PaymentButton({
                 unlockToken: verifyData.unlockToken as string | undefined,
               });
             } else {
-              setError(verifyData.error || "Payment verification failed");
+              setError(verifyData.error || t("payment.messages.verificationFailed"));
               setIsLoading(false);
               onFailure?.();
             }
           } catch (error: any) {
             console.error("Payment verification error:", error);
-            setError("Payment verification failed: " + error.message);
+            setError(t("payment.messages.verificationFailed") + ": " + error.message);
             setIsLoading(false);
             onFailure?.();
           }
@@ -160,7 +162,7 @@ export default function PaymentButton({
       
       razorpay.on("payment.failed", function (response: any) {
         console.error("Payment failed:", response.error);
-        setError(response.error?.description || "Payment failed. Please try again.");
+        setError(response.error?.description || t("errors.api.generic"));
         setIsLoading(false);
         onFailure?.();
       });
@@ -168,7 +170,7 @@ export default function PaymentButton({
       razorpay.open();
     } catch (error: any) {
       console.error("Payment error:", error);
-      setError(error.message || "Something went wrong. Please try again.");
+      setError(error.message || t("errors.api.generic"));
       setIsLoading(false);
       onFailure?.();
     }
@@ -185,7 +187,7 @@ export default function PaymentButton({
         }}
         onError={() => {
           console.error('Failed to load Razorpay script');
-          setError("Failed to load payment system. Please refresh the page.");
+          setError(t("payment.messages.loadFailed"));
         }}
       />
       
@@ -205,19 +207,19 @@ export default function PaymentButton({
           {isLoading ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Processing...</span>
+              <span>{t("payment.messages.processing")}</span>
             </>
           ) : (
             <>
               <Lock className="h-4 w-4" />
-              <span>{buttonText}</span>
+              <span>{buttonText || t("payment.buttons.payNow")}</span>
             </>
           )}
         </button>
         
         {!scriptLoaded && !error && (
           <p className="mt-2 text-center text-xs text-slate-400 dark:text-[#6B7280]">
-            Loading payment system...
+            {t("payment.messages.loading")}
           </p>
         )}
       </div>

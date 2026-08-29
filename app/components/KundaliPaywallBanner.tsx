@@ -5,6 +5,7 @@ import { Lock, CheckCircle2 } from 'lucide-react';
 import PaymentButton from '@/app/components/PaymentButton';
 import { useApp } from '@/app/context/AppContext';
 import { useLanguage } from '@/app/context/LanguageContext';
+import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { getUILabel, type LocaleCode } from '@/lib/astrologyDictionary';
 import { trackEvent } from '@/lib/analytics';
 
@@ -32,6 +33,7 @@ export default function KundaliPaywallBanner({
   const hi = language === 'hi';
   const locale: LocaleCode = hi ? 'hi' : 'en';
   const { markAsPaid } = useApp();
+  const { t } = useTranslation();
 
   const features = [
     getUILabel('lockedFeaturePlanets', locale),
@@ -44,9 +46,7 @@ export default function KundaliPaywallBanner({
     <motion.section
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      aria-label={
-        hi ? 'प्रीमियम कुंडली रिपोर्ट अनलॉक' : 'Unlock premium kundli report'
-      }
+      aria-label={t('kundali.sections.paywallAria')}
       className="relative overflow-hidden rounded-2xl p-[1.5px] bg-gradient-to-r from-violet-500/60 via-indigo-500/40 to-amber-400/60 dark:from-[#FFD166]/50 dark:via-white/10 dark:to-[#E0A96D]/50 shadow-sunlit-soft"
     >
       <div className="rounded-2xl bg-white/85 dark:bg-[#0B0B18]/90 backdrop-blur-md p-5 sm:p-7 text-center">
@@ -55,14 +55,10 @@ export default function KundaliPaywallBanner({
         </div>
 
         <h3 className="text-lg sm:text-xl font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] mb-2">
-          {hi
-            ? 'पूरी 20+ पेज प्रीमियम कुंडली रिपोर्ट अनलॉक करें'
-            : 'Unlock Full 20+ Page Premium Kundli Report'}
+          {t('kundali.sections.paywallTitle')}
         </h3>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF] max-w-md mx-auto mb-4">
-          {hi
-            ? 'कैरियर समय-रेखा, विवाह विश्लेषण, धन आवंटन, दशा रोडमैप, योग-दोष और उपाय — सब कुछ एक ही विस्तृत रिपोर्ट में।'
-            : 'Career timings, marriage dynamics, wealth allocation, dasha roadmap, yogas, doshas and remedies — everything in one detailed report.'}
+          {t('kundali.sections.paywallBody')}
         </p>
 
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-w-lg mx-auto mb-5 text-left">
@@ -83,11 +79,7 @@ export default function KundaliPaywallBanner({
             userEmail={userEmail || 'guest@astroveda.com'}
             userName={userName}
             paymentType="kundli_report"
-            buttonText={
-              hi
-                ? `₹${price} का भुगतान करें — पूरी रिपोर्ट अनलॉक करें`
-                : `Pay ₹${price} — Unlock Full Report`
-            }
+            buttonText={t('kundali.sections.paywallButton', { price })}
             onSuccess={(details) => {
               trackEvent('premium_kundli_unlocked', { order_id: details.orderId });
               // Server-verified payment → flips global isPaid & persists token
@@ -97,9 +89,7 @@ export default function KundaliPaywallBanner({
         </div>
 
         <p className="mt-3 text-[11px] text-slate-400 dark:text-[#6B7280]">
-          {hi
-            ? 'एक बार भुगतान • तुरंत अनलॉक • PDF डाउनलोड शामिल'
-            : 'One-time payment • Instant unlock • PDF download included'}
+          {t('kundali.sections.paywallFootnote')}
         </p>
       </div>
     </motion.section>

@@ -179,6 +179,15 @@ export interface Translations {
     basicDetails: string;
     detailedInsights: string;
     teaser: { career: string; marriage: string; health: string };
+    kundaliAwaitsTitle: string;
+    kundaliAwaitsSubtitle: string;
+    kundaliAwaitsCta: string;
+    kundaliAwaitsHint: string;
+    kundaliAwaitsBadge: string;
+    kundaliAwaitsFeaturePlanets: string;
+    kundaliAwaitsFeatureDasha: string;
+    kundaliAwaitsFeatureYogas: string;
+    kundaliAwaitsFeaturePdf: string;
   };
   kundali: {
     labels: {
@@ -368,6 +377,36 @@ export interface Translations {
       remedies: string;
       domainInsights: string;
       scorecard: string;
+      downloadFullKundli: string;
+      pdfRendering: string;
+      pdfRebuilding: string;
+      pdfDownloadSuccess: string;
+      pdfDownloadLocked: string;
+      pdfServerFailed: string;
+      pdfReportLocked: string;
+      pdfNothingToExport: string;
+      pdfRebuildFailed: string;
+      pdfExportFailed: string;
+      pdfPrintHint: string;
+      printEnglish: string;
+      printHindi: string;
+      chooseLanguage: string;
+      pdfLanguageAria: string;
+      paywallTitle: string;
+      paywallBody: string;
+      paywallButton: string;
+      paywallFootnote: string;
+      paywallAria: string;
+      kundliReport: string;
+      language: string;
+      selectLanguage: string;
+      preview: string;
+      lockedFeaturePlanets: string;
+      lockedFeatureDosha: string;
+      lockedFeatureRemedies: string;
+      lockedFeatureMahadasha: string;
+      unlockHint: string;
+      pay: string;
     };
     tabs: {
       overview: string;
@@ -576,12 +615,52 @@ export interface Translations {
     /** Localized strings consumed by the PDF HTML template (pdfHtmlTemplate.ts). */
     template: Record<string, string>;
   };
+  profile: {
+    titlePersonal: string;
+    titleWallet: string;
+    titleKundaliHistory: string;
+    titleChatHistory: string;
+    chartFor: string;
+    noKundaliHistory: string;
+    noKundaliHistoryDesc: string;
+    noChatHistory: string;
+    noChatHistoryDesc: string;
+    noTransactions: string;
+    noTransactionsDesc: string;
+    startChat: string;
+    generateKundali: string;
+    regenerateOnKundali: string;
+    messagesCount: string;
+    closeProfile: string;
+    fullName: string;
+    birthDate: string;
+    birthTime: string;
+    placeOfBirth: string;
+    placePlaceholder: string;
+    saveChanges: string;
+    savedSuccessfully: string;
+    profileUpdated: string;
+    avatarUpdated: string;
+    uploadPicture: string;
+    accountEmail: string;
+    walletBalance: string;
+    availableTokens: string;
+    transactions: string;
+    transactionsDesc: string;
+    addFunds: string;
+    downloadReceipt: string;
+  };
   payment: {
     messages: {
       processing: string;
       success: string;
       error: string;
       cancelled: string;
+      loadingSystem: string;
+      enterEmail: string;
+      verificationFailed: string;
+      loadFailed: string;
+      loading: string;
     };
     buttons: {
       payNow: string;
@@ -811,6 +890,15 @@ export const translations: Record<Language, Translations> = {
         marriage: 'The 7th house placement suggests a harmonious and supportive partnership ahead...',
         health: 'Your chart indicates natural resilience, with extra care advised during specific periods...',
       },
+      kundaliAwaitsTitle: 'Your Kundali Awaits',
+      kundaliAwaitsSubtitle: 'Discover your planetary positions, dasha periods, and auspicious yogas.',
+      kundaliAwaitsCta: 'Generate Your Full Kundali',
+      kundaliAwaitsHint: 'Free • Takes 30 seconds',
+      kundaliAwaitsBadge: 'Kundali Generator',
+      kundaliAwaitsFeaturePlanets: 'Planetary positions (Graha Sthiti)',
+      kundaliAwaitsFeatureDasha: 'Dasha & Antardasha periods',
+      kundaliAwaitsFeatureYogas: 'Auspicious yogas & doshas',
+      kundaliAwaitsFeaturePdf: 'PDF download & share',
     },
     kundali: {
       labels: {
@@ -1000,6 +1088,36 @@ export const translations: Record<Language, Translations> = {
         remedies: 'Remedies',
         domainInsights: 'Life Domain Insights',
         scorecard: 'Compatibility Scorecard',
+        downloadFullKundli: 'Download Full 25-Page Kundli',
+        pdfRendering: 'Rendering your 25-page PDF…',
+        pdfRebuilding: 'Rebuilding your full chart…',
+        pdfDownloadSuccess: 'Your full Kundli PDF has been downloaded! 🎉',
+        pdfDownloadLocked: 'This download is locked — complete payment to unlock the full report.',
+        pdfServerFailed: 'PDF server failed — opened the print fallback.',
+        pdfReportLocked: 'This report is locked. Complete payment to unlock the full PDF.',
+        pdfNothingToExport: 'Nothing to export yet — generate a kundali first.',
+        pdfRebuildFailed: 'Could not rebuild this chart (missing coordinates?). Open it on the Kundali page and try again.',
+        pdfExportFailed: 'Export failed. Please try again.',
+        pdfPrintHint: 'No server needed — opens your browser print dialog (Save as PDF).',
+        printEnglish: 'Print English',
+        printHindi: 'Print Hindi',
+        chooseLanguage: 'Choose Language',
+        pdfLanguageAria: 'Download kundli in {lang}',
+        paywallTitle: 'Unlock Full 20+ Page Premium Kundli Report',
+        paywallBody: 'Career timings, marriage dynamics, wealth allocation, dasha roadmap, yogas, doshas and remedies — everything in one detailed report.',
+        paywallButton: 'Pay ₹{price} — Unlock Full Report',
+        paywallFootnote: 'One-time payment • Instant unlock • PDF download included',
+        paywallAria: 'Unlock premium kundli report',
+        kundliReport: 'Kundli Report',
+        language: 'Language',
+        selectLanguage: 'Select Language',
+        preview: 'Preview',
+        lockedFeaturePlanets: 'Complete planetary positions table',
+        lockedFeatureDosha: 'Dosha analysis (Manglik & Sade Sati)',
+        lockedFeatureRemedies: 'Personalized remedies & gemstones',
+        lockedFeatureMahadasha: '120-year Dasha sequence',
+        unlockHint: 'One-time payment • Instant unlock • PDF download included',
+        pay: 'Pay',
       },
       tabs: {
         overview: 'Overview',
@@ -1188,12 +1306,52 @@ export const translations: Record<Language, Translations> = {
         houseShort: 'House',
       },
     },
+    profile: {
+      titlePersonal: 'Personal Details',
+      titleWallet: 'Wallet & Payments',
+      titleKundaliHistory: 'Kundali History',
+      titleChatHistory: 'Chat History',
+      chartFor: 'Chart of {name}',
+      noKundaliHistory: 'No Kundali history',
+      noKundaliHistoryDesc: 'Charts generated while signed in will be saved here.',
+      noChatHistory: 'No chat history',
+      noChatHistoryDesc: 'Astrology conversations started while signed in will be saved here.',
+      noTransactions: 'No transactions yet',
+      noTransactionsDesc: 'Completed wallet top-ups will appear here with downloadable receipts.',
+      startChat: 'Start a chat',
+      generateKundali: 'Generate Kundali',
+      regenerateOnKundali: 'Regenerate on Kundali page to enable PDF download',
+      messagesCount: '{count} messages',
+      closeProfile: 'Close profile',
+      fullName: 'Full name',
+      birthDate: 'Birth date',
+      birthTime: 'Birth time',
+      placeOfBirth: 'Place of birth',
+      placePlaceholder: 'City, State, Country',
+      saveChanges: 'Save changes',
+      savedSuccessfully: 'Profile updated successfully.',
+      profileUpdated: 'Profile updated successfully.',
+      avatarUpdated: 'Avatar updated successfully.',
+      uploadPicture: 'Upload profile picture',
+      accountEmail: 'Account email cannot be changed here.',
+      walletBalance: 'Wallet balance',
+      availableTokens: 'Available tokens',
+      transactions: 'Transactions',
+      transactionsDesc: 'Completed wallet payments and receipts',
+      addFunds: 'Add funds',
+      downloadReceipt: 'Download Receipt',
+    },
     payment: {
       messages: {
         processing: 'Processing payment...',
         success: 'Payment successful! Your report is unlocked.',
         error: 'Payment failed. Please try again.',
         cancelled: 'Payment was cancelled.',
+        loadingSystem: 'Payment system is still loading. Please wait a moment and try again.',
+        enterEmail: 'Please enter your email first.',
+        verificationFailed: 'Payment verification failed',
+        loadFailed: 'Failed to load payment system. Please refresh the page.',
+        loading: 'Loading payment system...',
       },
       buttons: {
         payNow: 'Pay Now',
@@ -1580,6 +1738,15 @@ export const translations: Record<Language, Translations> = {
         marriage: 'सप्तम भाव की स्थिति एक सामंजस्यपूर्ण और सहयोगी जीवनसाथी का संकेत देती है...',
         health: 'आपकी कुंडली स्वाभाविक मजबूती दर्शाती है, विशेष अवधियों में अतिरिक्त ध्यान देने की सलाह है...',
       },
+      kundaliAwaitsTitle: 'आपकी कुंडली इंतज़ार कर रही है',
+      kundaliAwaitsSubtitle: 'अपनी ग्रहों की स्थिति, दशा काल और शुभ योगों की खोज करें।',
+      kundaliAwaitsCta: 'अपनी पूरी कुंडली बनाएं',
+      kundaliAwaitsHint: 'मुफ्त • 30 सेकंड लगते हैं',
+      kundaliAwaitsBadge: 'कुंडली जनरेटर',
+      kundaliAwaitsFeaturePlanets: 'ग्रहों की स्थिति (ग्रह स्थिति)',
+      kundaliAwaitsFeatureDasha: 'दशा और अंतर्दशा काल',
+      kundaliAwaitsFeatureYogas: 'शुभ योग और दोष',
+      kundaliAwaitsFeaturePdf: 'PDF डाउनलोड और साझा करें',
     },
     kundali: {
       labels: {
@@ -1769,6 +1936,36 @@ export const translations: Record<Language, Translations> = {
         remedies: 'उपाय',
         domainInsights: 'जीवन क्षेत्र अंतर्दृष्टि',
         scorecard: 'अनुकूलता स्कोरकार्ड',
+        downloadFullKundli: 'पूरी 25 पेज कुंडली डाउनलोड करें',
+        pdfRendering: 'आपकी 25 पेज PDF बनाई जा रही है…',
+        pdfRebuilding: 'आपकी पूरी कुंडली तैयार हो रही है…',
+        pdfDownloadSuccess: 'आपकी पूर्ण कुंडली PDF डाउनलोड हो गई है! 🎉',
+        pdfDownloadLocked: 'यह डाउनलोड लॉक है — पूरी रिपोर्ट अनलॉक करने के लिए भुगतान पूर्ण करें।',
+        pdfServerFailed: 'PDF सर्वर विफल — प्रिंट विकल्प खोला गया।',
+        pdfReportLocked: 'यह रिपोर्ट लॉक है — पूर्ण PDF अनलॉक करने के लिए भुगतान करें।',
+        pdfNothingToExport: 'निर्यात करने के लिए कुछ नहीं — पहले कुंडली बनाएं।',
+        pdfRebuildFailed: 'यह कुंडली दोबारा नहीं बन सकी (निर्देशांक अनुपलब्ध?)। कुंडली पृष्ठ पर खोलकर पुनः प्रयास करें।',
+        pdfExportFailed: 'निर्यात विफल। कृपया पुनः प्रयास करें।',
+        pdfPrintHint: 'सर्वर आवश्यक नहीं — ब्राउज़र प्रिंट डायलॉग खुलेगा।',
+        printEnglish: 'अंग्रेज़ी प्रिंट करें',
+        printHindi: 'हिंदी प्रिंट करें',
+        chooseLanguage: 'भाषा चुनें',
+        pdfLanguageAria: '{lang} में कुंडली डाउनलोड करें',
+        paywallTitle: 'पूरी 20+ पेज प्रीमियम कुंडली रिपोर्ट अनलॉक करें',
+        paywallBody: 'कैरियर समय-रेखा, विवाह विश्लेषण, धन आवंटन, दशा रोडमैप, योग-दोष और उपाय — सब कुछ एक ही विस्तृत रिपोर्ट में।',
+        paywallButton: '₹{price} का भुगतान करें — पूरी रिपोर्ट अनलॉक करें',
+        paywallFootnote: 'एक बार भुगतान • तुरंत अनलॉक • PDF डाउनलोड शामिल',
+        paywallAria: 'प्रीमियम कुंडली रिपोर्ट अनलॉक',
+        kundliReport: 'कुंडली रिपोर्ट',
+        language: 'भाषा',
+        selectLanguage: 'भाषा चुनें',
+        preview: 'पूर्वावलोकन',
+        lockedFeaturePlanets: 'संपूर्ण ग्रह स्थिति तालिका',
+        lockedFeatureDosha: 'दोष विश्लेषण (मांगलिक और साढ़े साती)',
+        lockedFeatureRemedies: 'व्यक्तिगत उपाय और रत्न',
+        lockedFeatureMahadasha: '120 वर्ष की दशा अनुक्रम',
+        unlockHint: 'एक बार भुगतान • तुरंत अनलॉक • PDF डाउनलोड शामिल',
+        pay: 'भुगतान',
       },
       tabs: {
         overview: 'अवलोकन',
@@ -1957,12 +2154,52 @@ export const translations: Record<Language, Translations> = {
         houseShort: 'भाव',
       },
     },
+    profile: {
+      titlePersonal: 'व्यक्तिगत विवरण',
+      titleWallet: 'वॉलेट और भुगतान',
+      titleKundaliHistory: 'कुंडली इतिहास',
+      titleChatHistory: 'चैट इतिहास',
+      chartFor: '{name} की कुंडली',
+      noKundaliHistory: 'कोई कुंडली इतिहास नहीं',
+      noKundaliHistoryDesc: 'साइन इन करने पर बनाई गई कुंडलियाँ यहाँ सहेजी जाएंगी।',
+      noChatHistory: 'कोई चैट इतिहास नहीं',
+      noChatHistoryDesc: 'साइन इन करने पर शुरू की गई ज्योतिष बातचीत यहाँ सहेजी जाएगी।',
+      noTransactions: 'अभी कोई लेन-देन नहीं',
+      noTransactionsDesc: 'पूर्ण किए गए वॉलेट टॉप-अप यहाँ रसीदों के साथ दिखेंगे।',
+      startChat: 'चैट शुरू करें',
+      generateKundali: 'कुंडली बनाएं',
+      regenerateOnKundali: 'PDF डाउनलोड सक्षम करने के लिए कुंडली पृष्ठ पर पुनः बनाएं',
+      messagesCount: '{count} संदेश',
+      closeProfile: 'प्रोफ़ाइल बंद करें',
+      fullName: 'पूरा नाम',
+      birthDate: 'जन्म तिथि',
+      birthTime: 'जन्म समय',
+      placeOfBirth: 'जन्म स्थान',
+      placePlaceholder: 'शहर, राज्य, देश',
+      saveChanges: 'बदलाव सहेजें',
+      savedSuccessfully: 'प्रोफ़ाइल सफलतापूर्वक अद्यतन हो गई।',
+      profileUpdated: 'प्रोफ़ाइल सफलतापूर्वक अद्यतन हो गई।',
+      avatarUpdated: 'अवतार सफलतापूर्वक अपडेट हुआ।',
+      uploadPicture: 'प्रोफ़ाइल तस्वीर अपलोड करें',
+      accountEmail: 'यहाँ खाता ईमेल नहीं बदल सकते।',
+      walletBalance: 'वॉलेट बैलेंस',
+      availableTokens: 'उपलब्ध टोकन',
+      transactions: 'लेन-देन',
+      transactionsDesc: 'पूर्ण किए गए वॉलेट भुगतान और रसीदें',
+      addFunds: 'फंड जोड़ें',
+      downloadReceipt: 'रसीद डाउनलोड करें',
+    },
     payment: {
       messages: {
         processing: 'भुगतान संसाधित हो रहा है...',
         success: 'भुगतान सफल! आपकी रिपोर्ट अनलॉक हो गई है।',
         error: 'भुगतान विफल। कृपया पुनः प्रयास करें।',
         cancelled: 'भुगतान रद्द कर दिया गया।',
+        loadingSystem: 'भुगतान प्रणाली लोड हो रही है। कृपया कुछ क्षण प्रतीक्षा करें।',
+        enterEmail: 'कृपया पहले अपना ईमेल दर्ज करें।',
+        verificationFailed: 'भुगतान सत्यापन विफल',
+        loadFailed: 'भुगतान प्रणाली लोड नहीं हुई। कृपया पृष्ठ ताज़ा करें।',
+        loading: 'भुगतान प्रणाली लोड हो रही है...',
       },
       buttons: {
         payNow: 'अभी भुगतान करें',
