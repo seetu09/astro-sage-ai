@@ -525,57 +525,19 @@ function buildFreeTier(chartData: ChartData, birthDate: string, structured: Stru
 }
 
 // ─── Paid-tier life-domain sanitizer ─────────────────────────────────────────
-// Every life domain (career, wealth, marriage, health, education, family) is
-// guaranteed a non-empty `overview`: a substantive AI overview (>100 chars) is
-// kept verbatim, and anything missing or too short falls back to a lang-aware
-// deterministic paragraph so the PDF never renders an empty card.
-type LifeDomainKey = keyof SingleShotReport["paidTier"]["lifeDomains"];
+// Keeps a substantive AI overview (>100 chars) verbatim; missing or too-short
+// overviews are returned as "" — buildPaidTier fills those with the lang-aware
+// premium-upgrade message so every domain still renders with non-empty text.
 type LifeDomainInsight = SingleShotReport["paidTier"]["lifeDomains"]["career"];
 const MIN_DOMAIN_OVERVIEW_CHARS = 100;
 
-const DOMAIN_FALLBACK_OVERVIEWS: Record<"en" | "hi", Record<LifeDomainKey, string>> = {
-  en: {
-    career:
-      "Your career path favours steady, skill-based growth with periodic breakthroughs. Focus on structured roles where competence compounds, and time major moves to the stronger dasha windows in your chart.",
-    wealth:
-      "Wealth builds best through a mix of stable savings and calculated, well-timed investments. Keep an emergency buffer in liquid assets while letting long-term holdings appreciate over the cycles of your chart.",
-    marriage:
-      "Relationship dynamics are shaped by the 7th house and Venus; partnerships mature with time. Communicate openly, honour the other person's pace, and invest in shared goals through the favorable windows ahead.",
-    health:
-      "Your baseline vitality is steady but benefits from consistent routine. Prioritise regular sleep, moderate daily exercise, and preventive care, easing up during the more demanding transit stretches.",
-    education:
-      "Learning grows through a disciplined, syllabus-focused approach with revision cycles. Structured study and mentorship in your chosen field bring the most consistent results.",
-    family:
-      "Family life provides grounding and support, with closeness deepening in the positive dasha windows. Balance responsibilities with personal time to keep relationships harmonious.",
-  },
-  hi: {
-    career:
-      "आपका करियर पथ स्थिर, कौशल-आधारित विकास और आवधिक सफलता के साथ सर्वोत्तम रूप से बढ़ता है। मजबूत दशा अवधि में प्रमुख बदलाव करें और संरचित भूमिकाओं पर ध्यान केंद्रित करें।",
-    wealth:
-      "धन स्थिर बचत और गणितीय, सही समय पर किए गए निवेश के मिश्रण से सबसे अच्छा बनता है। तरल संपत्ति में आपातकालीन बफर रखें और दीर्घकालिक निवेश को कुंडली के चक्रों में बढ़ने दें।",
-    marriage:
-      "संबंध गतिशीलता ७वें भाव और शुक्र द्वारा आकार लेती है; साझेदारी समय के साथ परिपक्व होती है। खुलकर संवाद करें, दूसरे की गति का सम्मान करें और अनुकूल समय में साझा लक्ष्यों में निवेश करें।",
-    health:
-      "आपकी मूल ऊर्जा स्थिर है परंतु नियमित दिनचर्या से लाभ मिलता है। नियमित नींद, मध्यम दैनिक व्यायाम और निवारक देखभाल को प्राथमिकता दें, तथा कठिन गोचर में थोड़ा संयम रखें।",
-    education:
-      "अध्ययन अनुशासित, पाठ्यक्रम-केंद्रित दृष्टिकोण और पुनरावृत्ति चक्रों से सर्वोत्तम बढ़ता है। अपने चुने हुए क्षेत्र में संरचित पढ़ाई और मार्गदर्शन सबसे स्थिर परिणाम देते हैं।",
-    family:
-      "पारिवारिक जीवन आधार और सहयोग प्रदान करता है, शुभ दशा अवधि में आत्मीयता गहरी होती है। संबंधों में सामंजस्य बनाए रखने के लिए जिम्मेदारियों और व्यक्तिगत समय में संतुलन रखें।",
-  },
-};
-
-function sanitizeLifeDomain(
-  domain: LifeDomainInsight | undefined,
-  key: LifeDomainKey,
-  lang: "en" | "hi"
-): LifeDomainInsight {
-  const aiOverview =
+function sanitizeLifeDomain(domain?: LifeDomainInsight): LifeDomainInsight {
+  const overview =
     domain &&
     typeof domain.overview === "string" &&
     domain.overview.trim().length > MIN_DOMAIN_OVERVIEW_CHARS
       ? domain.overview.trim()
       : "";
-  const overview = aiOverview || DOMAIN_FALLBACK_OVERVIEWS[lang][key];
   return {
     overview,
     strengths: domain?.strengths ?? [],
@@ -585,13 +547,16 @@ function sanitizeLifeDomain(
 }
 
 function sanitizeLifeDomains(
-  domains: SingleShotReport["paidTier"]["lifeDomains"] | undefined,
-  lang: "en" | "hi"
+  domains?: SingleShotReport["paidTier"]["lifeDomains"]
 ): SingleShotReport["paidTier"]["lifeDomains"] {
-  const keys: LifeDomainKey[] = ["career", "wealth", "marriage", "health", "education", "family"];
-  return Object.fromEntries(
-    keys.map((key) => [key, sanitizeLifeDomain(domains?.[key], key, lang)])
-  ) as SingleShotReport["paidTier"]["lifeDomains"];
+  return {
+    career: sanitizeLifeDomain(domains?.career),
+    wealth: sanitizeLifeDomain(domains?.wealth),
+    marriage: sanitizeLifeDomain(domains?.marriage),
+    health: sanitizeLifeDomain(domains?.health),
+    education: sanitizeLifeDomain(domains?.education),
+    family: sanitizeLifeDomain(domains?.family),
+  };
 }
 
 function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: string, structured: StructuredReport | null, lang: "en" | "hi"): PaidTierData {
@@ -670,9 +635,52 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     }
   }
 
-  // Every life domain is guaranteed a non-empty overview: AI output is kept
-  // verbatim when substantive, otherwise a lang-aware deterministic paragraph
-  // covers the card so the PDF never renders an empty domain.
+  const remedies = structured?.paidTier?.remedies ?? [];
+  const fullBreakdown =
+    structured?.paidTier?.fullBreakdown ??
+    (interpretation
+      ? [
+          { title: lang === "hi" ? "व्यक्तित्व एवं लग्न" : "Personality & Lagna", content: interpretation.slice(0, 600) },
+          { title: lang === "hi" ? "ग्रह प्रभाव" : "Planetary Influences", content: interpretation.slice(600, 1200) },
+        ]
+      : []);
+  const timings = structured?.paidTier?.timings ?? [];
+
+  const paidTier: PaidTierData = {
+    careerTimings,
+    marriageDynamics,
+    wealthAllocation,
+    dashaRoadmap,
+    yogas,
+    doshas,
+    remedies,
+    fullBreakdown,
+    timings,
+    lifeDomains: {
+      career: { overview: "", strengths: [], challenges: [], recommendations: [] },
+      wealth: { overview: "", strengths: [], challenges: [], recommendations: [] },
+      marriage: { overview: "", strengths: [], challenges: [], recommendations: [] },
+      health: { overview: "", strengths: [], challenges: [], recommendations: [] },
+      education: { overview: "", strengths: [], challenges: [], recommendations: [] },
+      family: { overview: "", strengths: [], challenges: [], recommendations: [] },
+    },
+  };
+
+  const domains = sanitizeLifeDomains(structured?.paidTier?.lifeDomains);
+
+  const defaultOverview = (domain: string) =>
+    lang === "hi"
+      ? `${domain} विश्लेषण विस्तृत रिपोर्ट में शामिल है। कृपया प्रीमियम संस्करण अपग्रेड करें।`
+      : `Detailed ${domain} analysis is included in the premium report. Please upgrade to the premium version.`;
+
+  if (!domains.career?.overview) domains.career = { overview: defaultOverview("career"), strengths: [], challenges: [], recommendations: [] };
+  if (!domains.wealth?.overview) domains.wealth = { overview: defaultOverview("wealth"), strengths: [], challenges: [], recommendations: [] };
+  if (!domains.marriage?.overview) domains.marriage = { overview: defaultOverview("marriage"), strengths: [], challenges: [], recommendations: [] };
+  if (!domains.health?.overview) domains.health = { overview: defaultOverview("health"), strengths: [], challenges: [], recommendations: [] };
+  if (!domains.education?.overview) domains.education = { overview: defaultOverview("education"), strengths: [], challenges: [], recommendations: [] };
+  if (!domains.family?.overview) domains.family = { overview: defaultOverview("family"), strengths: [], challenges: [], recommendations: [] };
+
+  paidTier.lifeDomains = domains;
 
   return {
     careerTimings,
@@ -681,17 +689,10 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     dashaRoadmap,
     yogas,
     doshas,
-    remedies: structured?.paidTier?.remedies ?? [],
-    fullBreakdown:
-      structured?.paidTier?.fullBreakdown ??
-      (interpretation
-        ? [
-            { title: lang === "hi" ? "व्यक्तित्व एवं लग्न" : "Personality & Lagna", content: interpretation.slice(0, 600) },
-            { title: lang === "hi" ? "ग्रह प्रभाव" : "Planetary Influences", content: interpretation.slice(600, 1200) },
-          ]
-        : []),
-    timings: structured?.paidTier?.timings ?? [],
-    lifeDomains: sanitizeLifeDomains(structured?.paidTier?.lifeDomains, lang),
+    remedies,
+    fullBreakdown,
+    timings,
+    lifeDomains: paidTier.lifeDomains,
   };
 }
 

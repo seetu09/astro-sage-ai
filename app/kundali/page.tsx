@@ -523,97 +523,6 @@ export default function KundaliPage() {
   const hasPlanets =
     !!kundliData && Array.isArray(kundliData.planets) && kundliData.planets.length > 0;
 
-  // Build ReportData for the client-side iframe print-to-PDF
-  const reportData: ReportData | null = kundliData ? {
-    clientName: kundliData?.name || name,
-    chartType: t('kundali.northIndian'),
-    birthDetails: {
-      date: kundliData?.dateOfBirth || '',
-      time: kundliData?.timeOfBirth || '',
-      latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(4) : '',
-      longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(4) : '',
-      timezone: kundliData?.chartData?.timezone || kundliData?.timezone || '',
-    },
-    planetaryPositions: (kundliData?.planets ?? []).map((p) => ({
-      body: translatePlanet(p.name) || '',
-      sign: translateSign(p.sign) || '',
-      degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
-      house: String(p.house || ''),
-      retro: p.status === 'Retrograde',
-    })),
-    houseCusps: (kundliData?.houses ?? []).map((h) => ({
-      house: h?.house ?? 0,
-      sign: String(h?.sign ?? ''),
-      degree: '',
-    })),
-    dashaPeriods: (kundliData?.paidTier?.dashaRoadmap ?? []).map((d) => ({
-      mahaDasha: d.lord,
-      startYear: d.startDate.split('-')[0],
-      endYear: d.endDate.split('-')[0],
-      subPeriod: d.theme,
-    })),
-    yogas: (kundliData?.paidTier?.yogas ?? []).map((y) => ({
-      name: y.name,
-      description: y.description,
-    })),
-    remedies: [
-      ...(kundliData?.paidTier?.remedies ?? []).map((r) => ({
-        category: r.type,
-        description: r.description,
-      })),
-      // Rich AI remedy kit — daily mantras + gemstone digest.
-      ...(kundliData?.paidTier?.remedyKit?.dailyMantras ?? []).map((m) => ({
-        category: t('kundali.dailyMantra'),
-        description: m,
-      })),
-      ...((kundliData?.paidTier?.remedyKit?.gemstones ?? []).length
-        ? [{
-            category: t('kundali.gemstoneSuggestion'),
-            description: (kundliData?.paidTier?.remedyKit?.gemstones ?? []).join(' · '),
-          }]
-        : []),
-    ],
-    domainInsights: Object.entries(kundliData?.paidTier?.lifeDomains ?? {})
-      .filter(([domain]) => ['career', 'wealth', 'marriage', 'health'].includes(domain))
-      .map(([domain, insight]) => {
-        const milestones: RichMilestone[] = insight.milestones ?? [];
-        return {
-          domain: domain as 'career' | 'wealth' | 'marriage' | 'health',
-          prediction: kundliData?.richPredictions?.[domain as 'career' | 'wealth' | 'marriage' | 'health']?.narrative || insight.overview || '',
-          analysis:
-            milestones.map((m) => `${m.period}: ${m.event}`).join(' • ') ||
-            insight.recommendations?.join('. ') ||
-            '',
-          timeframe: milestones[0]?.period,
-        };
-      }),
-    // Six AI Life-Pillar narratives → each renders as its own localized
-    // appendix page in the A4 PDF (skipped entirely when absent).
-    narratives: kundliData?.pillars || [],
-    northIndianChartSvg: '',
-    kalpurushaPhalDeepikaRefs: [],
-    scorecard: [],
-    // Dense-layout extras — Panchang strip, D9 matrix and Ashtakavarga grid.
-    // All optional; the PDF template skips blocks whose data is absent.
-    panchang: {
-      varaWeekday: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
-      nakshatra: cleanAstroValue(kundliData?.chartData?.nakshatra || kundliData?.nakshatra),
-      nakshatraLord: nakshatraLordFor(
-        kundliData?.chartData?.nakshatra || kundliData?.nakshatra
-      ),
-      moonSign: cleanAstroValue(kundliData?.chartData?.rashi || kundliData?.moonSign),
-      sunSign: cleanAstroValue(kundliData?.chartData?.sunSign || kundliData?.sunSign),
-      lagna: cleanAstroValue(
-        kundliData?.chartData?.lagna ||
-          kundliData?.chartData?.ascendant ||
-          kundliData?.ascendant
-      ),
-    },
-    d9Chart: extractD9Chart(kundliData),
-        sarvashtakavarga: extractSarvashtakavarga(kundliData),
-    isPaidTier: isPaidSafe,
-  } : null;
-
   // Raw birth details handed to the free-tier <Preview> for its client-side
   // Lagna/Moon/Sun computation and the /api/kundali/generate yoga fetch.
   const previewBirthData: PreviewBirthData | null = kundliData &&
@@ -1021,7 +930,6 @@ export default function KundaliPage() {
             <ReportContainer
               userEmail={kundliData?.email || email}
               userName={kundliData?.name || name}
-              reportData={reportData ?? undefined}
             >
           {/* ── Tabbed full premium dashboard (Career / Marriage / Wealth / Dasha + A4 report) ── */}
           <KundaliView

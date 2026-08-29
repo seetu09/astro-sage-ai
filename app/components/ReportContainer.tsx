@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { Download, Globe, Lock, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
+import { Globe, Lock, Sparkles, CheckCircle2 } from 'lucide-react';
 import PaymentButton from '@/app/components/PaymentButton';
-import DownloadReportButton from '@/app/components/DownloadReportButton';
-import { ReportData } from '@/lib/pdfHtmlTemplate';
 import { useApp } from '@/app/context/AppContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import {
@@ -24,12 +22,6 @@ interface ReportContainerProps {
   userName?: string;
   /** Price in INR for unlocking the full report. */
   price?: number;
-  /** Called when "Download Kundli (PDF)" is clicked (full-report mode only). May be async. */
-  onDownload?: () => void | Promise<void>;
-  /** Optional live progress (e.g. "2/5") shown on the download button while generating. */
-  downloadProgress?: { current: number; total: number } | null;
-  /** Report data for client-side iframe print-to-PDF. */
-  reportData?: ReportData;
   /** The complete report content — rendered ONLY when isPaid === true. */
   children: React.ReactNode;
 }
@@ -39,33 +31,19 @@ interface ReportContainerProps {
  *
  * - Sticky TOP bar: localized title + language <select> (instant switch, no refresh).
  * - !isPaid → preview panel + Razorpay payment CTA (children NOT rendered).
- * -  isPaid → renders the full report (children).
- * - Sticky BOTTOM bar: "Download Kundli (PDF)" action button.
+ * -  isPaid → renders the full report (children). The download CTA lives inside
+ *    the report children (KundaliView → KundliPdfButton) so only one download
+ *    button appears on the result screen.
  */
 export default function ReportContainer({
   title,
   userEmail,
   userName = 'User',
   price = 49,
-  onDownload,
-  downloadProgress = null,
-  reportData,
   children,
 }: ReportContainerProps) {
   const { isPaid, markAsPaid, selectedLanguage, setSelectedLanguage } = useApp();
   const { t } = useTranslation();
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleDownload = async () => {
-    if (!onDownload || isGenerating) return;
-    trackEvent('download_pdf_clicked', { lang: selectedLanguage });
-    setIsGenerating(true);
-    try {
-      await onDownload();
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   return (
     <div className="relative">
@@ -171,38 +149,6 @@ export default function ReportContainer({
         /* ---------------------------- FULL REPORT VIEW ---------------------------- */
         <>
           {children}
-
-          {/* ------------------------ STICKY BOTTOM ACTION BAR ------------------------ */}
-          <div className="sticky bottom-0 z-40 -mx-4 sm:-mx-4 lg:-mx-6 px-4 sm:px-4 lg:px-6 py-2.5 mt-4 bg-[#F8F7FC]/85 dark:bg-[#080811]/85 backdrop-blur-md border-t border-slate-200/60 dark:border-white/10">
-            <div className="max-w-4xl mx-auto flex justify-center">
-              {reportData ? (
-                <DownloadReportButton reportData={reportData} userName={userName} />
-              ) : onDownload ? (
-                <button
-                  onClick={handleDownload}
-                  disabled={!onDownload || isGenerating}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 sm:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                      {t('kundali.sections.generatingPdf')}
-                      {downloadProgress && (
-                        <span className="text-xs opacity-80">
-                          {downloadProgress.current}/{downloadProgress.total}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                      {t('kundali.sections.downloadPdf')}
-                    </>
-                  )}
-                </button>
-              ) : null}
-            </div>
-          </div>
         </>
       )}
     </div>
