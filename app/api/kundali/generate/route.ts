@@ -659,9 +659,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { language = 'en' } = body;
-    const rawLang = typeof language === "string" ? language.trim().toLowerCase() : "en";
+    const { language, lang: langLegacy } = body;
+    // Accept both the canonical `language` field and the legacy `lang` key.
+    const requestedLang = typeof language === "string" && language.trim() !== ""
+      ? language
+      : typeof langLegacy === "string" && langLegacy.trim() !== ""
+        ? langLegacy
+        : "en";
+    const rawLang = requestedLang.trim().toLowerCase();
     const lang: "en" | "hi" = rawLang === "hi" ? "hi" : "en";
+    // Frontend maps English responses to translation keys via @lib/i18n/translations.ts
+    // (deterministic fallbacks below are English-only; the frontend translates them).
 
     const details: BirthDetails = {
       birthDate: body.birthDate,

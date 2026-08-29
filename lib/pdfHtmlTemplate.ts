@@ -4,6 +4,7 @@ import {
   ChartHouseInput,
 } from "@/lib/kundliChart";
 import { getSignIndex, SIGN_LORDS, localizePlanet, localizeSign, localizeRashi, canonicalPlanet } from "@/lib/astrologyDictionary";
+import { getTranslation, translations, type Language } from "@/lib/i18n/translations";
 
 export interface ReportData {
   clientName: string;
@@ -62,246 +63,8 @@ export interface ReportNarrative {
   milestones?: { period: string; event: string; note?: string; outcome?: "positive" | "neutral" | "caution" }[];
 }
 
-const LABEL = {
-  hi: {
-    title: "जन्म कुंडली विशद़ विश्लेषण",
-    clientName: "क्लाइंट नाम",
-    chartType: "चार्ट प्रकार",
-    birthDetails: "जन्म विवरण",
-    birthDetailsShort: "जन्म विवरण",
-    planetaryPositions: "ग्रह स्थिति",
-    houseCusps: "घर कस्स",
-    dashaPeriods: "दशा अवधि",
-    yogas: "योग",
-    remedies: "उपाय",
-    domainInsights: "डोमेन अंतर्दृष्टि",
-    scorecard: "स्कोरकार्ड",
-    page: "पृष्ठ",
-    northIndian: "उत्तर भारतीय",
-    southIndian: "दक्षिण भारतीय",
-    paid: "प्रीमियम रिपोर्ट",
-    basic: "मूलभूत रिपोर्ट",
-    latLong: "अक्षांश / द्राघिमांश",
-    bodyCol: "ग्रह",
-    signCol: "राशि",
-    degreeCol: "डिग्री",
-    houseCol: "घर",
-    retroCol: "रीत्रो",
-    mahaDashaCol: "महादशा",
-    startCol: "प्रारंभ",
-    endCol: "समाप्ति",
-    subPeriodCol: "उप-अवधि",
-    panchang: "जन्म पंचांग",
-    lagnaD1Chart: "लग्न कुंडली (D1)",
-    navamsaD9Chart: "नवांश (D9) चार्ट",
-    sarvashtakavarga: "सर्वाष्टकवर्ग बिंदु",
-    strongHouses: "प्रबल भाव",
-    dashasYogasRemedies: "दशा, योग एवं उपाय",
-    housesNavamsaAshtakavarga: "भाव, नवांश एवं अष्टकवर्ग",
-    lifeDomains: "जीवन क्षेत्र विश्लेषण",
-    references: "कल्पुरुश पुस्तक / स्रोत",
-    parameter: "पैरामीटर",
-    score: "स्कोर",
-    period: "अवधि",
-    influence: "प्रभाव",
-    event: "घटना",
-    note: "टिप्पणी",
-    notAvailable: "उपलब्ध नहीं",
-    generatedOn: "onDate को जनरेट किया गया",
-    appendix: "परिशिष्ट — जीवन स्तंभ",
-    milestones: "प्रमुख मील के पत्थर",
-    aiNote: "यह अध्याय AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन पर आधारित है।",
-
-    // ── Yogas & Doshas detail page ──
-    yogDoshTitle: "योग एवं दोष विश्लेषण",
-    doshaSection: "दोष विवरण",
-    manglik: "मांगलिक",
-    manglikDosha: "मांगलिक दोष",
-    manglikYes: "हाँ — दोष उपस्थित है",
-    manglikNo: "नहीं — दोष उपस्थित नहीं है",
-    doshaSeverity: "दोष तीव्रता",
-    severityHigh: "उच्च",
-    severityMedium: "मध्यम",
-    severityMild: "हल्का",
-    severityNone: "कोई नहीं",
-    sadeSati: "साढ़े साती",
-    satiPhase1: "साढ़े साती — प्रथम चरण (मंगल अ/शनि के 12वें)",
-    satiPhase2: "साढ़े साती — द्वितीय चरण (शनि राशि में)",
-    satiPhase3: "साढ़े साती — तृतीय चरण (द्वितीय)",
-    noSadeSati: "वर्तमान में साढ़े साती सक्रिय नहीं है",
-
-    // ── Gemstone / Rudraksha prescription page ──
-    gemRudhSection: "रत्न एवं रुद्राक्ष विधान",
-    primaryFortifyingPlanet: "प्राथमिक सुधार ग्रह",
-    recommendedGemstone: "अनुशंसित रत्न",
-    recommendedRudraksha: "अनुशंसित रुद्राक्ष",
-    wearingDay: "धारण का दिन",
-    gemMantra: "जप मंत्र",
-    gemmtGoal: "उद्देश्य",
-    planet: "ग्रह",
-    gemReason: "सुधार हेतु",
-    noRemedyData: "उपाय विवरण उपलब्ध नहीं",
-
-    // ── Current Dasha deep dive page ──
-    currDashaTitle: "वर्तमान दशा — गहन अध्ययन",
-    currMahaDasha: "वर्तमान महादशा",
-    currAntardasha: "वर्तमान अंतर्दशा",
-    activeWindow: "सक्रिय अवधि",
-    currentRemark: "वर्तमान में चल रही दशा उपरोक्त कालखंड में सक्रिय है।",
-    onDashaNow: "अभी सक्रिय",
-    upcomingNext: "आगामी",
-    dashaCycle: "दशा क्रम",
-
-    // ── Manglik / Sade Sati tracker page ──
-    manglikSadeTitle: "मंगल एवं साढ़े साती ट्रैकर",
-    manglikTracker: "मांगलिक ट्रैकर",
-    satiTracker: "साढ़े साती ट्रैकर",
-    maleficKarm: "कोष",
-    activePhase: "सक्रिय चरण",
-    phaseStart: "प्रारंभ",
-    phaseEnd: "समाप्ति",
-
-    // ── 120-year Dasha master table ──
-    dashaMasterTitle: "120 वर्ष महादशा तालिका",
-    vimshottari: "विमशोत्तरी",
-    seqNo: "अनु",
-    mahaYears: "वर्ष",
-    fromYear: "प्रारंभ",
-    toYear: "समाप्ति",
-
-    // ── Localized domain & misc labels ──
-    houseWord: "भाव",
-    lordWord: "स्वामी",
-    houseDataUnavailable: "भाव डेटा उपलब्ध नहीं।",
-    detailedPremiumAnalysis: "विस्तृत {domain} विश्लेषण प्रीमियम रिपोर्ट में शामिल है।",
-    domainCareer: "करियर",
-    domainMarriage: "विवाह",
-    domainWealth: "धन",
-    domainHealth: "स्वास्थ्य",
-    domainFinance: "वित्त",
-    domainEducation: "शिक्षा",
-    domainFamily: "परिवार",
-  },
-  en: {
-    title: "Birth Chart Detailed Analysis",
-    clientName: "Client Name",
-    chartType: "Chart Type",
-    birthDetails: "Birth Details",
-    birthDetailsShort: "Birth Details",
-    planetaryPositions: "Planetary Positions",
-    houseCusps: "House Cusps",
-    dashaPeriods: "Dasha Periods",
-    yogas: "Yogas",
-    remedies: "Remedies",
-    domainInsights: "Domain Insights",
-    scorecard: "Scorecard",
-    page: "Page",
-    northIndian: "North Indian",
-    southIndian: "South Indian",
-    paid: "Premium Report",
-    basic: "Basic Report",
-    latLong: "Lat / Long",
-    bodyCol: "Body",
-    signCol: "Sign",
-    degreeCol: "Degree",
-    houseCol: "House",
-    retroCol: "Retro",
-    mahaDashaCol: "Maha Dasha",
-    startCol: "Start",
-    endCol: "End",
-    subPeriodCol: "Sub Period",
-    panchang: "Panchang at Birth",
-    lagnaD1Chart: "Lagna (D1) Chart",
-    navamsaD9Chart: "Navamsa (D9) Chart",
-    sarvashtakavarga: "Sarvashtakavarga Bindus",
-    strongHouses: "Strong houses",
-    dashasYogasRemedies: "Dashas, Yogas & Remedies",
-    housesNavamsaAshtakavarga: "Houses, Navamsa & Ashtakavarga",
-    lifeDomains: "Life Domains Analysis",
-    references: "References / Sources",
-    parameter: "Parameter",
-    score: "Score",
-    period: "Period",
-    influence: "Influence",
-    event: "Event",
-    note: "Note",
-    notAvailable: "Not available",
-    generatedOn: "Generated for onDate",
-    appendix: "Appendix — Life Pillars",
-    milestones: "Key Milestones",
-    aiNote: "This chapter is based on AI-assisted Vedic astrology guidance.",
-
-    // ── Yogas & Doshas detail page ──
-    yogDoshTitle: "Yogas & Doshas Analysis",
-    doshaSection: "Doshas",
-    manglik: "Manglik",
-    manglikDosha: "Manglik Dosha",
-    manglikYes: "Yes — dosha present",
-    manglikNo: "No — dosha not present",
-    doshaSeverity: "Dosha Severity",
-    severityHigh: "High",
-    severityMedium: "Medium",
-    severityMild: "Mild",
-    severityNone: "None",
-    sadeSati: "Sade Sati",
-    satiPhase1: "Sade Sati — Phase 1 (Moon in 12th from Saturn)",
-    satiPhase2: "Sade Sati — Phase 2 (Moon in Saturn's sign)",
-    satiPhase3: "Sade Sati — Phase 3 (2nd from Saturn)",
-    noSadeSati: "Sade Sati is not active at present",
-
-    // ── Gemstone / Rudraksha prescription page ──
-    gemRudhSection: "Gemstone & Rudraksha Prescription",
-    primaryFortifyingPlanet: "Primary fortifying planet",
-    recommendedGemstone: "Recommended Gemstone",
-    recommendedRudraksha: "Recommended Rudraksha",
-    wearingDay: "Wearing Day",
-    gemMantra: "Japa Mantra",
-    gemmtGoal: "Objective",
-    planet: "Planet",
-    gemReason: "Purpose",
-    noRemedyData: "Remedy details not available",
-
-    // ── Current Dasha deep dive page ──
-    currDashaTitle: "Current Dasha — Deep Dive",
-    currMahaDasha: "Current Maha Dasha",
-    currAntardasha: "Current Antardasha",
-    activeWindow: "Active Window",
-    currentRemark: "The currently running dasha is active within the above window.",
-    onDashaNow: "Active now",
-    upcomingNext: "Upcoming",
-    dashaCycle: "Dasha Sequence",
-
-    // ── Manglik / Sade Sati tracker page ──
-    manglikSadeTitle: "Mars & Sade Sati Tracker",
-    manglikTracker: "Manglik Tracker",
-    satiTracker: "Sade Sati Tracker",
-    maleficKarm: "Cause",
-    activePhase: "Active Phase",
-    phaseStart: "Start",
-    phaseEnd: "End",
-
-    // ── 120-year Dasha master table ──
-    dashaMasterTitle: "120-Year Maha Dasha Master Table",
-    vimshottari: "Vimshottari",
-    seqNo: "No.",
-    mahaYears: "Years",
-    fromYear: "From",
-    toYear: "To",
-
-    // ── Localized domain & misc labels ──
-    houseWord: "House",
-    lordWord: "Lord",
-    houseDataUnavailable: "House data unavailable.",
-    detailedPremiumAnalysis: "Detailed {domain} analysis is included in the premium report.",
-    domainCareer: "Career",
-    domainMarriage: "Marriage",
-    domainWealth: "Wealth",
-    domainHealth: "Health",
-    domainFinance: "Finance",
-    domainEducation: "Education",
-    domainFamily: "Family",
-  },
-};
+/** All template labels live under `pdf.template` in the i18n dictionary. */
+type PdfTemplateKey = keyof typeof translations.en.pdf.template;
 
 const escapeHTML = (str: string): string =>
   str
@@ -311,20 +74,20 @@ const escapeHTML = (str: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-const L = (key: keyof typeof LABEL.hi, lang: "hi" | "en"): string => LABEL[lang][key];
+const L = (key: PdfTemplateKey, lang: Language): string => getTranslation(lang, `pdf.template.${key}`);
 
 /** Localize a planet name (English/Sanskrit/Hindi → target language). */
-const localizePlanetName = (name: string, lang: "hi" | "en"): string =>
+const localizePlanetName = (name: string, lang: Language): string =>
   localizePlanet(canonicalPlanet(name), lang);
 
 /** Localize a sign descriptor (name or 1-12 index → target language). */
-const localizeSignName = (sign: string | number, lang: "hi" | "en"): string => {
+const localizeSignName = (sign: string | number, lang: Language): string => {
   const idx = getSignIndex(sign);
   return idx ? localizeRashi(idx, lang) : localizeSign(String(sign), lang);
 };
 
 /** Domain key → localized LABEL lookup key for the life-domain pages. */
-const DOMAIN_LABEL_KEYS: Record<string, keyof typeof LABEL.hi> = {
+const DOMAIN_LABEL_KEYS: Record<string, PdfTemplateKey> = {
   career: "domainCareer",
   marriage: "domainMarriage",
   wealth: "domainWealth",
@@ -446,6 +209,7 @@ html, body { overflow: hidden; }
 .prescript-card { border: 0.5pt solid #bbb; border-radius: 3px; padding: 3mm; }
 .prescript-k { font-size: 8pt; color: #666; text-transform: uppercase; letter-spacing: 0.03em; }
 .prescript-v { font-size: 10.5pt; font-weight: 700; margin-top: 1pt; }
+.prescript-line { font-size: 8.5pt; margin-top: 1pt; }
 .dasha-focus-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.25cm; }
 .dasha-focus { border: 1pt solid #d1d5db; border-radius: 3px; padding: 2mm 3mm; flex: 1 1 30%; min-width: 55mm; }
 .dasha-focus.active { background: #eff6ff; border-color: #2563eb; }
@@ -462,7 +226,7 @@ html, body { overflow: hidden; }
 .tracker-table th { background: #f0f0f0; }
 `;
 
-const PAGE_CHROME = (title: string, lang: "hi" | "en", pageNumber: number, data: Pick<ReportData, "clientName" | "isPaidTier">): string => `<div class="page-container">
+const PAGE_CHROME = (title: string, lang: Language, pageNumber: number, data: Pick<ReportData, "clientName" | "isPaidTier">): string => `<div class="page-container">
 <div class="header">
   <h1 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(title)}</h1>
   <div class="meta">
@@ -473,7 +237,7 @@ const PAGE_CHROME = (title: string, lang: "hi" | "en", pageNumber: number, data:
 <div class="page-content">
 `;
 
-const PAGE_FOOTER = (pageNumber: number, lang: "hi" | "en"): string => `
+const PAGE_FOOTER = (pageNumber: number, lang: Language): string => `
 </div>
 <div class="footer">
   <span class="page-number">${L("page", lang)} ${pageNumber}</span>
@@ -514,7 +278,7 @@ const buildChartInput = (
  * Falls back to the pre-rendered `northIndianChartSvg` when a caller has
  * already supplied one (preserving existing behaviour).
  */
-const renderChartSvg = (data: ReportData, lang: "hi" | "en", style: "north" | "south"): string => {
+const renderChartSvg = (data: ReportData, lang: Language, style: "north" | "south"): string => {
   if (style === "north" && /^<svg/.test(data.northIndianChartSvg || "")) {
     return data.northIndianChartSvg;
   }
@@ -535,26 +299,20 @@ const renderChartSvg = (data: ReportData, lang: "hi" | "en", style: "north" | "s
 // blank space of the previous layout.
 
 /** Shared compact key/value tile used by the Panchang strip. */
-const tile = (
-  labelEn: string,
-  labelHi: string,
-  lang: "hi" | "en",
-  value?: string
-): string =>
+const tile = (key: PdfTemplateKey, lang: Language, value?: string): string =>
   value
-    ? `<div class="tile"><div class="tile-k">${escapeHTML(
-        lang === "hi" ? labelHi : labelEn
-      )}</div><div class="tile-v">${escapeHTML(value)}</div></div>`
+    ? `<div class="tile"><div class="tile-k">${escapeHTML(L(key, lang))}</div><div class="tile-v">${escapeHTML(value)}</div></div>`
     : "";
 
 /**
- * PAGE 1 — Nativity details + Panchang strip + D1 diamond chart + core
- * planetary table. Absorbs the old near-empty cover, birth-details and
- * planetary-positions sheets into one standard A4 sheet.
+ * PAGE 1 — Nativity details + Panchang strip (Lagna / Moon Sign / Sun Sign /
+ * Nakshatra / Weekday) + D1 diamond chart + core planetary table. Absorbs the
+ * old near-empty cover, birth-details and planetary-positions sheets into one
+ * standard A4 sheet.
  */
 const buildNativityPanchangChartPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const bd = data.birthDetails;
@@ -567,7 +325,7 @@ const buildNativityPanchangChartPage = (
       )}</th><td>${escapeHTML(data.chartType)}</td></tr>
 <tr><th>${L("birthDetails", lang)}</th><td>${escapeHTML(bd.date)} · ${escapeHTML(
         bd.time
-      )}</td><th>TZ</th><td>${escapeHTML(bd.timezone)}</td></tr>
+      )}</td><th>${L("tz", lang)}</th><td>${escapeHTML(bd.timezone)}</td></tr>
 <tr><th>${L("latLong", lang)}</th><td colspan="3">${escapeHTML(bd.latitude)}${
         bd.longitude ? `, ${escapeHTML(bd.longitude)}` : ""
       }</td></tr>
@@ -575,14 +333,17 @@ const buildNativityPanchangChartPage = (
     : "";
   const panchangGrid = pc
     ? `<div class="tile-grid">${[
-        tile("Vara (Weekday)", "वार", lang, pc.varaWeekday),
-        tile("Nakshatra", "नक्षत्र", lang, pc.nakshatra),
-        tile("Nakshatra Lord", "नक्षत्र स्वामी", lang, pc.nakshatraLord ? localizePlanetName(pc.nakshatraLord, lang) : undefined),
-        tile("Moon Sign", "चंद्र राशि", lang, pc.moonSign ? localizeSignName(pc.moonSign, lang) : undefined),
-        tile("Sun Sign", "सूर्य राशि", lang, pc.sunSign ? localizeSignName(pc.sunSign, lang) : undefined),
-        tile("Lagna", "लग्न", lang, pc.lagna ? localizeSignName(pc.lagna, lang) : undefined),
+        tile("varaWeekday", lang, pc.varaWeekday),
+        tile("nakshatra", lang, pc.nakshatra),
+        tile("nakshatraLord", lang, pc.nakshatraLord ? localizePlanetName(pc.nakshatraLord, lang) : undefined),
+        tile("moonSign", lang, pc.moonSign ? localizeSignName(pc.moonSign, lang) : undefined),
+        tile("sunSign", lang, pc.sunSign ? localizeSignName(pc.sunSign, lang) : undefined),
+        tile("lagna", lang, pc.lagna ? localizeSignName(pc.lagna, lang) : undefined),
       ].join("")}</div>`
     : "";
+  const planetRows = (data.planetaryPositions || [])
+    .map(p => `<tr><td>${escapeHTML(localizePlanetName(p.body, lang))}</td><td>${escapeHTML(localizeSignName(p.sign, lang))}</td><td>${escapeHTML(p.degree)}</td><td>${escapeHTML(p.house)}</td><td>${p.retro ? "✓" : "-"}</td></tr>`)
+    .join("");
   return `
 ${PAGE_CHROME(L("title", lang), lang, pageNumber, data)}
 <div class="cover-band"><span class="client-name">${escapeHTML(
@@ -599,13 +360,13 @@ ${panchangGrid}
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("lagnaD1Chart", lang)}</h2>
 <div class="chart-container chart-sm">${renderChartSvg(data, lang, "north")}</div>
 </div>
-<div class="section-block">
+${planetRows ? `<div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("planetaryPositions", lang)}</h2>
 <table class="table-0">
 <tr><th>${L("bodyCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th><th>${L("houseCol", lang)}</th><th>${L("retroCol", lang)}</th></tr>
-${data.planetaryPositions.map(p => `<tr><td>${escapeHTML(localizePlanetName(p.body, lang))}</td><td>${escapeHTML(localizeSignName(p.sign, lang))}</td><td>${escapeHTML(p.degree)}</td><td>${escapeHTML(p.house)}</td><td>${p.retro ? "✓" : "-"}</td></tr>`).join("")}
+${planetRows}
 </table>
-</div>
+</div>` : ""}
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -616,7 +377,7 @@ ${PAGE_FOOTER(pageNumber, lang)}
  */
 const buildHousesNavamsaAshtakavargaPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const sav = data.sarvashtakavarga?.bindus?.length ? data.sarvashtakavarga : null;
@@ -633,15 +394,15 @@ const buildHousesNavamsaAshtakavargaPage = (
     ? sav.bindus
         .map((b, i) => `<div class="av-cell${
           sav.beneficialHouses?.includes(i + 1) ? " av-strong" : ""
-        }"><span class="av-h">H${i + 1}</span><span class="av-b">${Number(b) || 0}</span></div>`)
+        }"><span class="av-h">${escapeHTML(L("houseShort", lang))}${i + 1}</span><span class="av-b">${Number(b) || 0}</span></div>`)
         .join("")
     : "";
-  const houseRows = data.houseCusps
+  const houseRows = (data.houseCusps || [])
     .map(h => `<tr><td>${escapeHTML(String(h.house))}</td><td>${escapeHTML(localizeSignName(h.sign, lang))}</td><td>${escapeHTML(h.degree || "-")}</td></tr>`)
     .join("");
   // Split the 12 cusps into two side-by-side tables so the block stays compact.
-  const half = Math.ceil(data.houseCusps.length / 2) || 6;
-  const houseCols = data.houseCusps.length
+  const half = Math.ceil((data.houseCusps || []).length / 2) || 6;
+  const houseCols = data.houseCusps?.length
     ? `<div class="grid-2">
 <table class="table-0"><tr><th>${L("houseCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th></tr>${houseRows.slice(0, half)}</table>
 <table class="table-0"><tr><th>${L("houseCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th></tr>${houseRows.slice(half)}</table>
@@ -667,23 +428,23 @@ ${PAGE_FOOTER(pageNumber, lang)}
 };
 
 /**
- * PAGE 3 — Vimshottari dasha table + yogas + remedies packed together.
- * Returns "" when none of the three carry data so no placeholder/blank
- * "उपाय" sheet can ever leak into the PDF.
+ * PAGE 3 — Vimshottari dasha table (Mahadasha / Antardasha periods) + yogas +
+ * remedies packed together. Returns "" when none of the three carry data so no
+ * placeholder/blank "उपाय" sheet can ever leak into the PDF.
  */
 const buildDashaYogasRemediesPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const dashaRows = (data.dashaPeriods || [])
     .map(d => `<tr><td>${escapeHTML(localizePlanetName(d.mahaDasha, lang))}</td><td>${escapeHTML(d.startYear)}</td><td>${escapeHTML(d.endYear)}</td><td>${escapeHTML(d.subPeriod || "-")}</td></tr>`)
     .join("");
   const yogaItems = (data.yogas || [])
-    .map(y => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span> — <span class="p en">${escapeHTML(y.description)}</span></div>`)
+    .map(y => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span> — <span class="p ${lang === "en" ? "en" : ""}">${escapeHTML(y.description)}</span></div>`)
     .join("");
   const remedyItems = (data.remedies || [])
-    .map(r => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(r.category)}</span><p class="p en">${escapeHTML(r.description)}</p></div>`)
+    .map(r => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(r.category)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(r.description)}</p></div>`)
     .join("");
   if (!dashaRows && !yogaItems && !remedyItems) return "";
   return `
@@ -723,11 +484,12 @@ const clampWords = (text: string, max: number): string => {
  * the three metric badges in a horizontal grid row, a justified narrative
  * (≤180 words, hard-clipped at 65mm) and a compact 2-row milestone table of
  * only the next upcoming windows; a hairline divider separates the halves.
+ * Domains: Career, Wealth, Marriage, Health, Education, Family.
  */
 const buildLifeDomainsPage = (
   domains: ReportData["domainInsights"],
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const currentYear = new Date().getFullYear();
@@ -748,7 +510,7 @@ const buildLifeDomainsPage = (
       const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
       const narrative = narrativeParts.length
         ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
-        : escapeHTML(L("detailedPremiumAnalysis", lang).replace("{domain}", title.toLowerCase()));
+        : escapeHTML(getTranslation(lang, "pdf.template.detailedPremiumAnalysis", { domain: title.toLowerCase() }));
       // Milestone table — at most TWO rows, showing only the NEXT upcoming windows.
       const upcomingWindows = (data.dashaPeriods || [])
         .filter((d) => {
@@ -758,7 +520,7 @@ const buildLifeDomainsPage = (
         .slice(0, 2);
       const milestoneRows = upcomingWindows.length
         ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([localizePlanetName(d.mahaDasha, lang), d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
-                : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
+        : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
       return `<div class="domain-half">
 <h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
 <div class="domain-badges">${badges.map((b) => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
@@ -831,7 +593,7 @@ const vimshottariCycle = (data: ReportData, year: number) => {
   });
 };
 
-const severityLabel = (count: number): keyof typeof LABEL.hi => {
+const severityLabel = (count: number): PdfTemplateKey => {
   if (count >= 3) return "severityHigh";
   if (count === 2) return "severityMedium";
   if (count === 1) return "severityMild";
@@ -841,7 +603,7 @@ const severityLabel = (count: number): keyof typeof LABEL.hi => {
 // Returns "" when there is no yoga content to render.
 const buildYogasDoshasPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const yogaItems = (data.yogas || [])
@@ -867,7 +629,7 @@ const buildYogasDoshasPage = (
     return -1;
   })();
   const satiCard = moon && sat
-    ? `<div class="verdict-card"><span class="status-badge ${satiPhase >= 0 ? "status-warn" : "status-ok"}">${L("sadeSati", lang)}</span><span>${satiPhase >= 0 ? L(`satiPhase${satiPhase}` as keyof typeof LABEL.hi, lang) : L("noSadeSati", lang)}</span></div>`
+    ? `<div class="verdict-card"><span class="status-badge ${satiPhase >= 0 ? "status-warn" : "status-ok"}">${L("sadeSati", lang)}</span><span>${satiPhase >= 0 ? L(`satiPhase${satiPhase}` as PdfTemplateKey, lang) : L("noSadeSati", lang)}</span></div>`
     : "";
   const doshaHtml = (manglikCard || satiCard)
     ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("doshaSection", lang)}</h2>${manglikCard}${satiCard}</div>`
@@ -882,33 +644,62 @@ ${PAGE_FOOTER(pageNumber, lang)}
 };
 
 /** Canonical gemstone / rudraksha / mantra mapping per strengthening planet. */
-const GEM_PRESCRIPT: Record<string, { gem: string; mukhi: string; day: string; mantra: string; goal: string }> = {
-  Sun:      { gem: "Ruby",                          mukhi: "1 Mukhi",  day: "Sunday",    mantra: "Om Suryaya Namaha",        goal: "Confidence & authority" },
-  Moon:     { gem: "Pearl",                         mukhi: "2 Mukhi",  day: "Monday",   mantra: "Om Somaya Namaha",          goal: "Emotional peace" },
-  Mars:     { gem: "Red Coral",                     mukhi: "3 Mukhi",  day: "Tuesday",  mantra: "Om Mangalaya Namaha",       goal: "Strength & courage" },
-  Mercury:  { gem: "Emerald",                       mukhi: "4 Mukhi",  day: "Wednesday", mantra: "Om Budhaya Namaha",        goal: "Intellect & speech" },
-  Jupiter:  { gem: "Yellow Sapphire",               mukhi: "5 Mukhi",  day: "Thursday", mantra: "Om Guru Devaya Namaha",    goal: "Fortune & wisdom" },
-  Venus:    { gem: "Diamond",                       mukhi: "6 Mukhi",  day: "Friday",   mantra: "Om Shukraya Namaha",        goal: "Relationships & harmony" },
-  Saturn:   { gem: "Blue Sapphire",                 mukhi: "7 Mukhi",  day: "Saturday", mantra: "Om Shanaischaraya Namaha", goal: "Discipline & karma" },
-  Rahu:     { gem: "Hessonite (Gomed)",             mukhi: "10 Mukhi", day: "Saturday", mantra: "Om Rahave Namaha",         goal: "Ambition & clarity" },
-  Ketu:     { gem: "Cat's Eye",                     mukhi: "9 Mukhi",  day: "Tuesday",  mantra: "Om Ketave Namaha",         goal: "Spiritual intuition" },
+const GEM_PRESCRIPT: Record<string, { gemKey: PdfTemplateKey; mukhi: number; dayKey: PdfTemplateKey; mantra: string; goalKey: PdfTemplateKey }> = {
+  Sun: { gemKey: "gemRuby", mukhi: 1, dayKey: "daySunday", mantra: "Om Suryaya Namaha", goalKey: "goalConfidence" },
+  Moon: { gemKey: "gemPearl", mukhi: 2, dayKey: "dayMonday", mantra: "Om Somaya Namaha", goalKey: "goalEmotional" },
+  Mars: { gemKey: "gemRedCoral", mukhi: 3, dayKey: "dayTuesday", mantra: "Om Mangalaya Namaha", goalKey: "goalStrength" },
+  Mercury: { gemKey: "gemEmerald", mukhi: 4, dayKey: "dayWednesday", mantra: "Om Budhaya Namaha", goalKey: "goalIntellect" },
+  Jupiter: { gemKey: "gemYellowSapphire", mukhi: 5, dayKey: "dayThursday", mantra: "Om Guru Devaya Namaha", goalKey: "goalFortune" },
+  Venus: { gemKey: "gemDiamond", mukhi: 6, dayKey: "dayFriday", mantra: "Om Shukraya Namaha", goalKey: "goalRelationships" },
+  Saturn: { gemKey: "gemBlueSapphire", mukhi: 7, dayKey: "daySaturday", mantra: "Om Shanaischaraya Namaha", goalKey: "goalDiscipline" },
+  Rahu: { gemKey: "gemHessonite", mukhi: 10, dayKey: "daySaturday", mantra: "Om Rahave Namaha", goalKey: "goalAmbition" },
+  Ketu: { gemKey: "gemCatsEye", mukhi: 9, dayKey: "dayTuesday", mantra: "Om Ketave Namaha", goalKey: "goalSpiritual" },
 };
+
+const PRESCRIPT_ALIASES: Record<string, string[]> = {
+  Sun: ["sun", "surya", "sury"],
+  Moon: ["moon", "chandra", "chand"],
+  Mars: ["mars", "mangal", "manglik"],
+  Mercury: ["mercury", "budha", "budh"],
+  Jupiter: ["jupiter", "guru", "brihaspati"],
+  Venus: ["venus", "shukra"],
+  Saturn: ["saturn", "shani"],
+  Rahu: ["rahu"],
+  Ketu: ["ketu"],
+};
+
+/** Find the canonical prescription entry whose planet alias appears in `text`. */
+const findPrescript = (text: string): { planet: string; prescript: typeof GEM_PRESCRIPT[string] } | null => {
+  const lower = text.toLowerCase();
+  for (const [planet, aliases] of Object.entries(PRESCRIPT_ALIASES)) {
+    if (aliases.some((a) => lower.includes(a))) {
+      return { planet, prescript: GEM_PRESCRIPT[planet] };
+    }
+  }
+  return null;
+};
+
+const prescriptLines = (prescript: typeof GEM_PRESCRIPT[string], lang: Language): string =>
+  `<div class="prescript-line"><strong>${escapeHTML(L(prescript.gemKey, lang))}</strong> · ${escapeHTML(getTranslation(lang, "pdf.template.mukhi", { count: prescript.mukhi }))} · ${escapeHTML(L(prescript.dayKey, lang))}</div><div class="prescript-line">${escapeHTML(prescript.mantra)}</div><div class="prescript-line">${escapeHTML(L(prescript.goalKey, lang))}</div>`;
 
 /**
  * PAGE — Gemstone / Rudraksha prescription. Renders rows only when the remedy
- * data actually describes gem or rudraksha material.
+ * data actually describes gem or rudraksha material. When a remedy references
+ * a strengthening planet, the canonical gem / mukhi / day / mantra / goal is
+ * appended to the card. Returns "" when no gem-related remedy exists.
  */
 const buildRemedyPrescriptPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const rows = (data.remedies || [])
     .filter((r) => /gem|rudraksh|ratna|रत्न|रुद्राक्ष|ruby|pearl|sapphire|gemstone/i.test(`${r.category} ${r.description}`))
     .slice(0, 6)
-    .map((r) =>
-      `<div class="prescript-card"><div class="prescript-k">${escapeHTML(r.category || L("gemRudhSection", lang))}</div>${r.description ? `<div class="prescript-v">${escapeHTML(r.description)}</div>` : ""}</div>`
-    )
+    .map((r) => {
+      const match = findPrescript(`${r.category} ${r.description}`);
+      return `<div class="prescript-card"><div class="prescript-k">${escapeHTML(r.category || L("gemRudhSection", lang))}</div>${r.description ? `<div class="prescript-v">${escapeHTML(r.description)}</div>` : ""}${match ? prescriptLines(match.prescript, lang) : ""}</div>`;
+    })
     .join("");
   if (!rows) return "";
 
@@ -925,7 +716,7 @@ ${PAGE_FOOTER(pageNumber, lang)}
  */
 const buildCurrentDashaPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   if (!(data.dashaPeriods || []).length) return "";
@@ -962,7 +753,7 @@ ${PAGE_FOOTER(pageNumber, lang)}
  */
 const buildManglikSadeTrackerPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const mars = findPlanet(data, "Mars");
@@ -977,7 +768,8 @@ const buildManglikSadeTrackerPage = (
     .map((h) => {
       const placing = (data.planetaryPositions || []).filter((p) => houseNum(p) === h);
       const hasMars = placing.some((p) => canonPlanet(p.body) === canonPlanet("Mars"));
-      return `<tr${hasMars ? " style=\"background:#fef3c7\"" : ""}><td>${h}</td><td>${placing.map((p) => escapeHTML(localizePlanetName(p.body, lang))).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
+      const rowStyle = hasMars ? " style=\"background:#fef3c7\"" : "";
+      return `<tr${rowStyle}><td>${h}</td><td>${placing.map((p) => escapeHTML(localizePlanetName(p.body, lang))).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
     })
     .join("");
 
@@ -990,10 +782,10 @@ const buildManglikSadeTrackerPage = (
     if (m === ((s + 10) % 12) + 1) return 0; // Phase 1 (12th from Saturn)
     return -1;
   })();
-  const satiPhaseLabels: (keyof typeof LABEL.hi)[] = [
+  const satiPhaseLabels: PdfTemplateKey[] = [
     "satiPhase1", "satiPhase2", "satiPhase3",
   ];
-  const satiPhaseLabel = (idx: -1 | 0 | 1 | 2): keyof typeof LABEL.hi | undefined =>
+  const satiPhaseLabel = (idx: -1 | 0 | 1 | 2): PdfTemplateKey | undefined =>
     idx >= 0 ? satiPhaseLabels[idx] : undefined;
   const satiActiveLabel = satiPhaseLabel(satiPhaseIndex);
   const satiRows = satiPhaseIndex >= 0 && satiActiveLabel
@@ -1023,7 +815,7 @@ ${PAGE_FOOTER(pageNumber, lang)}
  */
 const buildDashaMasterPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   if (!(data.dashaPeriods || []).length) return "";
@@ -1033,7 +825,8 @@ const buildDashaMasterPage = (
   const rows = cycle
     .map((c, i) => {
       const on = c.name.toLowerCase() === current.toLowerCase();
-      return `<tr${on ? " style=\"background:#eff6ff\"" : ""}><td>${i + 1}</td><td>${escapeHTML(localizePlanetName(c.name, lang))}</td><td>${c.years}</td><td>${c.from}</td><td>${c.to}</td>${on ? `<td>${L("onDashaNow", lang)}</td>` : ""}</tr>`;
+      const rowStyle = on ? " style=\"background:#eff6ff\"" : "";
+      return `<tr${rowStyle}><td>${i + 1}</td><td>${escapeHTML(localizePlanetName(c.name, lang))}</td><td>${c.years}</td><td>${c.from}</td><td>${c.to}</td>${on ? `<td>${L("onDashaNow", lang)}</td>` : ""}</tr>`;
     })
     .join("");
   return `
@@ -1046,6 +839,7 @@ ${rows}
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
+
 /**
  * FINAL SHEET — guarded appendix: Phal-Deepika references + scorecard + a
  * one-line closing note. Omitted entirely when neither dataset exists,
@@ -1053,26 +847,32 @@ ${PAGE_FOOTER(pageNumber, lang)}
  */
 const buildAppendixSummaryPage = (
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
   const refs = data.kalpurushaPhalDeepikaRefs || [];
   const score = data.scorecard || [];
   if (!refs.length && !score.length) return "";
+  const refItems = refs
+    .map(ref => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(ref.verse)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(ref.interpretation)}</p></div>`)
+    .join("");
+  const scoreRows = score
+    .map(s => `<tr><td>${escapeHTML(s.parameter)}</td><td><span class="score-text">${s.score}/${s.maxScore}</span></td><td><div class="score-bar"><div class="score-fill" style="width:${Math.min(100, Math.max(0, (s.score / s.maxScore) * 100))}%"></div></div></td></tr>`)
+    .join("");
   return `
 ${PAGE_CHROME(L("references", lang), lang, pageNumber, data)}
-${refs.length ? `<div class="section-block">
+${refItems ? `<div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("references", lang)}</h2>
-${refs.map(ref => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(ref.verse)}</span><p class="p en">${escapeHTML(ref.interpretation)}</p></div>`).join("")}
+${refItems}
 </div>` : ""}
-${score.length ? `<div class="section-block">
+${scoreRows ? `<div class="section-block">
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("scorecard", lang)}</h2>
 <table class="table-0">
 <tr><th>${L("parameter", lang)}</th><th>${L("score", lang)}</th><th></th></tr>
-${score.map(s => `<tr><td>${escapeHTML(s.parameter)}</td><td><span class="score-text">${s.score}/${s.maxScore}</span></td><td><div class="score-bar"><div class="score-fill" style="width:${Math.min(100, Math.max(0, (s.score / s.maxScore) * 100))}%"></div></div></td></tr>`).join("")}
+${scoreRows}
 </table>
 </div>` : ""}
-<p class="note">${escapeHTML(L("generatedOn", lang).replace("onDate", new Date().toLocaleDateString(lang === "hi" ? "hi-IN" : "en-US"))) }</p>
+<p class="note">${escapeHTML(getTranslation(lang, "pdf.template.generatedOn", { date: new Date().toLocaleDateString(lang === "hi" ? "hi-IN" : "en-US") }))}</p>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -1090,10 +890,10 @@ const OUTCOME_TAG_COLOR: Record<string, string> = {
 const buildNarrativePage = (
   n: ReportNarrative,
   data: ReportData,
-  lang: "hi" | "en",
+  lang: Language,
   pageNumber: number
 ): string => {
-        const title = lang === "hi" ? n.titleHi || n.titleEn : n.titleEn || n.titleHi;
+  const title = lang === "hi" ? n.titleHi || n.titleEn : n.titleEn || n.titleHi;
   const narrative = lang === "hi" ? n.narrativeHi || n.narrativeEn : n.narrativeEn || n.narrativeHi;
   const badges = n.badges || {};
   const badgeCells = [
@@ -1101,27 +901,41 @@ const buildNarrativePage = (
     badges.timeframe,
     badges.lord,
   ].filter(Boolean) as string[];
+  const badgeHtml = badgeCells.length
+    ? `<p class="p"><span class="tag paid">${badgeCells.map((b) => escapeHTML(b)).join('</span> <span class="tag paid">')}</span></p>`
+    : "";
+  const milestoneRows = (n.milestones || [])
+    .map((m) => {
+      const outcomeDot = m.outcome
+        ? ` <span style="color:${OUTCOME_TAG_COLOR[m.outcome] || "#6b7280"};font-weight:700;">●</span>`
+        : "";
+      return `<tr><td>${escapeHTML(m.period)}</td><td>${escapeHTML(m.event)}${outcomeDot}</td><td>${escapeHTML(m.note || "-")}</td></tr>`;
+    })
+    .join("");
+  const milestonesHtml = n.milestones?.length
+    ? `
+<div class="divider"></div>
+<h2 class="${lang === "en" ? "en" : ""}">${escapeHTML(L("milestones", lang))}</h2>
+<table class="table-0">
+<tr><th>${L("period", lang)}</th><th>${L("event", lang)}</th><th>${L("note", lang)}</th></tr>
+${milestoneRows}
+</table>`
+    : "";
 
   return `
 ${PAGE_CHROME(title, lang, pageNumber, data)}
 <p class="note">${escapeHTML(L("appendix", lang))}</p>
 <h1 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(title)}</h1>
-${badgeCells.length ? `<p class="p"><span class="tag paid">${badgeCells.map(b => escapeHTML(b)).join("</span> <span class=\"tag paid\">")}</span></p>` : ""}
+${badgeHtml}
 <h2 class="${lang === 'en' ? 'en' : ''}">${L("domainInsights", lang)}</h2>
 <p class="p${lang === "en" ? " en" : ""}" style="font-size:10pt;">${escapeHTML(narrative)}</p>
-${(n.milestones && n.milestones.length) ? `
-<div class="divider"></div>
-<h2 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(L("milestones", lang))}</h2>
-<table class="table-0">
-<tr><th>${L("period", lang)}</th><th>${L("event", lang)}</th><th>${L("note", lang)}</th></tr>
-${n.milestones.map(m => `<tr><td>${escapeHTML(m.period)}</td><td>${escapeHTML(m.event)}${m.outcome ? ` <span style="color:${OUTCOME_TAG_COLOR[m.outcome] || "#6b7280"};font-weight:700;">●</span>` : ""}</td><td>${escapeHTML(m.note || "-")}</td></tr>`).join("")}
-</table>` : ""}
+${milestonesHtml}
 <p class="note">${escapeHTML(L("aiNote", lang))}</p>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
 
-export function generateReportHtml(reportData: ReportData, language: "hi" | "en"): string {
+export function generateReportHtml(reportData: ReportData, language: Language): string {
   const lang = language;
   let pageNo = 0;
   const pages: string[] = [];
@@ -1201,4 +1015,4 @@ ${pages.join("")}
 `.trim();
 }
 
-export const PDF_HTML_TEMPLATE_VERSION = "2.0.0";
+export const PDF_HTML_TEMPLATE_VERSION = "2.1.0";

@@ -20,7 +20,6 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
-import DownloadReportButton from '@/app/components/DownloadReportButton';
 import KundliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
@@ -404,7 +403,6 @@ export default function KundaliView({
         {isPaid && (
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <KundliPdfButton reportData={reportData} userName={userName} />
-            <DownloadReportButton reportData={reportData} userName={userName} />
           </div>
         )}
         </>

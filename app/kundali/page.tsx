@@ -1033,7 +1033,7 @@ export default function KundaliPage() {
               time: kundliData?.timeOfBirth || '',
               latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(2) : '',
               longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(2) : '',
-              timezone: kundliData?.chartData?.timezone || 'IST (+05:30)',
+              timezone: kundliData?.chartData?.timezone || t('kundali.istTimezone'),
             }}
             planets={kundliData?.planets?.map((p) => ({
               body: p.name || '',

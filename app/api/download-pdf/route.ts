@@ -29,12 +29,27 @@ export async function POST(req: NextRequest) {
 
     // Language — prefer the canonical `language` field; fall back to the
     // legacy `lang` key for backwards compatibility with older clients.
-    const resolvedLang: "en" | "hi" =
-      typeof language === "string" && language.trim().toLowerCase() === "hi"
-        ? "hi"
-        : typeof lang === "string" && lang.trim().toLowerCase() === "hi"
-          ? "hi"
-          : "en";
+    const rawLang = typeof language === "string" && language.trim() !== ""
+      ? language
+      : typeof lang === "string" && lang.trim() !== ""
+        ? lang
+        : "";
+
+    if (!rawLang) {
+      return NextResponse.json(
+        { error: "Missing language", detail: "Provide a 'language' or 'lang' field" },
+        { status: 400 }
+      );
+    }
+
+    if (!["en", "hi"].includes(rawLang.trim().toLowerCase())) {
+      return NextResponse.json(
+        { error: "Unsupported language", detail: `Supported languages: en, hi. Got: ${rawLang}` },
+        { status: 400 }
+      );
+    }
+
+    const resolvedLang: "en" | "hi" = rawLang.trim().toLowerCase() as "en" | "hi";
 
     // Generate HTML
     const html = generateReportHtml(reportData as ReportData, resolvedLang);
