@@ -212,8 +212,8 @@ export default function RootLayout({
         )}
         <ThemeProvider>
           <ErrorBoundary>
-            <ToastProvider>
             <LanguageProvider>
+            <ToastProvider>
               <AppProvider>
                 <AuthProvider>
                 <WalletProvider>
@@ -226,11 +226,11 @@ export default function RootLayout({
                 </WalletProvider>
                 </AuthProvider>
               </AppProvider>
-            </LanguageProvider>
             </ToastProvider>
+            <InstallBanner />
+            </LanguageProvider>
           </ErrorBoundary>
-          <InstallBanner />
-        </ThemeProvider>
+          </ThemeProvider>
       </body>
     </html>
   );
