@@ -89,8 +89,12 @@ function useChartPoints(birthData: PreviewBirthData) {
 /**
  * Fetches the deterministic chart from /api/kundali/generate and returns up
  * to three confirmed yogas from its paidTier payload.
+ *
+ * The `lang` parameter is part of the dependency key so that switching the
+ * app language triggers a fresh fetch in the new language (mirrors the
+ * horoscope page pattern of including `language` in the effect deps).
  */
-function useYogas(birthData: PreviewBirthData) {
+function useYogas(birthData: PreviewBirthData, lang: 'en' | 'hi') {
   const [yogas, setYogas] = React.useState<YogaItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -100,6 +104,7 @@ function useYogas(birthData: PreviewBirthData) {
     birthData.latitude,
     birthData.longitude,
     birthData.timezoneOffset,
+    lang,
   ].join('|');
 
   React.useEffect(() => {
@@ -118,7 +123,7 @@ function useYogas(birthData: PreviewBirthData) {
             latitude: birthData.latitude,
             longitude: birthData.longitude,
             timezoneOffset: birthData.timezoneOffset || '+05:30',
-            language: 'en',
+            language: lang,
           }),
         });
         if (!res.ok) throw new Error(`generate failed: ${res.status}`);
@@ -214,7 +219,7 @@ export default function Preview({
   richPredictions,
   showHeader = true,
 }: PreviewProps) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
   const PLANET_KEYS: Record<string, string> = {
     Sun: 'sun',
@@ -255,7 +260,7 @@ export default function Preview({
   // 1) Real chart points computed in-browser from the passed birth data.
   const chart = useChartPoints(birthData);
   // 2) Yogas fetched from /api/kundali/generate (up to 3).
-  const { yogas, isLoading: yogasLoading } = useYogas(birthData);
+  const { yogas, isLoading: yogasLoading } = useYogas(birthData, lang);
   // Teaser copies (first 50 chars of each narrative).
   const careerTeaser = useDomainTeaser('career', paidTier, richPredictions);
   const marriageTeaser = useDomainTeaser('marriage', paidTier, richPredictions);

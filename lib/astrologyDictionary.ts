@@ -500,7 +500,7 @@ export const NAKSHATRA_LORDS: string[] = [
 export type TableLabelKey =
   | 'planet' | 'sign' | 'signLord' | 'degree' | 'house' | 'nakshatra' | 'nakshLord'
   | 'starLord' | 'subLord' | 'cusp' | 'mahadasha' | 'antardasha' | 'period'
-  | 'status' | 'retrograde' | 'direct' | 'strength' | 'description';
+  | 'status' | 'retrograde' | 'direct' | 'strength' | 'description' | 'pada';
 
 export const TABLE_LABELS: Record<LocaleCode, Record<TableLabelKey, string>> = {
   en: {
@@ -510,6 +510,7 @@ export const TABLE_LABELS: Record<LocaleCode, Record<TableLabelKey, string>> = {
     mahadasha: 'Mahadasha', antardasha: 'Antardasha', period: 'Period',
     status: 'Status', retrograde: 'Retrograde', direct: 'Direct',
     strength: 'Strength', description: 'Description',
+    pada: 'Pada',
   },
   hi: {
     planet: 'ग्रह', sign: 'राशि', signLord: 'राशि स्वामी', degree: 'अंश',
@@ -518,6 +519,7 @@ export const TABLE_LABELS: Record<LocaleCode, Record<TableLabelKey, string>> = {
     mahadasha: 'महादशा', antardasha: 'अंतर्दशा', period: 'अवधि',
     status: 'स्थिति', retrograde: 'रिट्रो', direct: 'डायरेक्ट',
     strength: 'शक्ति', description: 'विवरण',
+    pada: 'पाद',
   },
 };
 

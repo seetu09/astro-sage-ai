@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   Info,
@@ -246,6 +246,109 @@ function extractSarvashtakavarga(src: unknown): ReportData['sarvashtakavarga'] {
 }
 
 
+/**
+ * Interface for the raw birth details needed to (re-)generate a kundli.
+ * Used both by handleSubmit and the language-change re-fetch effect.
+ */
+interface BirthDetailsForApi {
+  name: string;
+  email: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  placeOfBirth: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string;
+}
+
+/**
+ * Process a `/api/kundli/generate` JSON response into a typed KundliData
+ * object. Extracted from handleSubmit so it can be reused when re-fetching
+ * on language change (mirrors the horoscope page pattern of re-fetching on
+ * language switch).
+ *
+ * NOTE: `localizeNakshatraClean` uses `selectedLanguage` so the basic-details
+ * card always reflects the active language at render time.
+ */
+function buildKundliData(
+  result: any,
+  details: BirthDetailsForApi,
+  selectedLanguage: 'en' | 'hi'
+): KundliData {
+  const chartData = result.chartData;
+
+  if (!chartData || typeof chartData !== 'object' || !Array.isArray(chartData.planets)) {
+    throw new Error('Invalid chart data received from the server');
+  }
+
+  return {
+    name: details.name,
+    email: details.email,
+    dateOfBirth: details.dateOfBirth,
+    timeOfBirth: details.timeOfBirth,
+    placeOfBirth: details.placeOfBirth,
+    latitude: details.latitude,
+    longitude: details.longitude,
+    timezone: details.timezone,
+    ascendant:
+      extractEnglishPart(chartData?.lagna) ||
+      extractEnglishPart(chartData?.ascendant) ||
+      '',
+    moonSign:
+      extractEnglishPart(chartData?.rashi) ||
+      extractEnglishPart(chartData?.moonSign) ||
+      '',
+    sunSign: extractEnglishPart(chartData?.sunSign) || '',
+    nakshatra: extractEnglishPart(chartData?.nakshatra) || '',
+    planets: (chartData?.planets ?? []).map((p: any) => ({
+      name: p?.name || '',
+      sign: cleanAstroValue(p?.sign) || '',
+      house: p?.house ?? 0,
+      degree: typeof p?.degree === 'string' ? parseFloat(p.degree) || 0 : p?.degree ?? 0,
+      status: p?.retrograde ? 'Retrograde' : 'Direct',
+      nakshatra: cleanAstroValue(p?.nakshatra) || undefined,
+      pada: p?.pada,
+    })),
+    houses: Array.isArray(chartData?.houses)
+      ? chartData.houses.map((h: any) => ({ house: h?.house ?? 0, sign: signToIndex(h?.sign) }))
+      : undefined,
+    interpretation: typeof result.interpretation === 'string' ? result.interpretation : '',
+    freeTier: (result.freeTier as FreeTierData) ?? EMPTY_FREE_TIER,
+    paidTier: (result.paidTier as PaidTierData) ?? EMPTY_PAID_TIER,
+    pillars: Array.isArray(result.pillars) && result.pillars.length === 6
+      ? (result.pillars as LifePillarConfig[])
+      : undefined,
+    richPredictions: (result.richPredictions as RichPredictionReport | null | undefined) ?? undefined,
+    chartData: {
+      lagna: chartData?.lagna,
+      ascendant: chartData?.ascendant,
+      rashi: chartData?.rashi,
+      moonSign: chartData?.moonSign,
+      sunSign: chartData?.sunSign,
+      nakshatra: chartData?.nakshatra,
+      timezone: chartData?.timezone,
+      houses: Array.isArray(chartData?.houses)
+        ? chartData.houses.map((h: any) => ({
+            house: h?.house ?? 0,
+            sign: h?.sign ?? '',
+            planets: Array.isArray(h?.planets) ? h.planets : [],
+          }))
+        : undefined,
+      planets: Array.isArray(chartData?.planets)
+        ? chartData.planets.map((p: any) => ({
+            name: p?.name || '',
+            sign: p?.sign || '',
+            house: p?.house ?? 0,
+            degree: p?.degree ?? '',
+            nakshatra: p?.nakshatra || '',
+            retrograde: p?.retrograde ?? false,
+          }))
+        : undefined,
+    },
+  };
+}
+
+
 export default function KundaliPage() {
   const { language } = useLanguage();
   const { t } = useTranslation();
@@ -389,84 +492,12 @@ export default function KundaliPage() {
       }
 
       const result = await response.json();
-      const chartData = result.chartData;
 
-      // Defensive guard: bail out into the catch block (which sets `error`
-      // state) instead of letting a TypeError bubble up and crash React
-      // when the API returns a malformed/unexpected payload.
-      if (!chartData || typeof chartData !== 'object' || !Array.isArray(chartData.planets)) {
-        throw new Error('Invalid chart data received from the server');
-      }
-
-      const data: KundliData = {
-        name,
-        email,
-        dateOfBirth,
-        timeOfBirth: resolvedTime,
-        placeOfBirth,
-        latitude,
-        longitude,
-        timezone,
-        // Bind to both English and Hindi keys from the flat chartData.
-        // extractEnglishPart strips the "(कुंभ)" suffix so signToIndex works,
-        // while the raw bilingual string is preserved in data.chartData for display.
-        ascendant:
-          extractEnglishPart(chartData?.lagna) ||
-          extractEnglishPart(chartData?.ascendant) ||
-          '',
-        moonSign:
-          extractEnglishPart(chartData?.rashi) ||
-          extractEnglishPart(chartData?.moonSign) ||
-          '',
-        sunSign: extractEnglishPart(chartData?.sunSign) || '',
-        nakshatra: extractEnglishPart(chartData?.nakshatra) || '',
-        planets: (chartData?.planets ?? []).map((p: any) => ({
-          name: p?.name || '',
-          sign: cleanAstroValue(p?.sign) || '',
-          house: p?.house ?? 0,
-          degree: typeof p?.degree === 'string' ? parseFloat(p.degree) || 0 : p?.degree ?? 0,
-          status: p?.retrograde ? 'Retrograde' : 'Direct',
-          nakshatra: cleanAstroValue(p?.nakshatra) || undefined,
-          pada: p?.pada,
-        })),
-        houses: Array.isArray(chartData?.houses)
-          ? chartData.houses.map((h: any) => ({ house: h?.house ?? 0, sign: signToIndex(h?.sign) }))
-          : undefined,
-        interpretation: typeof result.interpretation === 'string' ? result.interpretation : '',
-        freeTier: (result.freeTier as FreeTierData) ?? EMPTY_FREE_TIER,
-        paidTier: (result.paidTier as PaidTierData) ?? EMPTY_PAID_TIER,
-        pillars: Array.isArray(result.pillars) && result.pillars.length === 6
-          ? (result.pillars as LifePillarConfig[])
-          : undefined,
-        richPredictions: (result.richPredictions as RichPredictionReport | null | undefined) ?? undefined,
-        // Store the raw flat chartData for direct binding in summary cards + SVG chart
-        chartData: {
-          lagna: chartData?.lagna,
-          ascendant: chartData?.ascendant,
-          rashi: chartData?.rashi,
-          moonSign: chartData?.moonSign,
-          sunSign: chartData?.sunSign,
-          nakshatra: chartData?.nakshatra,
-          timezone: chartData?.timezone,
-          houses: Array.isArray(chartData?.houses)
-            ? chartData.houses.map((h: any) => ({
-                house: h?.house ?? 0,
-                sign: h?.sign ?? '',
-                planets: Array.isArray(h?.planets) ? h.planets : [],
-              }))
-            : undefined,
-          planets: Array.isArray(chartData?.planets)
-            ? chartData.planets.map((p: any) => ({
-                name: p?.name || '',
-                sign: p?.sign || '',
-                house: p?.house ?? 0,
-                degree: p?.degree ?? '',
-                nakshatra: p?.nakshatra || '',
-                retrograde: p?.retrograde ?? false,
-              }))
-            : undefined,
-        },
+      const birthDetails: BirthDetailsForApi = {
+        name, email, dateOfBirth, timeOfBirth: resolvedTime,
+        placeOfBirth, latitude, longitude, timezone,
       };
+      const data = buildKundliData(result, birthDetails, selectedLanguage);
 
 
       setKundliData(data);
@@ -517,6 +548,73 @@ export default function KundaliPage() {
       setIsLoading(false);
     }
   };
+
+  // ─── Language-change re-fetch ───────────────────────────────────────────────
+  // When the user switches language after a kundli has already been generated,
+  // re-call /api/kundli/generate with the new language so that ALL AI-generated
+  // content (summaries, narratives, yogas, dasha themes, pillars, etc.) is
+  // regenerated in the selected language. This mirrors the horoscope page
+  // pattern of including `language` in the effect's dependency array.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    // Skip on initial mount — no kundli has been generated yet.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Only re-fetch when we already have generated data to refresh.
+    if (!showResult || !kundliData) return;
+
+    const regenerate = async () => {
+      setIsLoading(true);
+      setError('');
+      try {
+        const response = await fetch('/api/kundali/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            birthDate: kundliData.dateOfBirth,
+            birthTime: kundliData.timeOfBirth,
+            birthPlace: kundliData.placeOfBirth,
+            latitude: kundliData.latitude,
+            longitude: kundliData.longitude,
+            timezoneOffset: kundliData.timezone || '+05:30',
+            language,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to regenerate kundali');
+        }
+
+        const result = await response.json();
+        const details: BirthDetailsForApi = {
+          name: kundliData.name,
+          email: kundliData.email,
+          dateOfBirth: kundliData.dateOfBirth,
+          timeOfBirth: kundliData.timeOfBirth,
+          placeOfBirth: kundliData.placeOfBirth,
+          latitude: kundliData.latitude,
+          longitude: kundliData.longitude,
+          timezone: kundliData.timezone,
+        };
+        const data = buildKundliData(result, details, selectedLanguage);
+        setKundliData(data);
+      } catch (err) {
+        console.error('Kundali re-fetch error:', err);
+        const isNetworkError = err instanceof TypeError;
+        setErrorKind(isNetworkError ? 'network' : 'generic');
+        setError(isNetworkError ? t('kundali.errors.network') : t('kundali.errors.generic'));
+        toast.error(isNetworkError ? t('kundali.errors.network') : t('kundali.errors.generic'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void regenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
   // Defensive rendering guard: only draw the SVG chart, planet tables and
   // analysis sections when a non-empty planets array actually exists.

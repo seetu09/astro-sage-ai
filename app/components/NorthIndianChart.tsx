@@ -15,6 +15,7 @@ import {
   getDivisionalSign,
   getDivisionalAscendant,
   getDivisionalHouse,
+  NAKSHATRA_NAMES,
 } from '@/lib/astrologyDictionary';
 
 // ---------------------------------------------------------------------------
@@ -237,6 +238,16 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
   const getSignSymbol = (signNum: number): string => {
     const symbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
     return symbols[signNum - 1] ?? '♈';
+  };
+
+  // Localize a nakshatra name (e.g., "Ashwini" → "अश्विनी") based on the active language
+  const getLocalizedNakshatra = (nakshatra: string | undefined): string => {
+    if (!nakshatra) return '—';
+    const enIndex = NAKSHATRA_NAMES.en.indexOf(nakshatra.trim());
+    if (enIndex !== -1) {
+      return NAKSHATRA_NAMES[selectedLanguage]?.[enIndex] ?? nakshatra;
+    }
+    return nakshatra;
   };
 
   // Full details of the currently selected planet (for the detail card)
@@ -474,11 +485,11 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
                 <div className="flex justify-between gap-2">
                   <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('nakshatra', selectedLanguage)}</span>
                   <span className="font-medium text-indigo-950 dark:text-[#F3F4F6] truncate max-w-[110px]">
-                    {selectedDetails.nakshatra ?? '—'}
+                    {getLocalizedNakshatra(selectedDetails.nakshatra)}
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-slate-400 dark:text-[#6B7280]">Pada</span>
+                  <span className="text-slate-400 dark:text-[#6B7280]">{getTableLabel('pada', selectedLanguage)}</span>
                   <span className="font-medium text-indigo-950 dark:text-[#F3F4F6]">{selectedDetails.pada ?? '—'}</span>
                 </div>
                 <div className="flex justify-between gap-2">
