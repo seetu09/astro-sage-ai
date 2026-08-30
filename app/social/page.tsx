@@ -40,7 +40,7 @@ export default function SocialPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-[var(--accent)]">{social.followers}</div>
-                  <div className="text-xs text-[var(--text-muted)]">followers</div>
+                  <div className="text-xs text-[var(--text-muted)]">{t.social.followers}</div>
                 </div>
               </div>
             </motion.a>

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 export default function InstallBanner() {
+  const { t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -45,7 +47,7 @@ export default function InstallBanner() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
-      alert('Tap the menu (⋮) → "Add to Home Screen"');
+      alert(t.installBanner.instructions);
       return;
     }
     
@@ -74,8 +76,8 @@ export default function InstallBanner() {
             <Smartphone className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm">Install AstroVeda App</h3>
-            <p className="text-xs text-amber-100 mt-0.5">Get daily horoscopes & Kundali on your home screen</p>
+            <h3 className="font-bold text-sm">{t.installBanner.title}</h3>
+            <p className="text-xs text-amber-100 mt-0.5">{t.installBanner.subtitle}</p>
           </div>
           <button
             onClick={handleDismiss}
@@ -88,8 +90,8 @@ export default function InstallBanner() {
           onClick={handleInstall}
           className="mt-3 w-full bg-white text-amber-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
         >
-          <Download className="w-4 h-4" />
-          Add to Home Screen
+           <Download className="w-4 h-4" />
+           {t.installBanner.action}
         </button>
       </div>
     </div>

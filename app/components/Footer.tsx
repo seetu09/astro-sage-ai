@@ -114,7 +114,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-10 pt-6 border-t border-amber-200/60 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-amber-700/60 dark:text-[#6B7280]">
-            © 2026 AstroVeda. All rights reserved.
+            © {new Date().getFullYear()} {t.footer.copyright}
           </p>
           <p className="text-xs text-amber-700/60 dark:text-[#6B7280] flex items-center gap-1">
             {t.footer?.madeWith || "के साथ बनाया गया"}{" "}

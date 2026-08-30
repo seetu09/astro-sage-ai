@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, MapPin, Search, Crosshair } from "lucide-react";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 interface GeocodingResult {
   name: string;
@@ -111,7 +112,7 @@ export default function PlaceAutocomplete({
   longitude,
   onLatitudeChange,
   onLongitudeChange,
-  placeholder = "Enter city, town, or PIN code...",
+  placeholder = "",
   inputClassName = "",
   required = false,
 }: PlaceAutocompleteProps) {
@@ -131,6 +132,7 @@ export default function PlaceAutocomplete({
   );
   const [isResolving, setIsResolving] = useState(false);
   const [reverseError, setReverseError] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -451,12 +453,12 @@ export default function PlaceAutocomplete({
                 if (value.trim().length >= 2 && results.length > 0) setIsOpen(true);
               }}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              className={inputClassName}
-              autoComplete="off"
-              role="combobox"
-              aria-expanded={isOpen}
-              aria-haspopup="listbox"
+               placeholder={placeholder || t.placeSearch.placeholder}
+               className={inputClassName}
+               autoComplete="off"
+               role="combobox"
+               aria-expanded={isOpen}
+               aria-haspopup="listbox"
               aria-controls="place-autocomplete-list"
               aria-autocomplete="list"
               required={required}
@@ -527,7 +529,7 @@ export default function PlaceAutocomplete({
                 max={90}
                 step="any"
                 className="w-full astro-input py-2 px-3 text-xs sm:text-sm"
-                aria-label="Latitude"
+                aria-label={t.placeSearch.latitude}
                 autoComplete="off"
               />
             </div>
@@ -545,7 +547,7 @@ export default function PlaceAutocomplete({
                 max={180}
                 step="any"
                 className="w-full astro-input py-2 px-3 text-xs sm:text-sm"
-                aria-label="Longitude"
+                aria-label={t.placeSearch.longitude}
                 autoComplete="off"
               />
             </div>
@@ -578,7 +580,7 @@ export default function PlaceAutocomplete({
           {isLoading && (
             <li className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
               <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-              Searching locations...
+               {t.common.searching}
             </li>
           )}
 
@@ -588,7 +590,7 @@ export default function PlaceAutocomplete({
 
           {!isLoading && !error && results.length === 0 && (
             <li className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-slate-500 dark:text-[#9CA3AF]">
-              No locations found
+              {t.common.notFound}
             </li>
           )}
 

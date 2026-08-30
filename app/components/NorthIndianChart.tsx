@@ -440,7 +440,7 @@ const NorthIndianChart: React.FC<NorthIndianChartProps> = ({
             >
               <button
                 onClick={() => setSelectedPlanet(null)}
-                aria-label="Close"
+                aria-label={selectedLanguage === 'hi' ? 'बंद करें' : 'Close'}
                 className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-white/70 dark:bg-white/10 text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-900 dark:hover:text-[#F3F4F6] transition-colors"
               >
                 <X className="w-3.5 h-3.5" />

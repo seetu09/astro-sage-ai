@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Share2, Loader2, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export interface ShareCardData {
   /** Kundali mode */
@@ -90,6 +91,7 @@ type NavigatorWithCanShare = Navigator & { canShare?: (data: ShareData) => boole
 export default function ShareCard({ open, onClose, mode, lang = "en", data }: ShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<null | "download" | "share">(null);
+  const { t } = useLanguage();
   const [done, setDone] = useState(false);
 
   const L = LABELS[lang];
@@ -210,7 +212,7 @@ export default function ShareCard({ open, onClose, mode, lang = "en", data }: Sh
           >
             <button
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t.common.close}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X className="w-4 h-4" />

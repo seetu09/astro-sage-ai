@@ -197,7 +197,7 @@ export default function Navbar() {
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 rounded-lg hover:bg-amber-100/70 dark:hover:bg-white/5 transition-colors"
-                aria-label="Toggle menu"
+                 aria-label={t.nav.toggleMenu}
               >
                 {mobileMenuOpen ? (
                   <X className="w-5 h-5 sm:w-6 sm:h-6 text-amber-900 dark:text-[#F3F4F6]" />

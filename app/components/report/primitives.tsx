@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 /**
  * ReportPrimitives — small, self-contained design elements reused across every
@@ -119,15 +120,16 @@ export function MilestoneTable({
   title?: string;
   milestones: Milestone[];
 }) {
+  const { t } = useLanguage();
   return (
     <div className="rpt-milestone">
       {title && <div className="rpt-milestone-title">{title}</div>}
       <table className="rpt-table rpt-milestone-table">
         <thead>
           <tr>
-            <th>Period</th>
-            <th>Event / Forecast</th>
-            {milestones.some((m) => m.outcome) && <th>Outlook</th>}
+            <th>{t.report.period}</th>
+            <th>{t.report.event}</th>
+            {milestones.some((m) => m.outcome) && <th>{t.report.outlook}</th>}
           </tr>
         </thead>
         <tbody>

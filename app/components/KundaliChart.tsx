@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 interface PlanetPosition {
   symbol: string;
@@ -47,6 +48,7 @@ interface HouseInfo {
 }
 
 export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "Aries" }: KundaliChartProps) {
+  const { t } = useLanguage();
   const [hoveredHouse, setHoveredHouse] = useState<HouseInfo | null>(null);
 
   // Build house data
@@ -88,10 +90,10 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
         {/* Chart Title */}
         <div className="text-center mb-4">
           <h3 className="text-sm font-serif font-semibold text-indigo-900 dark:text-[#FFD166] tracking-wide">
-            Vedic Birth Chart
+            {t.common.vedicBirthChart}
           </h3>
           <p className="text-xs text-slate-400 dark:text-[#6B7280] mt-0.5">
-            North Indian Style • Lagna: {ascendant}
+            {t.common.northIndianStyle} • {t.common.lagna}: {ascendant}
           </p>
         </div>
 
@@ -101,7 +103,7 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rotate-45 border-2 border-indigo-300/60 dark:border-[#FFD166]/40 bg-white/90 dark:bg-[#121026]/50 backdrop-blur-sm flex items-center justify-center">
               <div className="-rotate-45 text-center">
-                <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">Lagna</p>
+                <p className="text-[10px] text-slate-400 dark:text-[#6B7280]">{t.common.lagna}</p>
                 <p className="text-lg text-indigo-700 dark:text-[#FFD166]">{RASHI_SYMBOLS[ascIndex]}</p>
               </div>
             </div>
@@ -168,7 +170,7 @@ export default function KundaliChart({ planets = DEFAULT_PLANETS, ascendant = "A
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 dark:text-[#6B7280]">No planets in this house</p>
+               <p className="text-xs text-slate-400 dark:text-[#6B7280]">{t.common.noPlanetsHere}</p>
             )}
           </div>
         )}

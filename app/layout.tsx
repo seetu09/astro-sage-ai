@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { cookies } from "next/headers";
 import {
   Inter,
   Cinzel,
@@ -22,6 +23,8 @@ import WarmGlow from "./components/WarmGlow";
 import InstallBanner from "./components/InstallBanner";
 import { ToastProvider } from "./components/ToastProvider";
 import TopUpModal from "./components/TopUpModal";
+import HtmlLangSync from "./components/HtmlLangSync";
+import { LANGUAGE_COOKIE_KEY, isLanguage, type Language } from "@/lib/i18n";
 
 const inter = Inter({ subsets: ["latin"] });
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"] });
@@ -53,7 +56,7 @@ export const viewport: Viewport = {
 };
 
 export function generateMetadata({ params }: { params: { lang?: string } }): Metadata {
-  const lang = params?.lang === "hi" ? "hi" : "en";
+  const lang = resolveLayoutLang(params?.lang);
   const isHindi = lang === "hi";
 
   const title = isHindi
@@ -87,6 +90,10 @@ export function generateMetadata({ params }: { params: { lang?: string } }): Met
     },
     alternates: {
       canonical: "/",
+      languages: {
+        en: "/?hl=en",
+        hi: "/?hl=hi",
+      },
     },
     openGraph: {
       type: "website",
@@ -139,6 +146,21 @@ export function generateMetadata({ params }: { params: { lang?: string } }): Met
   };
 }
 
+/**
+ * Resolve the active language for SSR/metadata. Priority: explicit `params.lang`
+ * (a future `/[lang]` segment), then the persisted language cookie, then "en".
+ */
+function resolveLayoutLang(paramLang?: string): Language {
+  if (paramLang && isLanguage(paramLang)) return paramLang;
+  try {
+    const stored = cookies().get(LANGUAGE_COOKIE_KEY)?.value;
+    if (stored && isLanguage(stored)) return stored;
+  } catch {
+    // cookies() is unavailable in edge/non-SSR runtimes — fall back to default.
+  }
+  return "en";
+}
+
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "WebSite",
@@ -159,7 +181,7 @@ export default function RootLayout({
   children: React.ReactNode;
   params?: { lang?: string };
 }>) {
-  const lang = params?.lang === "hi" ? "hi" : "en";
+  const lang = resolveLayoutLang(params?.lang);
   return (
     <html lang={lang} suppressHydrationWarning>
       <head>
@@ -169,6 +191,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className} ${notoDevanagari.variable} ${notoSans.variable} font-sans`}>
+        <HtmlLangSync lang={lang} />
         {/* Pre-launch analytics placeholder — activates only when NEXT_PUBLIC_GA_ID is set.
             Swap for Plausible/PostHog by replacing this block; funnel events use lib/analytics.ts trackEvent(). */}
         {process.env.NEXT_PUBLIC_GA_ID && (

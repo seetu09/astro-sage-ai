@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 /**
  * PageShell — the strict A4 print boundary container.
@@ -42,6 +43,7 @@ export default function PageShell({
   cover = false,
   children,
 }: PageShellProps) {
+  const { t } = useLanguage();
   return (
     <div className="page" data-report-page={page}>
       <div className="page-inner">
@@ -58,10 +60,10 @@ export default function PageShell({
 
         {!cover && (
           <footer className="page-footer">
-            <span className="page-footer-mark">AstroVeda • Vedic Insight Report</span>
+            <span className="page-footer-mark">{t.report.footerMark}</span>
             {page && (
               <span className="page-number">
-                Page {page}{totalPages ? ` of ${totalPages}` : ''}
+                {t.report.page} {page}{totalPages ? ` ${t.report.of} ${totalPages}` : ''}
               </span>
             )}
           </footer>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, RefreshCw, Star } from "lucide-react";
 import { TAROT_CARDS, TAROT_TOPICS, drawThreeCards, getCardById, getCardMeaning, type DrawnCard, type TarotTopic } from "@/lib/tarot-data";
+import { getTarotCardName, getTarotCardHiMeaning, TAROT_TOPICS_HI } from "@/lib/tarot-dictionary";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 interface RevealedCard extends DrawnCard {
@@ -116,17 +117,13 @@ export default function TarotReadingPage() {
                 onClick={() => setTopic(topicItem.id)}
                 className={`astro-card p-4 text-center cursor-pointer transition-all ${topic === topicItem.id ? "ring-2 ring-[var(--accent)] bg-[var(--accent)]/5" : ""}`}
               >
-                <div className="text-3xl mb-2">{topicItem.icon}</div>
-                <div className="font-semibold text-[var(--text-primary)]">
-                  {language === 'hi'
-                    ? topicItem.id === 'love' ? 'प्रेम' : topicItem.id === 'career' ? 'करियर' : 'सामान्य'
-                    : topicItem.label}
-                </div>
-                <div className="text-xs text-[var(--text-muted)] mt-1">
-                  {language === 'hi'
-                    ? topicItem.id === 'love' ? 'रोमांस, रिश्ते और भावनात्मक संबंध' : topicItem.id === 'career' ? 'काम, महत्वाकांक्षा और पेशेवर विकास' : 'समग्र जीवन मार्गदर्शन और आध्यात्मिक अंतर्दृष्टि'
-                    : topicItem.description}
-                </div>
+                 <div className="text-3xl mb-2">{topicItem.icon}</div>
+                 <div className="font-semibold text-[var(--text-primary)]">
+                   {language === 'hi' ? TAROT_TOPICS_HI[topicItem.id].label : topicItem.label}
+                 </div>
+                 <div className="text-xs text-[var(--text-muted)] mt-1">
+                   {language === 'hi' ? TAROT_TOPICS_HI[topicItem.id].description : topicItem.description}
+                 </div>
               </motion.button>
             ))}
           </div>
@@ -177,11 +174,17 @@ export default function TarotReadingPage() {
                     {/* Card Front */}
                     <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-2xl bg-gradient-to-br from-amber-50 to-orange-100 border-2 border-amber-300 shadow-xl p-5 flex flex-col items-center justify-center text-center">
                       <div className="text-5xl mb-3">{card.symbol}</div>
-                      <div className="text-lg font-bold text-amber-900 mb-1">{card.name}</div>
-                      <div className={`text-xs font-semibold px-2 py-0.5 rounded-full mb-3 ${card.reversed ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                        {card.reversed ? t.tarot.reversed : t.tarot.upright}
-                      </div>
-                      <div className="text-xs text-amber-800 leading-relaxed">{card.meaning}</div>
+                       <div className="text-lg font-bold text-amber-900 mb-1">
+                         {language === 'hi' ? getTarotCardName(card.name, 'hi') : card.name}
+                       </div>
+                       <div className={`text-xs font-semibold px-2 py-0.5 rounded-full mb-3 ${card.reversed ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                         {card.reversed ? t.tarot.reversed : t.tarot.upright}
+                       </div>
+                       <div className="text-xs text-amber-800 leading-relaxed">
+                         {language === 'hi'
+                           ? (getTarotCardHiMeaning(card.name, card.reversed) || card.meaning)
+                           : card.meaning}
+                       </div>
                       <div className="text-[10px] text-amber-600 mt-3 uppercase tracking-wider">{card.arcana}</div>
                     </div>
                   </motion.div>

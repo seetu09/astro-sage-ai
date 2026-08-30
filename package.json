@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "typecheck": "next lint && tsc --noEmit",
+    "check:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

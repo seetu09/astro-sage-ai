@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Share, Plus, X } from 'lucide-react';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 export default function InstallPrompt() {
+  const { t } = useLanguage();
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
 
   useEffect(() => {
@@ -34,12 +36,12 @@ export default function InstallPrompt() {
           <Share className="w-5 h-5 text-amber-700 dark:text-[#FFD166]" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-amber-900 dark:text-[#F3F4F6] text-sm">Install AstroVeda</h3>
-          <p className="text-xs text-amber-700 dark:text-[#9CA3AF] mt-1">
-            Tap <Share className="w-3 h-3 inline mx-0.5" /> then 
-            <Plus className="w-3 h-3 inline mx-0.5" /> 
-            &quot;Add to Home Screen&quot;
-          </p>
+           <h3 className="font-semibold text-amber-900 dark:text-[#F3F4F6] text-sm">{t.pwa.installTitle}</h3>
+           <p className="text-xs text-amber-700 dark:text-[#9CA3AF] mt-1">
+             Tap <Share className="w-3 h-3 inline mx-0.5" /> then 
+             <Plus className="w-3 h-3 inline mx-0.5" /> 
+             &quot;{t.pwa.addToHome}&quot;
+           </p>
         </div>
         <button
           onClick={handleDismiss}

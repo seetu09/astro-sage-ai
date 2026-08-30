@@ -93,7 +93,7 @@ export default function ReportContainer({
               {t('kundali.sections.preview')}
             </span>
             <p className="text-sm sm:text-base text-slate-600 dark:text-[#9CA3AF] leading-relaxed">
-              {t('kundali.sections.birthDetails')} • {t('kundali.sections.kundliReport')}
+              {t('kundali.labels.birthDetails')} • {t('kundali.sections.kundliReport')}
             </p>
 
             {/* Blur veil over the preview body */}

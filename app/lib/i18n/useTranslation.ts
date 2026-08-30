@@ -1,30 +1,29 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useLanguage } from "@/app/context/LanguageContext";
 import {
-  getTranslation,
   DEFAULT_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
   SUPPORTED_LANGUAGES,
-  toLanguage,
+  getTranslation,
   type Language,
 } from "@/lib/i18n";
 
 interface UseTranslationValue {
-  /** Currently active language. */
   lang: Language;
-  /** Translate a dotted key in the active language. */
   t: (key: string, params?: Record<string, any>) => string;
-  /** Persist the user's language choice for future sessions. */
   setLang: (lang: Language) => void;
-  /** Supported language codes, useful for a switcher UI. */
   supportedLanguages: Language[];
 }
 
 /**
- * Resolve the language from the URL's optional /[lang] segment, falling back
- * to the value saved in the user's session (localStorage), then the default.
+ * Resolve the language for a given URL pathname. The `hi` locale is served from
+ * an optional `/hi` (or `/hi/...`) prefix; everything else falls back to the
+ * saved session language or the default.
+ *
+ * Kept exported for backwards compatibility / SSR path resolution, but the
+ * runtime hook below now reads from `LanguageContext` so every consumer reacts
+ * to instant language switches without a page reload.
  */
 export function resolveLangFromPathname(pathname: string | null): Language {
   if (pathname) {
@@ -43,33 +42,24 @@ export function resolveLangFromPathname(pathname: string | null): Language {
 }
 
 /**
- * React hook that reads the current language from the URL's /[lang] segment
- * or the user's saved session. Re-renders when the route's language changes.
+ * React hook that returns translation utilities backed by the SINGLE language
+ * source of truth (`LanguageContext`).
+ *
+ * This used to read from the URL's `/[lang]` segment + its own `useState`,
+ * which meant Kundali-flow components never re-rendered when the user toggled
+ * language via the Navbar (no `/[lang]` route existed, so the pathname never
+ * changed). Delegating to the context guarantees that a language change
+ * propagates instantly to *every* consumer (both `useLanguage()` object-style
+ * access and `useTranslation()` keyed access).
  */
 export function useTranslation(): UseTranslationValue {
-  const pathname = usePathname();
-  const [lang, setLangState] = useState<Language>(() =>
-    toLanguage(resolveLangFromPathname(pathname))
-  );
-
-  useEffect(() => {
-    setLangState(toLanguage(resolveLangFromPathname(pathname)));
-  }, [pathname]);
-
-  const setLang = (next: Language) => {
-    const normalized = toLanguage(next);
-    setLangState(normalized);
-    try {
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, normalized);
-    } catch {
-      // localStorage may be unavailable (private mode) — ignore.
-    }
-  };
+  const { language, setLanguage } = useLanguage();
 
   return {
-    lang,
-    t: (key: string, params?: Record<string, any>) => getTranslation(lang, key, params),
-    setLang,
+    lang: language,
+    t: (key: string, params?: Record<string, any>) =>
+      getTranslation(language, key, params),
+    setLang: setLanguage,
     supportedLanguages: SUPPORTED_LANGUAGES,
   };
 }

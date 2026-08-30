@@ -323,7 +323,7 @@ function ChatContent() {
               <button
                 onClick={clearChat}
                 className="p-2 rounded-lg hover:bg-[var(--hover-bg)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                title="Clear chat"
+                title={t.chat.clearChat}
               >
                 <RotateCcw className="w-4 h-4" />
               </button>

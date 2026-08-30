@@ -10,6 +10,7 @@ import {
   ReceiptText,
   WalletCards,
 } from "lucide-react";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export type { ProfileMenuAction } from "@/types/user";
 
@@ -58,6 +59,7 @@ export default function UserProfileDropdown({
   onLogout,
   className = "",
 }: UserProfileDropdownProps) {
+  const { t } = useLanguage();
   const renderItems = (
     items: readonly {
       action: ProfileMenuAction;
@@ -81,7 +83,7 @@ export default function UserProfileDropdown({
   return (
     <div
       role="menu"
-      aria-label="User profile menu"
+       aria-label={t.common.userProfileMenu}
       className={`overflow-hidden rounded-2xl border border-amber-200/70 bg-[#FFFDF6]/95 shadow-xl shadow-amber-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-[#121026]/95 dark:shadow-black/30 ${className}`}
     >
       <div className="flex items-center gap-3 border-b border-amber-200/60 px-4 py-4 dark:border-white/10">
@@ -118,7 +120,7 @@ export default function UserProfileDropdown({
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:text-red-400 dark:hover:bg-red-500/10"
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          <span>Logout</span>
+           <span>{t.common.logout}</span>
         </button>
       </div>
     </div>

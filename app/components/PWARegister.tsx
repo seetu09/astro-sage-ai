@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 export default function PWARegister() {
+  const { t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstall, setShowInstall] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -65,14 +67,14 @@ export default function PWARegister() {
           <Smartphone className="w-5 h-5 text-amber-700 dark:text-[#FFD166]" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-amber-900 dark:text-[#F3F4F6] text-sm">Add AstroVeda to Home Screen</h3>
-          <p className="text-xs text-amber-700 dark:text-[#9CA3AF] mt-1">Get instant access to your cosmic guidance</p>
+          <h3 className="font-semibold text-amber-900 dark:text-[#F3F4F6] text-sm">{t.pwa.addToHome}</h3>
+          <p className="text-xs text-amber-700 dark:text-[#9CA3AF] mt-1">{t.pwa.promptDesc}</p>
           <button
             onClick={handleInstall}
             className="mt-2 flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            Install App
+            {t.pwa.installButton}
           </button>
         </div>
         <button

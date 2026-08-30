@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
+import { useLanguage } from '@/app/context/LanguageContext';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -50,6 +51,7 @@ const TYPE_STYLES: Record<ToastType, { icon: typeof Info; ring: string; iconColo
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const idRef = useRef(0);
+  const { t: uiT } = useLanguage();
 
   const dismiss = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -94,7 +96,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               </p>
               <button
                 onClick={() => dismiss(t.id)}
-                aria-label="Dismiss notification"
+                aria-label={uiT.common.dismissNotification}
                 className="shrink-0 rounded-md p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
               >
                 <X className="w-4 h-4" />

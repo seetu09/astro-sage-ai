@@ -22,6 +22,8 @@ export interface Translations {
     more: string;
     signIn: string;
     askGuru: string;
+    toggleMenu: string;
+    toggleLanguage: string;
   };
   hero: {
     title: string;
@@ -37,6 +39,7 @@ export interface Translations {
     trending: { emoji: string; label: string }[];
   };
   chat: {
+    clearChat: string;
     title: string;
     subtitle: string;
     placeholder: string;
@@ -145,6 +148,7 @@ export interface Translations {
     communityText: string;
     dailyUpdates: string;
     updatesText: string;
+    followers: string;
     newsletter: { title: string; subtitle: string; placeholder: string; subscribe: string };
   };
   footer: {
@@ -167,7 +171,125 @@ export interface Translations {
     en: string;
     hi: string;
   };
-  preview: {
+  installBanner: {
+    title: string;
+    subtitle: string;
+    action: string;
+    instructions: string;
+  };
+  auth: {
+    titleLogin: string;
+    titleRegister: string;
+    titleProfile: string;
+    titleForgot: string;
+    titlePhone: string;
+    titlePhoneVerify: string;
+    labelBirthDate: string;
+    labelBirthTime: string;
+    labelBirthPlace: string;
+    placeholderBirthPlace: string;
+    labelPhoneNumber: string;
+    placeholderPhone: string;
+    labelOtp: string;
+    placeholderOtp: string;
+    placeholderFullName: string;
+    placeholderEmail: string;
+    placeholderPassword: string;
+    ariaHidePassword: string;
+    ariaShowPassword: string;
+    ariaToggleMenu: string;
+    buttonSaving: string;
+    buttonSaveProfile: string;
+    buttonSignOut: string;
+    buttonContinueGoogle: string;
+    buttonContinuePhone: string;
+    buttonSending: string;
+    buttonSendOtp: string;
+    buttonVerifying: string;
+    buttonVerifyAndSignIn: string;
+    buttonSendResetLink: string;
+    buttonPleaseWait: string;
+    labelResendIn: string;
+    buttonResendOtp: string;
+    linkForgotPassword: string;
+    linkBackToLogin: string;
+    textNoAccount: string;
+    linkSignUp: string;
+    textHaveAccount: string;
+    linkSignIn: string;
+    dividerText: string;
+    successPasswordReset: string;
+    successOtpSent: string;
+      successOtpResent: string;
+      errorSomethingWentWrong: string;
+    };
+    birthDetails: {
+      personalizing: string;
+      revealReading: string;
+      formSubtitle: string;
+      calibrating: string;
+      labelName: string;
+      labelDob: string;
+      labelTime: string;
+      labelPlace: string;
+      checkboxTimeUnknown: string;
+      placeholderName: string;
+      placeholderPlace: string;
+      submitLoading: string;
+      submitReveal: string;
+      privacyNote: string;
+      ariaClose: string;
+    };
+    common: {
+      empty: string;
+      emptyDesc: string;
+      error: string;
+      errorDesc: string;
+      noResults: string;
+      noResultsDesc: string;
+      noMessages: string;
+      noMessagesDesc: string;
+      noData: string;
+      noDataDesc: string;
+      goBack: string;
+      tryAgain: string;
+      searching: string;
+      notFound: string;
+      vedicBirthChart: string;
+      northIndianStyle: string;
+      lagna: string;
+      noPlanetsHere: string;
+       notAvailable: string;
+      orderId: string;
+      paymentId: string;
+      close: string;
+      dismissNotification: string;
+      logout: string;
+      userProfileMenu: string;
+      profileSections: string;
+    };
+    placeSearch: {
+      placeholder: string;
+      latitude: string;
+      longitude: string;
+      useTyped: string;
+      countries: { code: string; en: string; hi: string }[];
+    };
+    pwa: {
+      installTitle: string;
+      addToHome: string;
+      promptDesc: string;
+      installButton: string;
+    };
+    report: {
+      footerMark: string;
+      period: string;
+      event: string;
+      outlook: string;
+      page: string;
+      of: string;
+    };
+    preview: {
     title: string;
     lagna: string;
     moonSign: string;
@@ -705,6 +827,8 @@ export const translations: Record<Language, Translations> = {
       more: 'More',
       signIn: 'Sign In',
       askGuru: 'Ask Guru',
+      toggleMenu: 'Toggle menu',
+      toggleLanguage: 'Toggle language',
     },
     hero: {
       title: 'Decode Your',
@@ -752,6 +876,7 @@ export const translations: Record<Language, Translations> = {
       pillRelationship: '❤️ Relationship Future & Marriage',
       pillCommunication: '💬 Resolving Communication Issues',
       pillPersonality: '✨ Partner Personality & Love Style',
+      clearChat: 'Clear chat',
     },
     horoscope: {
       title: 'Daily Horoscope',
@@ -847,6 +972,7 @@ export const translations: Record<Language, Translations> = {
       communityText: 'Connect with fellow astrology enthusiasts, share experiences, and learn together.',
       dailyUpdates: 'Daily Horoscope Updates',
       updatesText: 'Get your daily horoscope delivered to your favorite social platform.',
+      followers: 'followers',
       newsletter: {
         title: 'Cosmic Newsletter',
         subtitle: 'Get weekly horoscope updates and spiritual insights',
@@ -873,6 +999,135 @@ export const translations: Record<Language, Translations> = {
     language: {
       en: 'English',
       hi: 'हिन्दी',
+    },
+    installBanner: {
+      title: 'Install AstroVeda App',
+      subtitle: 'Get daily horoscopes & Kundali on your home screen',
+      action: 'Add to Home Screen',
+      instructions: 'Tap the menu (⋮) → "Add to Home Screen"',
+    },
+    auth: {
+      titleLogin: 'Sign In',
+      titleRegister: 'Create Account',
+      titleProfile: 'Your Profile',
+      titleForgot: 'Reset Password',
+      titlePhone: 'Enter Phone Number',
+      titlePhoneVerify: 'Verify OTP',
+      labelBirthDate: 'Birth Date',
+      labelBirthTime: 'Birth Time',
+      labelBirthPlace: 'Birth Place',
+      placeholderBirthPlace: 'City, Country',
+      labelPhoneNumber: 'Phone Number',
+      placeholderPhone: '98765 43210',
+      labelOtp: 'Enter the 6-digit code sent to {phone}',
+      placeholderOtp: '000000',
+      placeholderFullName: 'Full Name',
+      placeholderEmail: 'Email address',
+      placeholderPassword: 'Password',
+      ariaHidePassword: 'Hide password',
+      ariaShowPassword: 'Show password',
+      ariaToggleMenu: 'Toggle menu',
+      buttonSaving: 'Saving...',
+      buttonSaveProfile: 'Save Profile',
+      buttonSignOut: 'Sign Out',
+      buttonContinueGoogle: 'Continue with Google',
+      buttonContinuePhone: 'Continue with phone',
+      buttonSending: 'Sending...',
+      buttonSendOtp: 'Send OTP',
+      buttonVerifying: 'Verifying...',
+      buttonVerifyAndSignIn: 'Verify & Sign In',
+      buttonSendResetLink: 'Send Reset Link',
+      buttonPleaseWait: 'Please wait...',
+      labelResendIn: 'Resend in {seconds}s',
+      buttonResendOtp: 'Resend OTP',
+      linkForgotPassword: 'Forgot Password?',
+      linkBackToLogin: 'Back to Login',
+      textNoAccount: "Don't have an account?",
+      linkSignUp: 'Sign up',
+      textHaveAccount: 'Already have an account?',
+      linkSignIn: 'Sign in',
+      dividerText: 'or',
+      successPasswordReset: 'Password reset link sent to your email',
+      successOtpSent: 'OTP sent to your phone',
+      successOtpResent: 'OTP resent to your phone',
+      errorSomethingWentWrong: 'Something went wrong',
+    },
+    birthDetails: {
+      personalizing: 'Personalize Your Reading',
+      revealReading: 'Reveal My Reading',
+      formSubtitle: 'We need your birth details to align the stars',
+      calibrating: 'Calibrating your exact Nakshatra alignment...',
+      labelName: 'Name',
+      labelDob: 'Date of Birth',
+      labelTime: 'Time of Birth',
+      labelPlace: 'Place of Birth',
+      checkboxTimeUnknown: 'Time Unknown (defaults to 12:00 PM / Moon Chart)',
+      placeholderName: 'Enter your full name',
+      placeholderPlace: 'City, State, Country',
+      submitLoading: 'Aligning the stars...',
+      submitReveal: 'Reveal My Reading →',
+      privacyNote: '🔒 Your birth details are encrypted & never shared',
+      ariaClose: 'Close',
+    },
+    common: {
+      empty: 'Nothing here yet',
+      emptyDesc: 'This section is currently empty. Check back later!',
+      error: 'Something went wrong',
+      errorDesc: 'We encountered an error while loading this content. Please try again.',
+      noResults: 'No results found',
+      noResultsDesc: "We couldn't find anything matching your search. Try different keywords.",
+      noMessages: 'No messages yet',
+      noMessagesDesc: 'Start a conversation by typing your first message below.',
+      noData: 'No data available',
+      noDataDesc: "There's no data to display at the moment.",
+      goBack: 'Go Back',
+      tryAgain: 'Try Again',
+      searching: 'Searching locations...',
+      notFound: 'No locations found',
+      vedicBirthChart: 'Vedic Birth Chart',
+      northIndianStyle: 'North Indian Style',
+      lagna: 'Lagna',
+      noPlanetsHere: 'No planets in this house',
+      notAvailable: 'Not available',
+      orderId: 'Order ID:',
+      paymentId: 'Payment ID:',
+      close: 'Close',
+      dismissNotification: 'Dismiss notification',
+      logout: 'Logout',
+      userProfileMenu: 'User profile menu',
+      profileSections: 'Profile sections',
+    },
+    placeSearch: {
+      placeholder: 'Enter city, town, or PIN code...',
+      latitude: 'Latitude',
+      longitude: 'Longitude',
+      useTyped: 'Use "{value}"',
+      countries: [
+        { code: '+91', en: 'India', hi: 'भारत' },
+        { code: '+1', en: 'US/Canada', hi: 'US/कनाडा' },
+        { code: '+44', en: 'UK', hi: 'यूके' },
+        { code: '+61', en: 'Australia', hi: 'ऑस्ट्रेलिया' },
+        { code: '+86', en: 'China', hi: 'चीन' },
+        { code: '+81', en: 'Japan', hi: 'जापान' },
+        { code: '+49', en: 'Germany', hi: 'जर्मनी' },
+        { code: '+33', en: 'France', hi: 'फ्रांस' },
+        { code: '+52', en: 'Mexico', hi: 'मैक्सिको' },
+        { code: '+55', en: 'Brazil', hi: 'ब्राज़ील' },
+      ],
+    },
+    pwa: {
+      installTitle: 'Install AstroVeda',
+      addToHome: 'Add AstroVeda to Home Screen',
+      promptDesc: 'Get instant access to your cosmic guidance',
+      installButton: 'Install App',
+    },
+    report: {
+      footerMark: 'AstroVeda \u2022 Vedic Insight Report',
+      period: 'Period',
+      event: 'Event / Forecast',
+      outlook: 'Outlook',
+      page: 'Page',
+      of: 'of',
     },
     preview: {
       title: 'Limited Free Preview',
@@ -1553,6 +1808,8 @@ export const translations: Record<Language, Translations> = {
       more: 'और',
       signIn: 'साइन इन',
       askGuru: 'गुरु से पूछें',
+      toggleMenu: 'मेनू टॉगल करें',
+      toggleLanguage: 'भाषा बदलें',
     },
     hero: {
       title: 'अपने ब्रह्मांडीय ब्लूप्रिंट को',
@@ -1600,6 +1857,7 @@ export const translations: Record<Language, Translations> = {
       pillRelationship: '❤️ रिश्ते का भविष्य और विवाह',
       pillCommunication: '💬 संचार समस्याओं का समाधान',
       pillPersonality: '✨ साथी का व्यक्तित्व और प्रेम शैली',
+      clearChat: 'चैट साफ़ करें',
     },
     horoscope: {
       title: 'दैनिक राशिफल',
@@ -1695,6 +1953,7 @@ export const translations: Record<Language, Translations> = {
       communityText: 'साथी ज्योतिष उत्साहियों से जुड़ें, अनुभव साझा करें, और एक साथ सीखें।',
       dailyUpdates: 'दैनिक राशिफल अपडेट',
       updatesText: 'अपने पसंदीदा सोशल प्लेटफॉर्म पर अपना दैनिक राशिफल प्राप्त करें।',
+      followers: 'फॉलोअर्स',
       newsletter: {
         title: 'ब्रह्मांडीय न्यूज़लेटर',
         subtitle: 'साप्ताहिक राशिफल अपडेट और आध्यात्मिक अंतर्दृष्टि प्राप्त करें',
@@ -1721,6 +1980,135 @@ export const translations: Record<Language, Translations> = {
     language: {
       en: 'English',
       hi: 'हिन्दी',
+    },
+    installBanner: {
+      title: 'AstroVeda ऐप इंस्टॉल करें',
+      subtitle: 'अपनी होम स्क्रीन पर दैनिक राशिफल और कुंडली प्राप्त करें',
+      action: 'होम स्क्रीन में जोड़ें',
+      instructions: 'मेनू (⋮) पर टैप करें → "होम स्क्रीन में जोड़ें"',
+    },
+    auth: {
+      titleLogin: 'साइन इन',
+      titleRegister: 'खाता बनाएं',
+      titleProfile: 'आपकी प्रोफ़ाइल',
+      titleForgot: 'पासवर्ड रीसेट करें',
+      titlePhone: 'फ़ोन नंबर दर्ज करें',
+      titlePhoneVerify: 'OTP सत्यापित करें',
+      labelBirthDate: 'जन्म तिथि',
+      labelBirthTime: 'जन्म समय',
+      labelBirthPlace: 'जन्म स्थान',
+      placeholderBirthPlace: 'शहर, देश',
+      labelPhoneNumber: 'फ़ोन नंबर',
+      placeholderPhone: '98765 43210',
+      labelOtp: 'भेजा गया 6-अंकीय कोड दर्ज करें: {phone}',
+      placeholderOtp: '000000',
+      placeholderFullName: 'पूरा नाम',
+      placeholderEmail: 'ईमेल पता',
+      placeholderPassword: 'पासवर्ड',
+      ariaHidePassword: 'पासवर्ड छुपाएँ',
+      ariaShowPassword: 'पासवर्ड दिखाएँ',
+      ariaToggleMenu: 'मेनू टॉगल करें',
+      buttonSaving: 'सहेज रहा है...',
+      buttonSaveProfile: 'प्रोफ़ाइल सहेजें',
+      buttonSignOut: 'साइन आउट',
+      buttonContinueGoogle: 'Google के साथ जारी रखें',
+      buttonContinuePhone: 'फ़ोन के साथ जारी रखें',
+      buttonSending: 'भेजा जा रहा है...',
+      buttonSendOtp: 'OTP भेजें',
+      buttonVerifying: 'सत्यापित हो रहा है...',
+      buttonVerifyAndSignIn: 'सत्यापित करें और साइन इन करें',
+      buttonSendResetLink: 'रीसेट लिंक भेजें',
+      buttonPleaseWait: 'कृपया प्रतीक्षा करें...',
+      labelResendIn: 'फिर से भेजें {seconds}s में',
+      buttonResendOtp: 'OTP फिर से भेजें',
+      linkForgotPassword: 'पासवर्ड भूल गए?',
+      linkBackToLogin: 'लॉगिन पर वापस',
+      textNoAccount: 'खाता नहीं है?',
+      linkSignUp: 'साइन अप',
+      textHaveAccount: 'पहले से खाता है?',
+      linkSignIn: 'साइन इन',
+      dividerText: 'या',
+      successPasswordReset: 'पासवर्ड रीसेट लिंक आपके ईमेल पर भेजा गया है',
+      successOtpSent: 'OTP आपके फ़ोन पर भेजा गया है',
+      successOtpResent: 'OTP फिर से आपके फ़ोन पर भेजा गया है',
+      errorSomethingWentWrong: 'कुछ गलत हो गया',
+    },
+    birthDetails: {
+      personalizing: 'अपनी रीडिंग को वैयक्तिगत बनाएं',
+      revealReading: 'मेरी रीडिंग खोलें',
+      formSubtitle: 'तारों को समायोजित करने के लिए हमें आपकी जन्म विवरण चाहिए',
+      calibrating: 'आपका नक्शत्र समन्वय कैलिब्रेट कर रहा है...',
+      labelName: 'नाम',
+      labelDob: 'जन्म तिथि',
+      labelTime: 'जन्म समय',
+      labelPlace: 'जन्म स्थान',
+      checkboxTimeUnknown: 'समय अज्ञात (डिफ़ॉल्ट 12:00 PM / चंद्रमा चार्ट)',
+      placeholderName: 'अपना पूरा नाम दर्ज करें',
+      placeholderPlace: 'शहर, राज्य, देश',
+      submitLoading: 'तारों को समायोजित कर रहा है...',
+      submitReveal: 'मेरी रीडिंग खोलें →',
+      privacyNote: '🔒 आपका जन्म विवरण एन्क्रिप्टेड और कभी शेयर नहीं किया जाता',
+      ariaClose: 'बंद करें',
+    },
+    common: {
+      empty: 'यहाँ अभी तक कुछ नहीं है',
+      emptyDesc: 'यह खंड वर्तमान में खाली है। बाद में जाँचें!',
+      error: 'कुछ गलत हो गया',
+      errorDesc: 'इस सामग्री को लोड करते समय हमें एक त्रुटि का सामना करना पड़ा। कृपया पुनः प्रयास करें।',
+      noResults: 'कोई परिणाम नहीं मिला',
+      noResultsDesc: 'हम आपकी खोज से मेल खाता हुआ कुछ नहीं ढूँढ पाए। अलग कीवर्ड आजमाएँ।',
+      noMessages: 'अभी तक कोई संदेश नहीं',
+      noMessagesDesc: 'नीचे अपना पहला संदेश टाइप करके एक बातचीत शुरू करें।',
+      noData: 'कोई डेटा उपलब्ध नहीं',
+      noDataDesc: 'अभी डिस्प्ले करने के लिए कोई डेटा नहीं है।',
+      goBack: 'वापस जाएँ',
+      tryAgain: 'फिर कोशिश करें',
+      searching: 'स्थान खोज रहा है...',
+      notFound: 'कोई स्थान नहीं मिला',
+      vedicBirthChart: 'वैदिक जन्म कुंडली',
+      northIndianStyle: 'नॉर्थ इंडियन स्टाइल',
+      lagna: 'लग्न',
+      noPlanetsHere: 'इस घर में कोई ग्रह नहीं',
+      notAvailable: 'उपलब्ध नहीं',
+      orderId: 'ऑर्डर आईडी:',
+      paymentId: 'भुगतान आईडी:',
+      close: 'बंद करें',
+      dismissNotification: 'सूचना हटाएँ',
+      logout: 'लॉग आउट',
+      userProfileMenu: 'यूज़र प्रोफ़ाइल मेन्यू',
+      profileSections: 'प्रोफ़ाइल सेक्शन',
+    },
+    placeSearch: {
+      placeholder: 'शहर, टाउन या पिन कोड दर्शाने...',
+      latitude: 'अक्षांश',
+      longitude: 'द्राघिमांश',
+      useTyped: '"{value}" का उपयोग करें',
+      countries: [
+        { code: '+91', en: 'India', hi: 'भारत' },
+        { code: '+1', en: 'US/Canada', hi: 'US/कनाडा' },
+        { code: '+44', en: 'UK', hi: 'यूके' },
+        { code: '+61', en: 'Australia', hi: 'ऑस्ट्रेलिया' },
+        { code: '+86', en: 'China', hi: 'चीन' },
+        { code: '+81', en: 'Japan', hi: 'जापान' },
+        { code: '+49', en: 'Germany', hi: 'जर्मनी' },
+        { code: '+33', en: 'France', hi: 'फ्रांस' },
+        { code: '+52', en: 'Mexico', hi: 'मैक्सिको' },
+        { code: '+55', en: 'Brazil', hi: 'ब्राज़ील' },
+      ],
+    },
+    pwa: {
+      installTitle: 'AstroVeda इंस्टॉल करें',
+      addToHome: 'होम स्क्रीन में AstroVeda जोड़ें',
+      promptDesc: 'अपना कॉस्मिक मार्गदर्शन तुरंत प्राप्त करें',
+      installButton: 'ऐप इंस्टॉल करें',
+    },
+    report: {
+      footerMark: 'AstroVeda \u2022 वैदिक अंतर्दृष्टि रिपोर्ट',
+      period: 'अवधि',
+      event: 'घटना / भविष्यवाणी',
+      outlook: 'दृष्टिकोण',
+      page: 'पृष्ठ',
+      of: 'की',
     },
     preview: {
       title: 'सीमित मुफ़्त पूर्वावलोकन',
@@ -2327,59 +2715,59 @@ export const translations: Record<Language, Translations> = {
       nameNumber: 'नामांक',
       careerPaths: 'करियर पथ',
       idealProfessions: 'आदर्श व्यवसाय',
-      loveCompatibility: 'बेस्ट लव कंपेटिबिलिटी',
-      recommendations: 'पर्सनलाइज्ड रेमेडीज एंड रिकमेंडेशंस',
-      strengths: 'स्ट्रेंथ्स',
-      watchOut: 'वॉच आउट',
-      luckyGemstone: 'लकी जेमस्टोन',
+      loveCompatibility: 'श्रेष्ट प्रेम अनुकूलता',
+      recommendations: 'व्यक्तिगत उपाय व अनुशंसाएँ',
+      strengths: 'मजबूती',
+      watchOut: 'ध्यान में रखें',
+      luckyGemstone: 'भाग्यशाली रत्न',
     },
     tarot: {
-      badge: 'Free 3-Card Tarot Reading',
-      title: 'Tarot Card Reading',
-      subtitle: 'Draw three cards to reveal insights about your past, present, and future. Choose a topic to focus your reading.',
-      chooseTopic: 'Choose Your Topic',
-      shuffle: 'Shuffle & Draw Cards',
-      shuffling: 'Shuffling...',
-      shuffleAgain: 'Shuffle Again',
-      past: 'Past',
-      present: 'Present',
-      future: 'Future / Outcome',
-      reversed: 'Reversed',
-      upright: 'Upright',
-      tapToReveal: 'Tap to reveal',
-      getInterpretation: 'Get AI Interpretation',
-      consulting: 'Consulting the Stars...',
-      yourReading: 'Your Reading',
-      start: 'Click "Shuffle & Draw Cards" to begin your reading',
+      badge: 'मुफ्त 3-कार्ड टैरो रीडिंग',
+      title: 'टैरो कार्ड रीडिंग',
+      subtitle: 'अपने past, present और future के बारे में जानकारी प्राप्त करने के लिए तीन कार्ड खींचें। अपनी रीडिंग पर ध्यान केंद्रित करने के लिए एक विषय चुनें।',
+      chooseTopic: 'अपना विषय चुनें',
+      shuffle: 'शफल करें और कार्ड खींचें',
+      shuffling: 'शफल हो रहा है...',
+      shuffleAgain: 'फिर से शफल करें',
+      past: 'past',
+      present: 'present',
+      future: 'future / परिणाम',
+      reversed: 'टुला हुआ',
+      upright: 'सीधा',
+      tapToReveal: 'खुलाएँ देखने के लिए स्पर्श करें',
+      getInterpretation: 'AI व्याख्या प्राप्त करें',
+      consulting: 'तारों से परामर्श कर रहा है...',
+      yourReading: 'आपकी रीडिंग',
+      start: '"शफल करें और कार्ड खींचें" पर क्लिक करके अपनी रीडिंग शुरू करें',
     },
     horoscopePage: {
-      title: 'Daily Horoscope',
-      subtitle: "Select your zodiac sign to read today's Vedic astrology prediction with lucky attributes and category scores.",
-      readToday: 'Read Today',
-      personalizedTitle: '✨ Personalized Guidance',
-      personalizedText: 'Our AI Guru analyzes planetary positions to give you specific daily advice for career, love, money, and health.',
-      freeTitle: '🆓 100% Free',
-      freeText: 'Check your lucky color, number, and time every day without any subscription.',
-      vedicTitle: '🕉️ Vedic Wisdom',
-      vedicText: 'Traditional Indian astrology principles meet modern AI technology for accurate guidance.',
+      title: 'दैनिक राशिफल',
+      subtitle: "आज की वैदिक ज्योतिष भविष्यवाणी पढ़ने के लिए अपनी राशि चुनें।",
+      readToday: 'आज पढ़ें',
+      personalizedTitle: '✨ व्यक्तिगत मार्गदर्शन',
+      personalizedText: 'हमारा AI गुरु करियर, प्रेम, मनोविद्या और स्वास्थ्य के लिए आपके विशिष्ट दैनिक सल्ले प्रदान करने के लिए ग्रहों की स्थिति का विश्लेषण करता है।',
+      freeTitle: '🆓 100% मुफ्त',
+      freeText: 'किसी भी सदस्यता के बिना हर दिन अपना भाग्यशाली रंग, संख्या और समय जांचें।',
+      vedicTitle: '🕉️ वैदिक ज्ञान',
+      vedicText: 'पारंपरिक भारतीय ज्योतिष सिद्धांत आधुनिक AI तकनीक से मिलकर सटीक मार्गदर्शन प्रदान करते हैं।',
     },
     horoscopeSign: {
-      allSigns: 'All Signs',
-      title: '{sign} Horoscope',
-      subtitle: 'Daily Vedic astrology guidance for {sign}',
-      prediction: '{period} Prediction',
-      luckyColor: 'Lucky Color',
-      luckyNumber: 'Lucky Number',
-      luckyTime: 'Lucky Time',
-      categoryScores: 'Category Scores',
-      yesterday: 'Yesterday',
-      today: 'Today',
-      tomorrow: 'Tomorrow',
-      career: 'Career',
-      love: 'Love',
-      money: 'Money',
-      health: 'Health',
-      error: 'Unable to load horoscope. Please try again.',
+      allSigns: 'सभी राशि',
+      title: '{sign} का राशिफल',
+      subtitle: '{sign} के लिए दैनिक वैदिक ज्योतिष मार्गदर्शन',
+      prediction: '{period} भविष्यवाणी',
+      luckyColor: 'भाग्यशाली रंग',
+      luckyNumber: 'भाग्यशाली संख्या',
+      luckyTime: 'भाग्यशाली समय',
+      categoryScores: 'श्रेणी अंक',
+      yesterday: 'पिछला दिन',
+      today: 'आज',
+      tomorrow: 'अगला दिन',
+      career: 'करियर',
+      love: 'प्रेम',
+      money: 'धन',
+      health: 'स्वास्थ्य',
+      error: 'राशिफल लोड करने में असमर्थ। कृपया पुनः प्रयास करें।',
     },
   },
 };

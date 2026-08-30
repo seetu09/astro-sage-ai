@@ -50,7 +50,7 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function downloadReceipt(transaction: WalletTransaction, customerName: string, email: string) {
+function downloadReceipt(transaction: WalletTransaction, customerName: string, email: string, t: (key: string) => string) {
   const receipt = [
     "ASTROVEDA PAYMENT RECEIPT",
     "",
@@ -61,8 +61,8 @@ function downloadReceipt(transaction: WalletTransaction, customerName: string, e
     `Description: ${transaction.description}`,
     `Amount: INR ${transaction.amount.toFixed(2)}`,
     `Status: ${transaction.status.toUpperCase()}`,
-    `Order ID: ${transaction.orderId || "Not available"}`,
-    `Payment ID: ${transaction.paymentId || "Not available"}`,
+    `${t('common.orderId')} ${transaction.orderId || t('common.notAvailable')}`,
+    `${t('common.paymentId')} ${transaction.paymentId || t('common.notAvailable')}`,
     "",
     "Thank you for using AstroVeda.",
   ].join("\n");
@@ -265,7 +265,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
                 </div>
                 <p className="mt-1 text-xs text-amber-800/60 dark:text-[#9CA3AF]">{formatDate(transaction.createdAt)} · {transaction.paymentId || transaction.id}</p>
               </div>
-              <button onClick={() => downloadReceipt(transaction, user.name, user.email)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:border-white/15 dark:text-[#D1D5DB] dark:hover:bg-white/5">
+               <button onClick={() => downloadReceipt(transaction, user.name, user.email, t)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50 dark:border-white/15 dark:text-[#D1D5DB] dark:hover:bg-white/5">
                 <Download className="h-4 w-4" /> {t('profile.downloadReceipt')}
               </button>
             </div>
@@ -351,7 +351,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
           </div>
           <button onClick={onClose} aria-label={t('profile.closeProfile')} className="rounded-lg p-2 text-amber-800/60 hover:bg-amber-100 dark:text-[#9CA3AF] dark:hover:bg-white/5"><X className="h-5 w-5" /></button>
         </header>
-         <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-amber-200/60 p-2 sm:hidden dark:border-white/10" aria-label="Profile sections">
+         <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-amber-200/60 p-2 sm:hidden dark:border-white/10" aria-label={t('common.profileSections')}>
           {sections.map(({ action, key, icon: Icon }) => (
             <button key={action} onClick={() => setActiveView(action)} className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold ${activeView === action ? "bg-amber-600 text-white dark:bg-[#FFD166] dark:text-[#080811]" : "text-amber-900/70 dark:text-[#D1D5DB]"}`}><Icon className="h-4 w-4" />{t(key)}</button>
           ))}

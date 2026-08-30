@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Sparkles, Loader2, MapPin, Calendar, Clock, User } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface BirthDetailsModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface BirthDetails {
 // Google Places Autocomplete is used for place selection instead of a static city list
 
 export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDetailsModalProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [step, setStep] = useState<"calibrating" | "form">("calibrating");
   const [formData, setFormData] = useState<BirthDetails>({
@@ -90,7 +92,7 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-lg text-amber-700/60 dark:text-[#9CA3AF] hover:text-amber-700 dark:hover:text-[#F3F4F6] hover:bg-amber-100/70 dark:hover:bg-white/5 transition-colors"
-          aria-label="Close"
+           aria-label={t.birthDetails.ariaClose}
         >
           <X className="w-5 h-5" />
         </button>
@@ -105,9 +107,9 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
                 <Sparkles className="w-8 h-8 text-amber-600 dark:text-[#FFD166] animate-glow" />
               </div>
             </div>
-            <h3 className="text-xl font-serif font-semibold text-amber-900 dark:text-[#F3F4F6] mb-2">
-              Calibrating your exact Nakshatra alignment...
-            </h3>
+              <h3 className="text-xl font-serif font-semibold text-amber-900 dark:text-[#F3F4F6] mb-2">
+                {t.birthDetails.calibrating}
+              </h3>
             <p className="text-sm text-amber-800/70 dark:text-[#9CA3AF]">
               Syncing with the cosmic grid to personalize your reading
             </p>
@@ -117,27 +119,27 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
             <div className="text-center mb-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-[#FFD166]/10 border border-amber-200/60 dark:border-[#FFD166]/20 mb-3">
                 <Sparkles className="w-3 h-3 text-amber-700 dark:text-[#FFD166]" />
-                <span className="text-xs font-medium text-amber-700 dark:text-[#FFD166]">Personalize Your Reading</span>
+                 <span className="text-xs font-medium text-amber-700 dark:text-[#FFD166]">{t.birthDetails.personalizing}</span>
               </div>
-              <h3 className="text-2xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-1">
-                Reveal My Reading
-              </h3>
-              <p className="text-sm text-amber-800/70 dark:text-[#9CA3AF]">
-                We need your birth details to align the stars
-              </p>
+               <h3 className="text-2xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-1">
+                 {t.birthDetails.revealReading}
+               </h3>
+               <p className="text-sm text-amber-800/70 dark:text-[#9CA3AF]">
+                 {t.birthDetails.formSubtitle}
+               </p>
             </div>
 
             {/* Name */}
             <div>
               <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
-                <User className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
-                Name
+                 <User className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
+                 {t.birthDetails.labelName}
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter your full name"
+                 placeholder={t.birthDetails.placeholderName}
                 className={inputClass}
                 required
               />
@@ -146,8 +148,8 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
             {/* Date of Birth */}
             <div>
               <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
-                <Calendar className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
-                Date of Birth
+                 <Calendar className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
+                 {t.birthDetails.labelDob}
               </label>
               <input
                 type="date"
@@ -161,8 +163,8 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
             {/* Time of Birth */}
             <div>
               <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
-                Exact Time of Birth
+                 <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
+                 {t.birthDetails.labelTime}
               </label>
               <input
                 type="time"
@@ -178,21 +180,21 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
                   onChange={(e) => setFormData({ ...formData, timeUnknown: e.target.checked, timeOfBirth: "12:00" })}
                   className="w-4 h-4 rounded border-amber-300 dark:border-white/20 bg-white dark:bg-white/5 accent-amber-600 dark:accent-[#FFD166]"
                 />
-                Time Unknown (defaults to 12:00 PM / Moon Chart)
+                 {t.birthDetails.checkboxTimeUnknown}
               </label>
             </div>
 
             {/* Place of Birth */}
             <div className="relative">
               <label className="flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-800/70 dark:text-[#9CA3AF] mb-1.5">
-                <MapPin className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
-                Place of Birth
+                 <MapPin className="w-3.5 h-3.5 text-amber-700 dark:text-[#FFD166]" />
+                 {t.birthDetails.labelPlace}
               </label>
               <input
                 type="text"
                 value={formData.placeOfBirth}
                 onChange={(e) => setFormData({ ...formData, placeOfBirth: e.target.value })}
-                placeholder="City, State, Country"
+                 placeholder={t.birthDetails.placeholderPlace}
                 className={inputClass}
                 required
               />
@@ -203,22 +205,22 @@ export default function BirthDetailsModal({ isOpen, onClose, question }: BirthDe
               disabled={isSubmitting}
               className="w-full py-3.5 bg-gradient-to-r from-amber-600 to-orange-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] text-sm sm:text-base font-semibold rounded-xl hover:shadow-sunlit-soft dark:hover:shadow-glow-gold transition-all flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Aligning the stars...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Reveal My Reading →
-                </>
-              )}
+               {isSubmitting ? (
+                 <>
+                   <Loader2 className="w-4 h-4 animate-spin" />
+                   {t.birthDetails.submitLoading}
+                 </>
+               ) : (
+                 <>
+                   <Sparkles className="w-4 h-4" />
+                   {t.birthDetails.submitReveal}
+                 </>
+               )}
             </button>
 
-            <p className="text-center text-[10px] text-amber-700/60 dark:text-[#6B7280]">
-              🔒 Your birth details are encrypted & never shared
-            </p>
+             <p className="text-center text-[10px] text-amber-700/60 dark:text-[#6B7280]">
+               {t.birthDetails.privacyNote}
+             </p>
           </form>
         )}
       </div>

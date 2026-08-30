@@ -13,7 +13,7 @@ interface AuthModalProps {
 type AuthView = "login" | "register" | "profile" | "forgot" | "phone" | "phone-verify";
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { t } = useLanguage();
+   const { t, language } = useLanguage();
   const { user, isAuthenticated, login, register, resetPassword, logout, googleLogin, updateProfile, sendPhoneOtp, verifyPhoneOtp, isLoading } = useAuth();
   const [view, setView] = useState<AuthView>("login");
   const [showPassword, setShowPassword] = useState(false);
@@ -53,11 +53,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         onClose();
       } else if (view === "forgot") {
         await resetPassword(formData.email);
-        setSuccess("Password reset link sent to your email");
+        setSuccess(t.auth.successPasswordReset);
       } else if (view === "phone") {
         const fullPhone = formData.countryCode + formData.phone;
         await sendPhoneOtp(fullPhone);
-        setSuccess("OTP sent to your phone");
+        setSuccess(t.auth.successOtpSent);
         setOtpResendCountdown(30);
         setView("phone-verify");
       } else if (view === "phone-verify") {
@@ -66,7 +66,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || t.auth.errorSomethingWentWrong);
     }
   };
 
@@ -75,15 +75,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setSuccess("");
     try {
       const fullPhone = formData.countryCode + formData.phone;
-      await sendPhoneOtp(fullPhone);
-      setSuccess("OTP resent to your phone");
-      setOtpResendCountdown(30);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
-    }
-  };
+       await sendPhoneOtp(fullPhone);
+       setSuccess(t.auth.successOtpResent);
+       setOtpResendCountdown(30);
+      } catch (err: any) {
+        setError(err.message || t.auth.errorSomethingWentWrong);
+      }
+    };
 
-  const handleGoogle = async () => {
+    const handleGoogle = async () => {
     setError("");
     setSuccess("");
     try {
@@ -122,14 +122,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-[var(--border-color)]">
-          <h2 className="text-xl font-bold text-[var(--text-primary)]">
-            {view === "login" && "Sign In"}
-            {view === "register" && "Create Account"}
-            {view === "profile" && "Your Profile"}
-            {view === "forgot" && "Reset Password"}
-            {view === "phone" && "Enter Phone Number"}
-            {view === "phone-verify" && "Verify OTP"}
-          </h2>
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
+             {view === "login" && t.auth.titleLogin}
+             {view === "register" && t.auth.titleRegister}
+             {view === "profile" && t.auth.titleProfile}
+             {view === "forgot" && t.auth.titleForgot}
+             {view === "phone" && t.auth.titlePhone}
+             {view === "phone-verify" && t.auth.titlePhoneVerify}
+           </h2>
           <button onClick={onClose} className="p-2 hover:bg-[var(--hover-bg)] rounded-full transition-colors">
             <X className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
@@ -162,7 +162,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Birth Date</label>
+                   <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">{t.auth.labelBirthDate}</label>
                   <input
                     type="date"
                     value={formData.birthDate}
@@ -171,7 +171,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Birth Time</label>
+                   <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">{t.auth.labelBirthTime}</label>
                   <input
                     type="time"
                     value={formData.birthTime}
@@ -180,10 +180,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Birth Place</label>
-                  <input
-                    type="text"
-                    placeholder="City, Country"
+                   <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">{t.auth.labelBirthPlace}</label>
+                   <input
+                     type="text"
+                     placeholder={t.auth.placeholderBirthPlace}
                     value={formData.birthPlace}
                     onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
                     className="w-full px-4 py-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-amber-500/50"
@@ -194,7 +194,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   disabled={isLoading}
                   className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
                 >
-                  {isLoading ? "Saving..." : "Save Profile"}
+                   {isLoading ? t.auth.buttonSaving : t.auth.buttonSaveProfile}
                 </button>
               </form>
 
@@ -202,8 +202,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 onClick={() => { logout(); onClose(); }}
                 className="w-full mt-4 py-3 border border-red-500/30 text-red-400 font-semibold rounded-lg hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
               >
-                <LogOut className="w-4 h-4" />
-                Sign Out
+                 <LogOut className="w-4 h-4" />
+                 {t.auth.buttonSignOut}
               </button>
             </div>
           ) : (
@@ -221,7 +221,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Continue with Google
+                     {t.auth.buttonContinueGoogle}
                   </button>
 
                   <div className="relative my-4">
@@ -229,7 +229,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       <div className="w-full border-t border-[var(--border-color)]" />
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-[var(--card-bg)] text-[var(--text-muted)]">or</span>
+                      <span className="px-2 bg-[var(--card-bg)] text-[var(--text-muted)]">{t.auth.dividerText}</span>
                     </div>
                   </div>
 
@@ -238,8 +238,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     disabled={isLoading}
                     className="w-full py-3 mb-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] font-medium hover:bg-[var(--hover-bg)] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                   >
-                    <Phone className="w-5 h-5" />
-                    Continue with phone
+                     <Phone className="w-5 h-5" />
+                     {t.auth.buttonContinuePhone}
                   </button>
                 </>
               )}
@@ -247,27 +247,22 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               {view === "phone" && (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Phone Number</label>
+                     <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">{t.auth.labelPhoneNumber}</label>
                     <div className="flex gap-2">
                       <select
                         value={formData.countryCode}
                         onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
-                        className="w-1/3 px-3 py-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                      >
-                        <option value="+91">India (+91)</option>
-                        <option value="+1">US/Canada (+1)</option>
-                        <option value="+44">UK (+44)</option>
-                        <option value="+61">Australia (+61)</option>
-                        <option value="+86">China (+86)</option>
-                        <option value="+81">Japan (+81)</option>
-                        <option value="+49">Germany (+49)</option>
-                        <option value="+33">France (+33)</option>
-                        <option value="+52">Mexico (+52)</option>
-                        <option value="+55">Brazil (+55)</option>
+                         className="w-1/3 px-3 py-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                       >
+                        {t.placeSearch.countries.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {language === "hi" ? c.hi : c.en} ({c.code})
+                          </option>
+                        ))}
                       </select>
                       <input
                         type="tel"
-                        placeholder="98765 43210"
+                         placeholder={t.auth.placeholderPhone}
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         autoComplete="tel"
@@ -281,7 +276,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     disabled={isLoading || !formData.phone}
                     className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
                   >
-                    {isLoading ? "Sending..." : "Send OTP"}
+                     {isLoading ? t.auth.buttonSending : t.auth.buttonSendOtp}
                   </button>
                 </form>
               )}
@@ -289,14 +284,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               {view === "phone-verify" && (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      Enter the 6-digit code sent to {formData.countryCode + formData.phone}
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]{6}"
-                      placeholder="000000"
+                     <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                       {t.auth.labelOtp.replace("{phone}", formData.countryCode + formData.phone)}
+                     </label>
+                     <input
+                       type="text"
+                       inputMode="numeric"
+                       pattern="[0-9]{6}"
+                       placeholder={t.auth.placeholderOtp}
                       value={formData.otp}
                       onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, "").slice(0, 6) })}
                       autoComplete="one-time-code"
@@ -309,21 +304,21 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     disabled={isLoading || formData.otp.length < 6}
                     className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
                   >
-                    {isLoading ? "Verifying..." : "Verify & Sign In"}
+                     {isLoading ? t.auth.buttonVerifying : t.auth.buttonVerifyAndSignIn}
                   </button>
                   <div className="text-center">
                     {otpResendCountdown > 0 ? (
-                      <span className="text-sm text-[var(--text-secondary)]">
-                        Resend in {otpResendCountdown}s
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={isLoading}
-                        className="text-sm text-amber-500 hover:text-amber-400 font-medium"
-                      >
-                        Resend OTP
+                         <span className="text-sm text-[var(--text-secondary)]">
+                           {t.auth.labelResendIn.replace("{seconds}", String(otpResendCountdown))}
+                         </span>
+                     ) : (
+                       <button
+                         type="button"
+                         onClick={handleResendOtp}
+                         disabled={isLoading}
+                         className="text-sm text-amber-500 hover:text-amber-400 font-medium"
+                       >
+                         {t.auth.buttonResendOtp}
                       </button>
                     )}
                   </div>
@@ -334,10 +329,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {view === "register" && (
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                    <input
-                      type="text"
-                      placeholder="Full Name"
+                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+                 <input
+                   type="text"
+                   placeholder={t.auth.placeholderFullName}
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
@@ -347,10 +342,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 )}
 
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                  <input
-                    type="email"
-                    placeholder="Email address"
+                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
+                   <input
+                     type="email"
+                     placeholder={t.auth.placeholderEmail}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     autoComplete="email"
@@ -363,9 +358,9 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   <div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Password"
+                       <input
+                         type={showPassword ? "text" : "password"}
+                         placeholder={t.auth.placeholderPassword}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         autoComplete={view === "login" ? "current-password" : "new-password"}
@@ -374,7 +369,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                       />
                       <button
                         type="button"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                         aria-label={showPassword ? t.auth.ariaHidePassword : t.auth.ariaShowPassword}
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                       >
@@ -388,7 +383,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                           onClick={() => switchView("forgot")}
                           className="text-sm text-amber-500 hover:text-amber-400 font-medium"
                         >
-                          Forgot Password?
+                           {t.auth.linkForgotPassword}
                         </button>
                       </div>
                     )}
@@ -400,11 +395,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   disabled={isLoading}
                   className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50"
                 >
-                  {isLoading
-                    ? view === "forgot" ? "Sending..." : "Please wait..."
-                    : view === "login" ? "Sign In"
-                    : view === "register" ? "Create Account"
-                    : "Send Reset Link"}
+                   {isLoading
+                     ? view === "forgot" ? t.auth.buttonSending : t.auth.buttonPleaseWait
+                     : view === "login" ? t.auth.titleLogin
+                     : view === "register" ? t.auth.titleRegister
+                     : t.auth.buttonSendResetLink}
                 </button>
               </form>
               )}
@@ -412,25 +407,25 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <div className="mt-6 text-center text-sm text-[var(--text-secondary)]">
                 {view === "forgot" ? (
                   <button onClick={() => switchView("login")} className="text-amber-500 hover:text-amber-400 font-medium">
-                    Back to Login
+                    {t.auth.linkBackToLogin}
                   </button>
                 ) : view === "login" ? (
                   <>
-                    Don't have an account?{" "}
+                    {t.auth.textNoAccount}{" "}
                     <button onClick={() => switchView("register")} className="text-amber-500 hover:text-amber-400 font-medium">
-                      Sign up
+                      {t.auth.linkSignUp}
                     </button>
                   </>
                 ) : view === "register" ? (
                   <>
-                    Already have an account?{" "}
+                    {t.auth.textHaveAccount}{" "}
                     <button onClick={() => switchView("login")} className="text-amber-500 hover:text-amber-400 font-medium">
-                      Sign in
+                      {t.auth.linkSignIn}
                     </button>
                   </>
                 ) : view === "phone" || view === "phone-verify" ? (
                   <button onClick={() => switchView("login")} className="text-amber-500 hover:text-amber-400 font-medium">
-                    Back to Login
+                    {t.auth.linkBackToLogin}
                   </button>
                 ) : null}
               </div>

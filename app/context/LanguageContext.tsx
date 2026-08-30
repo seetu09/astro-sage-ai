@@ -1,7 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Language, getTranslation, translations, type Translations } from '@/lib/i18n';
+import {
+  Language,
+  LANGUAGE_STORAGE_KEY,
+  getLanguageCookie,
+  setLanguageCookie,
+  getTranslation,
+  translations,
+  isLanguage,
+  type Translations,
+} from '@/lib/i18n';
 
 interface LanguageContextType {
   language: Language;
@@ -26,22 +35,41 @@ const defaultValue: LanguageContextType = {
 
 const LanguageContext = createContext<LanguageContextType>(defaultValue);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
-  const [mounted, setMounted] = useState(false);
+/**
+ * Resolve the initial language synchronously so the very first client render
+ * matches the server render (kills the EN→HI "flash of English" on load).
+ * Checks, in priority order: URL `?hl=`, document.cookie (set by SSR), then
+ * localStorage, finally the default language.
+ */
+function getInitialLanguage(): Language {
+  if (typeof window !== "undefined") {
+    const search = window.location.search;
+    const hl = new URLSearchParams(search).get("hl");
+    if (hl && isLanguage(hl)) return hl;
 
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('astroveda-language') as Language;
-    if (saved && (saved === 'en' || saved === 'hi')) {
-      setLanguageState(saved);
-    }
-  }, []);
+    const fromCookie = getLanguageCookie();
+    if (fromCookie) return fromCookie;
+
+    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (stored && isLanguage(stored)) return stored as Language;
+  }
+  return "en";
+}
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('astroveda-language', lang);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    setLanguageCookie(lang);
   };
+
+  // Keep a cookie in sync if the language is changed outside the provider
+  // (e.g. a server redirect). Cheap no-op if already synced.
+  useEffect(() => {
+    setLanguageCookie(language);
+  }, [language]);
 
   const t = translations[language];
 
