@@ -2,6 +2,7 @@
 
 import { SectionHeading, NarrativeCard, MilestoneTable, Badge } from '../primitives';
 import type { ReportModel } from '../reportModel';
+import { localizeSign } from '../reportModel';
 
 const SIGN_NAMES: string[] = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -16,8 +17,8 @@ function baseLabel(t: (a: string, b: string) => string, key: string): string {
   return key;
 }
 
-function houseLabel(num: number): string {
-  return SIGN_NAMES[num - 1] ?? String(num);
+function houseLabel(num: number, locale: 'en' | 'hi'): string {
+  return localizeSign(locale, SIGN_NAMES[num - 1] ?? 'Aries');
 }
 
 /**
@@ -50,9 +51,9 @@ export function MangalDoshaSection({ model }: { model: ReportModel }) {
       />
 
       <div className="rpt-badge-group">
-        <Badge label={t('Present', 'वर्तमान')} value={present ? 'Yes' : 'No'} tone={present ? 'rose' : 'emerald'} />
-        <Badge label={t('Severity', 'गंभीरता')} value={severityLabel} tone={present ? 'rose' : 'amber'} />
-        <Badge label={t('Neutralized', 'तटस्थ')} value={neutralized ? 'Yes' : 'No'} tone={neutralized ? 'emerald' : 'rose'} />
+         <Badge label={t('Present', 'वर्तमान')} value={present ? t('Yes', 'हाँ') : t('No', 'नहीं')} tone={present ? 'rose' : 'emerald'} />
+         <Badge label={t('Severity', 'गंभीरता')} value={severityLabel} tone={present ? 'rose' : 'amber'} />
+         <Badge label={t('Neutralized', 'तटस्थ')} value={neutralized ? t('Yes', 'हाँ') : t('No', 'नहीं')} tone={neutralized ? 'emerald' : 'rose'} />
       </div>
 
       {present && bases && (
@@ -75,7 +76,7 @@ export function MangalDoshaSection({ model }: { model: ReportModel }) {
                         {Object.entries(bases).map(([k, v]) => (
               <tr key={k}>
                 <td className="rpt-strong">{baseLabel(t, k)}</td>
-                <td>{v.marsHouse} — {houseLabel(v.marsHouse)}</td>
+                 <td>{v.marsHouse} — {houseLabel(v.marsHouse, model.language)}</td>
                 <td className="rpt-muted">
                   {v.inManglikHouse ? t('Afflicting', 'आक्रामक') : t('No affliction', 'कोई दोष नहीं')}
                 </td>

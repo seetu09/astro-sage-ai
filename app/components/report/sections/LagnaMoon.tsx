@@ -52,7 +52,7 @@ export function LagnaMoonSection({ model }: { model: ReportModel }) {
 
       <div className="rpt-badge-group" style={{ marginTop: 12 }}>
         <StatTile label={t('Moon Lord', 'चंद्र स्वामी')} value={moonLord} />
-        <StatTile label={t('Element', 'तत्त्व')} value={elementOf(calc?.moonSign)} />
+        <StatTile label={t('Element', 'तत्त्व')} value={elementOf(calc?.moonSign, model.language)} />
       </div>
     </>
   );
@@ -65,7 +65,10 @@ const SIGN_NAMES: string[] = [
 function signFromIndex(i?: number): string {
   return SIGN_NAMES[Math.max(0, Math.min(11, (i ?? 1) - 1))];
 }
-function elementOf(sign?: number): string {
-  const e = ['Fire', 'Earth', 'Air', 'Water'];
-  return sign ? e[Math.max(0, Math.min(3, (sign - 1) % 4))] : '—';
+function elementOf(sign: number | undefined, language: 'en' | 'hi' = 'en'): string {
+  const elements: Record<'en' | 'hi', string[]> = {
+    en: ['Fire', 'Earth', 'Air', 'Water'],
+    hi: ['अग्नि', 'पृथ्वी', 'हवा', 'जल'],
+  };
+  return sign ? elements[language][Math.max(0, Math.min(3, (sign - 1) % 4))] : '—';
 }

@@ -21,7 +21,7 @@ export function PanchangSection({ model }: { model: ReportModel }) {
 
   const panchang = [
     { key: t('Tithi', 'तिथि'), value: t('— (see calendar)', '— (पंचांग देखें)'), tone: 'default' },
-    { key: t('Vara (Weekday)', 'वार'), value: derivedWeekday(model.birthDetails?.date), tone: 'default' },
+     { key: t('Vara (Weekday)', 'वार'), value: derivedWeekday(model.birthDetails?.date, model.language), tone: 'default' },
     { key: t('Nakshatra', 'नक्षत्र'), value: calc?.moonNakshatra ? localizeNakshatra(model.language, calc.moonNakshatra) : '—', tone: 'gold' },
     { key: t('Nakshatra Lord', 'नक्षत्र स्वामी'), value: localizePlanet(model.language, nakshatraLordFromIndex(nakIndex)), tone: 'violet' },
     { key: t('Tithi Count', 'तिथि गणना'), value: '—', tone: 'default' },
@@ -85,10 +85,13 @@ function nakshatraLordFromIndex(idx: number): string {
   return NAKSHATRA_LORDS_ARR[Math.max(0, Math.min(26, ((idx - 1) % 27 + 27) % 27))];
 }
 
-function derivedWeekday(dateStr?: string): string {
+function derivedWeekday(dateStr?: string, language: 'en' | 'hi' = 'en'): string {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '—';
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[d.getDay()] ?? '—';
+  const days: Record<'en' | 'hi', string[]> = {
+    en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    hi: ['रविवार', 'सोमवार', 'मंगलवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार'],
+  };
+  return days[language][d.getDay()] ?? '—';
 }

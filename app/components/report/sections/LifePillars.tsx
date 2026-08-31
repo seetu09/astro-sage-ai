@@ -9,6 +9,7 @@ import {
   Milestone,
 } from '../primitives';
 import type { ReportModel } from '../reportModel';
+import { localizePlanet } from '../reportModel';
 import type {
   LifePillarConfig,
   LifePillarKey,
@@ -145,7 +146,7 @@ export function LifePillarPage({
         badges={[
           { label: t('Strength', 'सशक्तता'), value: pillar.badges.score, tone: 'violet' },
           { label: t('Active Window', 'सक्रिय अवधि'), value: pillar.badges.timeframe, tone: 'cyan' },
-          { label: t('Ruling Lord', 'नियंत्रक ग्रह'), value: pillar.badges.lord, tone: 'gold' },
+          { label: t('Ruling Lord', 'नियंत्रक ग्रह'), value: localizePlanet(model.language, pillar.badges.lord), tone: 'gold' },
         ]}
       />
 
@@ -189,9 +190,9 @@ export function LifeBalanceSection({
           return (
             <div key={p.key} className="rpt-synergy-card">
               <div className="rpt-synergy-name">{name}</div>
-              <div className="rpt-synergy-meta">
-                {p.badges.score} • Lord {p.badges.lord}
-              </div>
+               <div className="rpt-synergy-meta">
+                 {p.badges.score} • {t('Lord', 'स्वामी')} {localizePlanet(model.language, p.badges.lord)}
+               </div>
             </div>
           );
         })}
@@ -214,6 +215,14 @@ export function MilestoneTrackerSection({
 }) {
   const t = (en: string, hi: string) => (model.language === 'hi' ? hi : en);
   const list = pillars && pillars.length === 6 ? pillars : PILLARS;
+  const outcomeLabel = (outcome: string): string => {
+    const map: Record<string, string> = {
+      positive: t('Positive', 'सकारात्मक'),
+      neutral: t('Neutral', 'तटस्थ'),
+      caution: t('Caution', 'सावधानी'),
+    };
+    return map[outcome] ?? outcome;
+  };
   const all: { period: string; event: string; pillar: string; outcome: Milestone['outcome'] }[] = [];
   for (const p of list) {
     for (const m of p.milestones) {
@@ -234,26 +243,28 @@ export function MilestoneTrackerSection({
         subtitle={t('How each pillar interacts over time', 'प्रत्येक स्तंभ समय के साथ कैसे अंतःक्रिया करता है')}
       />
       <div className="rpt-timeline">
-        {bands.map((band) => (
-          <div key={band} className="rpt-timeline-band">
-            <div className="rpt-timeline-period">{band}</div>
-            <table className="rpt-table rpt-milestone-table">
-              <tbody>
-                {all.filter((x) => x.period === band).map((x, i) => (
-                  <tr key={i}>
-                    <td>{x.pillar}</td>
-                    <td>{x.event}</td>
-                    <td>
-                      {x.outcome && (
-                        <span className={`rpt-outcome outcome-${x.outcome}`}>{x.outcome}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))}
+          {bands.map((band) => (
+           <div key={band} className="rpt-timeline-band">
+             <div className="rpt-timeline-period">{band}</div>
+             <table className="rpt-table rpt-milestone-table">
+               <tbody>
+                 {all.filter((x) => x.period === band).map((x, i) => (
+                   <tr key={i}>
+                     <td>{x.pillar}</td>
+                     <td>{x.event}</td>
+                     <td>
+                       {x.outcome && (
+                         <span className={`rpt-outcome outcome-${x.outcome}`}>
+                           {outcomeLabel(x.outcome)}
+                         </span>
+                       )}
+                     </td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
+           </div>
+         ))}
       </div>
     </>
   );

@@ -1234,7 +1234,7 @@ export function formatLocalizedDate(dateStr: string, locale: LocaleCode): string
   try {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
-    const localeMap: Record<LocaleCode, string> = { en: 'en-IN', hi: 'en-IN' };
+    const localeMap: Record<LocaleCode, string> = { en: 'en-IN', hi: 'hi-IN' };
     return new Intl.DateTimeFormat(localeMap[locale] ?? 'en-IN', {
       day: 'numeric',
       month: 'short',

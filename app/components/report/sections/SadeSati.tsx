@@ -44,7 +44,7 @@ export function SadeSatiSection({ model }: { model: ReportModel }) {
 
       <BadgeGroup
         badges={[
-          { label: t('Active', 'सक्रिय'), value: active ? 'Yes' : 'No', tone: active ? 'rose' : 'emerald' },
+          { label: t('Active', 'सक्रिय'), value: active ? t('Yes', 'हाँ') : t('No', 'नहीं'), tone: active ? 'rose' : 'emerald' },
           { label: t('Phase', 'चरण'), value: phaseLabel, tone: active ? 'amber' : 'cyan' },
           { label: t('Saturn Sign', 'शनि राशि'), value: satSign, tone: 'gold' },
         ]}

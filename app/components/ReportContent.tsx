@@ -190,7 +190,7 @@ const ReportContent: React.FC<ReportContentProps> = ({ data, selectedLanguage })
       marsSign: data.marsSign,
       ascendantSign: data.ascendantSign,
     };
-    return calculateManglik(details);
+    return calculateManglik(details, selectedLanguage);
   }, [data]);
 
   const sadeSatiResult = useMemo(() => {
@@ -200,7 +200,7 @@ const ReportContent: React.FC<ReportContentProps> = ({ data, selectedLanguage })
       marsSign: data.marsSign,
       ascendantSign: data.ascendantSign,
     };
-    return calculateSadeSati(details);
+    return calculateSadeSati(details, selectedLanguage);
   }, [data]);
 
   const hasKaalSarp = useMemo(() => detectKaalSarp(data.planets), [data.planets]);
@@ -262,15 +262,15 @@ const ReportContent: React.FC<ReportContentProps> = ({ data, selectedLanguage })
               <div key={yoga.key} className="p-3 bg-slate-50/50 dark:bg-white/[0.03] rounded-lg border border-slate-200/60 dark:border-white/10">
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="text-sm font-medium text-indigo-950 dark:text-[#F3F4F6]">{yoga.name}</h4>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                      yoga.strength === 'Strong'
-                        ? 'bg-emerald-500/10 text-emerald-500'
-                        : yoga.strength === 'Moderate'
-                        ? 'bg-amber-500/10 text-amber-500'
-                        : 'bg-slate-500/10 text-slate-500'
-                    }`}
-                  >
+                   <span
+                     className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                       yoga.strength === 'Strong' || yoga.strength === 'शक्तिशाली'
+                         ? 'bg-emerald-500/10 text-emerald-500'
+                         : yoga.strength === 'Moderate' || yoga.strength === 'मध्यम'
+                         ? 'bg-amber-500/10 text-amber-500'
+                         : 'bg-slate-500/10 text-slate-500'
+                     }`}
+                   >
                     {yoga.strength}
                   </span>
                 </div>

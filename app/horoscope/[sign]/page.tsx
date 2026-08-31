@@ -47,9 +47,9 @@ export default function HoroscopeSignPage() {
   const signSymbol = signData ? signData.symbol : "♈";
 
   const PERIODS: { id: Period; label: string }[] = [
-    { id: "yesterday", label: language === 'hi' ? "कल" : "Yesterday" },
-    { id: "today", label: language === 'hi' ? "आज" : "Today" },
-    { id: "tomorrow", label: language === 'hi' ? "कल" : "Tomorrow" },
+    { id: "yesterday", label: language === 'hi' ? t.horoscopeSign.yesterday : t.horoscopeSign.yesterday },
+    { id: "today", label: language === 'hi' ? t.horoscopeSign.today : t.horoscopeSign.today },
+    { id: "tomorrow", label: language === 'hi' ? t.horoscopeSign.tomorrow : t.horoscopeSign.tomorrow },
   ];
 
   const SCORE_CATEGORIES = [

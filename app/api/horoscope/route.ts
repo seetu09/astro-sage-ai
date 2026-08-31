@@ -45,9 +45,9 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 const PERIOD_LABELS_HI: Record<string, string> = {
-  yesterday: "कल",
+  yesterday: "पिछला दिन",
   today: "आज",
-  tomorrow: "कल",
+  tomorrow: "अगला दिन",
 };
 
 function getDateForPeriod(period: string): string {
@@ -134,10 +134,14 @@ function buildMockHoroscope(sign: string, period: string, lang: string = "en"): 
     sagittarius: 3, capricorn: 8, aquarius: 4, pisces: 7,
   };
 
-  const luckyTimes: Record<string, string> = {
-    aries: "6:00 AM - 8:00 AM", taurus: "2:00 PM - 4:00 PM", gemini: "10:00 AM - 12:00 PM", cancer: "8:00 PM - 10:00 PM",
-    leo: "12:00 PM - 2:00 PM", virgo: "5:00 AM - 7:00 AM", libra: "4:00 PM - 6:00 PM", scorpio: "11:00 PM - 1:00 AM",
-    sagittarius: "3:00 PM - 5:00 PM", capricorn: "7:00 AM - 9:00 AM", aquarius: "1:00 AM - 3:00 AM", pisces: "9:00 PM - 11:00 PM",
+  const luckyTimes: Record<string, { en: string; hi: string }> = isHi ? {
+    aries: { en: "6:00 AM - 8:00 AM", hi: "6:00 AM - 8:00 AM" }, taurus: { en: "2:00 PM - 4:00 PM", hi: "2:00 PM - 4:00 PM" }, gemini: { en: "10:00 AM - 12:00 PM", hi: "10:00 AM - 12:00 PM" }, cancer: { en: "8:00 PM - 10:00 PM", hi: "8:00 PM - 10:00 PM" },
+    leo: { en: "12:00 PM - 2:00 PM", hi: "12:00 PM - 2:00 PM" }, virgo: { en: "5:00 AM - 7:00 AM", hi: "5:00 AM - 7:00 AM" }, libra: { en: "4:00 PM - 6:00 PM", hi: "4:00 PM - 6:00 PM" }, scorpio: { en: "11:00 PM - 1:00 AM", hi: "11:00 PM - 1:00 AM" },
+    sagittarius: { en: "3:00 PM - 5:00 PM", hi: "3:00 PM - 5:00 PM" }, capricorn: { en: "7:00 AM - 9:00 AM", hi: "7:00 AM - 9:00 AM" }, aquarius: { en: "1:00 AM - 3:00 AM", hi: "1:00 AM - 3:00 AM" }, pisces: { en: "9:00 PM - 11:00 PM", hi: "9:00 PM - 11:00 PM" },
+  } : {
+    aries: { en: "6:00 AM - 8:00 AM", hi: "6:00 AM - 8:00 AM" }, taurus: { en: "2:00 PM - 4:00 PM", hi: "2:00 PM - 4:00 PM" }, gemini: { en: "10:00 AM - 12:00 PM", hi: "10:00 AM - 12:00 PM" }, cancer: { en: "8:00 PM - 10:00 PM", hi: "8:00 PM - 10:00 PM" },
+    leo: { en: "12:00 PM - 2:00 PM", hi: "12:00 PM - 2:00 PM" }, virgo: { en: "5:00 AM - 7:00 AM", hi: "5:00 AM - 7:00 AM" }, libra: { en: "4:00 PM - 6:00 PM", hi: "4:00 PM - 6:00 PM" }, scorpio: { en: "11:00 PM - 1:00 AM", hi: "11:00 PM - 1:00 AM" },
+    sagittarius: { en: "3:00 PM - 5:00 PM", hi: "3:00 PM - 5:00 PM" }, capricorn: { en: "7:00 AM - 9:00 AM", hi: "7:00 AM - 9:00 AM" }, aquarius: { en: "1:00 AM - 3:00 AM", hi: "1:00 AM - 3:00 AM" }, pisces: { en: "9:00 PM - 11:00 PM", hi: "9:00 PM - 11:00 PM" },
   };
 
   return {
@@ -148,7 +152,7 @@ function buildMockHoroscope(sign: string, period: string, lang: string = "en"): 
     lucky: {
       color: luckyColors[sign] || (isHi ? "सुनहरा" : "Gold"),
       number: luckyNumbers[sign] || 7,
-      time: luckyTimes[sign] || "12:00 PM - 2:00 PM",
+       time: luckyTimes[sign]?.[isHi ? "hi" : "en"] || "12:00 PM - 2:00 PM",
     },
     scores: scores[period as keyof typeof scores],
     insights: insights[period as keyof typeof insights],
@@ -176,6 +180,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Production: call LLM API for structured JSON
+    const isHi = lang === "hi";
+    const localizedSignName = isHi ? (SIGN_NAMES_HI[sign] || "मेष") : (SIGN_NAMES[sign] || "Aries");
+    const localizedPeriodLabel = isHi ? (PERIOD_LABELS_HI[period] || "आज") : (PERIOD_LABELS[period] || "Today");
     const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -187,7 +194,7 @@ export async function GET(request: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are an expert Vedic astrologer. Generate a daily horoscope for ${SIGN_NAMES[sign]} for ${PERIOD_LABELS[period]}. 
+            content: `You are an expert Vedic astrologer. Generate a daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}. 
             Respond with STRICT JSON only in this exact format:
             {
               "sign": "${sign}",
@@ -201,9 +208,9 @@ export async function GET(request: NextRequest) {
           },
           {
             role: "user",
-            content: `Provide the daily horoscope for ${SIGN_NAMES[sign]} for ${PERIOD_LABELS[period]}.`,
+            content: `Provide the daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}.`,
           },
-        ],
+],
         temperature: 0.7,
         max_tokens: 500,
       }),

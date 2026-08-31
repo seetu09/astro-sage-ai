@@ -63,14 +63,10 @@ import type {
 
 /** The seven natural/visible planets used for Kaal Sarp hemming. */
 const NATURAL_PLANETS: PlanetName[] = [
-  "Sun",
-  "Moon",
-  "Mars",
-  "Mercury",
-  "Jupiter",
-  "Venus",
-  "Saturn",
+  "Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn",
 ];
+
+type LocaleCode = 'en' | 'hi';
 
 /** Houses (whole-sign, from Lagna) in which Mars produces Mangal Dosha. */
 const MANGAL_HOUSES = [1, 4, 7, 8, 12];
@@ -317,14 +313,161 @@ export function computeVimshottari(
   };
 }
 
-// ─── Dosha checks ────────────────────────────────────────────────────────
+// ─── Dosha checks ── Bilingual text constants ──────────────────────────────
+
+const MANGAL_CANCELLATIONS_EN = [
+  "Mars is in its own sign (Aries/Scorpio), which cancels Mangal Dosha.",
+  "Mars is exalted in Capricorn, which neutralises the Dosha.",
+  "Mars conjoins Venus (Mangal-Shukra yuti), a classic cancellation.",
+  "Jupiter occupies a kendra from Mars, providing natural cancellation.",
+  "Mars sits in a kendra from both Lagna and Moon, balancing its energy.",
+];
+
+const MANGAL_CANCELLATIONS_HI = [
+  "मंगल अपने स्वयं के राशि (मेष/वृश्चिक) में है, जो मंगल दोष को रद्द कर देता है।",
+  "मंगल कर्कों (मकर) में ऊचे गुण में है, जो दोष को निरपेक्ष कर देता है।",
+  "मंगल शुक्रा (मंगल-शुक्र युति) संग जुड़ा है, एक क्लासिक रद्दीकरण।",
+  "मंगल से जूप के केंद्र में विराजता है, प्राकृतिक रद्दीकरण प्रदान करता है।",
+  "मंगल लग्न और चंद्रमा दोनों से केंद्र में स्थित है, इसकी ऊर्जा को संतुलित करता है।",
+];
+
+const MANGAL_DESC_NONE_EN = (lagnaH: number, moonH: number, venusH: number) =>
+  `Mars does not occupy a Manglik house from the Lagna, Moon or Venus — no Mangal Dosha is present. (Lagna ${lagnaH}, Moon ${moonH}, Venus ${venusH})`;
+
+const MANGAL_DESC_NONE_HI = (lagnaH: number, moonH: number, venusH: number) =>
+  `मंगल लग्न, चंद्रमा या शुक्रा से मांगलिक भाव में नहीं स्थित है — कोई मंगल दोष नहीं है। (लग्न ${lagnaH}, चंद्रमा ${moonH}, शुक्रा ${venusH})`;
+
+const MANGAL_DESC_NEUTRALIZED_EN = (lagnaH: number, moonH: number, reason: string) =>
+  `Mars is in house ${lagnaH} from Lagna (house ${moonH} from Moon), but the Dosha is neutralised: ${reason}`;
+
+const MANGAL_DESC_NEUTRALIZED_HI = (lagnaH: number, moonH: number, reason: string) =>
+  `मंगल लग्न से भाव ${lagnaH} में है (चंद्रमा से भाव ${moonH} में), लेकिन दोष निरपेक्ष कर दिया गया है: ${reason}`;
+
+const MANGAL_DESC_ACTIVE_EN = (lagnaH: number, moonH: number, venusH: number) =>
+  `Mars occupies house ${lagnaH} from the Lagna (house ${moonH} from the Moon, house ${venusH} from Venus), triggering Mangal Dosha.`;
+
+const MANGAL_DESC_ACTIVE_HI = (lagnaH: number, moonH: number, venusH: number) =>
+  `मंगल लग्न से भाव ${lagnaH} में स्थित है (चंद्रमा से भाव ${moonH} में, शुक्रा से भाव ${venusH} में), जो मंगल दोष को ट्रिगर करता है।`;
+
+const MANGAL_REMEDIES_STRONG_EN = [
+  "Recite Hanuman Chalisa every Tuesday for 43 days.",
+  "Worship Lord Hanuman and offer sindoor at the temple.",
+  "Consider Kumbh Vivah (symbolic marriage to a water-pot) before the final wedding.",
+  "Donate wheat, jaggery and red cloth on Tuesdays.",
+  "Wear a properly-charged red coral (Moonga) ring on the ring finger of the dominant hand.",
+];
+
+const MANGAL_REMEDIES_STRONG_HI = [
+  "प्रत्येक मंगलवार को 43 दिनों तक हनुमान चालीसा का पाठ करें।",
+  "भगवान हनुमान की पूजा करें और मंदिर में सिंदूर चढ़ाएं।",
+  "अंतिम विवाह से पहले कुंभ विवाह (एक बर्तन से प्रतीकात्मक विवाह) पर विचार करें।",
+  "मंगलवार को गेहूँ, गुड़ और लाल कपड़ा दान करें।",
+  "प्रतिष्ठित रेड कॉरल (मूंगा) की अंगूठी पहनें।",
+];
+
+const MANGAL_REMEDIES_LIGHT_EN = [
+  "No strong Manglik remedies are required; maintain regular spiritual practice.",
+  "Avoid unnecessary delays or doubts in partnerships.",
+];
+
+const MANGAL_REMEDIES_LIGHT_HI = [
+  "कोई शक्तिशाली मंगल उपाय आवश्यक नहीं है; नियमित आध्यात्मिक अभ्यास रखें।",
+  "साझेदारी में अनावश्यक देरी या संदेह से बचें।",
+];
+
+const SADE_SATI_REMEDIES_ACTIVE_EN = [
+  "Recite Shani Chalisa daily, especially on Saturdays.",
+  "Offer mustard oil, black sesame and urad dal to Lord Shani at the temple every Saturday.",
+  "Donate black cloth, iron articles and black sesame on Saturdays.",
+  "Observe a Saturday fast or eat a single satvik meal.",
+  "Serve the elderly and underprivileged through regular seva.",
+];
+
+const SADE_SATI_REMEDIES_ACTIVE_HI = [
+  "हर दिन शनि चालीसा का पाठ करें, विशेषकर शनिवार को।",
+  "हर शनिवार मंदिर में भगवान शनि को सरसों का तेल, काला तिल और उड़द दाल चढ़ाएं।",
+  "शनिवार को काला कपड़ा, लोहे के सामान और काला तिल दान करें।",
+  "शनिवार के उपवास रखें या एक साधुक्त भोजन खाएं।",
+  "नियमित सेवा के माध्यम से बूढ़ों और सीमान्तक्षीण लोगों की सेवा करें।",
+];
+
+const SADE_SATI_REMEDIES_INACTIVE_EN = [
+  "Maintain your regular spiritual practice; no special Sade Sati remedy is required right now.",
+];
+
+const SADE_SATI_REMEDIES_INACTIVE_HI = [
+  "अपनी नियमित आध्यात्मिक अभ्यास जारी रखें; इस समय कोई विशेष सड़े सती उपाय आवश्यक नहीं है।",
+];
+
+const SADE_SATI_DESC_ACTIVE_EN = (phase: SadeSatiPhase, moonSign: number) =>
+  `Saturn is transiting the ${phase} phase of Sade Sati (12th/1st/2nd from the natal Moon in sign ${moonSign}).`;
+
+const SADE_SATI_DESC_ACTIVE_HI = (phase: SadeSatiPhase, moonSign: number) =>
+  `शनि सड़े सती के ${phase} चरण में संक्रमण कर रहा है (जन्मज चंद्रमा से 12वीं/1वीं/2वीं, राशि ${moonSign})।`;
+
+const SADE_SATI_DESC_INACTIVE_EN = (next: string, moonSign: number) =>
+  `Saturn is not currently in Sade Sati from the natal Moon (sign ${moonSign}). The next cycle begins around ${next}.`;
+
+const SADE_SATI_DESC_INACTIVE_HI = (next: string, moonSign: number) =>
+  `शनि वर्तमान में जन्मज चंद्रमा से सड़े सती में नहीं है (राशि ${moonSign})। अगला चक्र ${next} के आसपास शुरू होगा।`;
+
+const KAAL_SARP_DESC_PRESENT_EN = "All seven natural planets sit on one side of the Rahu-Ketu axis, forming Kaal Sarp Dosha.";
+const KAAL_SARP_DESC_ABSENT_EN = "The seven planets are distributed on both sides of the Rahu-Ketu axis; no Kaal Sarp Dosha is formed.";
+const KAAL_SARP_DESC_INSUFFICIENT_EN = "Insufficient planet data to evaluate Kaal Sarp Dosha.";
+
+const KAAL_SARP_DESC_PRESENT_HI = "सभी सात प्राकृतिक ग्रह राहु-केतु अक्स के एक ही पक्ष पर स्थित हैं, जो काल सर्प दोष का निर्माण करता है।";
+const KAAL_SARP_DESC_ABSENT_HI = "सात ग्रह राहु-केतु अक्स के दोनों पक्षों में वितरित हैं; कोई काल सर्प दोष नहीं है।";
+const KAAL_SARP_DESC_INSUFFICIENT_HI = "काल सर्प दोष कायलकरण के लिए पर्याप्त ग्रह डेटा नहीं है।";
+
+const KAAL_SARP_REMEDIES_PRESENT_EN = [
+  "Recite the Kaal Sarp mantra 'Om Hraam Hreem Hoom Hanu Hanat Hanapathakaya Sarvadosha Kshaya Hreem Shreem Mahalakshaye Namaha' daily.",
+  "Perform Rudra Abhishek on Maha Shivaratri and every Shukla Paksha Trayodashi.",
+  "Keep a crystal or rudraksha in the south-west corner of the home.",
+  "Complete the Navratri Kanya Puja and Durga Saptashati path.",
+];
+
+const KAAL_SARP_REMEDIES_PRESENT_HI = [
+  "दैनिक काल सर्प मंत्र 'ॐ ह्रां ह्रीं हूं हनु हनात हनपाठकाय सर्वदोष क्षय ह्रीं श्रीं महालक्ष्यै नमः' का जप करें।",
+  "महाशिवरात्रि और हर शुक्ल पक्ष त्रयोदशी को रुद्र अभिषेक कराएं।",
+  "घर के दक्षिण-पश्चिम कोने में एक क्रिस्टल या रुद्राक्ष रखें।",
+  "नवरात्रि कन्या पूजा और दुर्गा सप्तशती पाठ पूरा करें।",
+];
+
+const KAAL_SARP_REMEDIES_ABSENT_EN = ["No Kaal Sarp Dosha remedies are required."];
+const KAAL_SARP_REMEDIES_ABSENT_HI = ["कोई काल सर्प दोष उपाय आवश्यक नहीं है।"];
+
+// ─── Yoga Descriptions (bilingual) ──────────────────────────────────────────
+
+const YOGA_NAME_EN: Record<string, string> = {
+  "Gajakesari Yoga": "Gajakesari Yoga",
+  "Budha-Aditya Yoga": "Budha-Aditya Yoga",
+  "Eleventh-lord in 11th": "Eleventh-lord in 11th",
+  "Second-lord in Kendra": "Second-lord in Kendra",
+  "Lakshmi Yoga": "Lakshmi Yoga",
+  "Parardhi Dhan Yoga": "Parardhi Dhan Yoga",
+  "Chamunda Yoga": "Chamunda Yoga",
+  "Venus in 2nd/11th from Moon": "Venus in 2nd/11th from Moon",
+};
+
+const YOGA_NAME_HI: Record<string, string> = {
+  "Gajakesari Yoga": "गजकेसरी योग",
+  "Budha-Aditya Yoga": "बुधादित्य योग",
+  "Eleventh-lord in 11th": "11वें भाव का स्वामी 11वें भाव में",
+  "Second-lord in Kendra": "2वें भाव का स्वामी केंद्र में",
+  "Lakshmi Yoga": "लक्ष्मी योग",
+  "Parardhi Dhan Yoga": "परार्धि धन योग",
+  "Chamunda Yoga": "चामुंदा योग",
+  "Venus in 2nd/11th from Moon": "चंद्रमा से गृह में शुक्रा योग",
+};
+
+// ─── Dosha checks ───────────────────────────────────────────────────────────
 
 /**
  * Deterministic Mangal (Kuja) Dosha from three bases — Lagna, Moon and Venus —
  * plus the classical cancellation rules (own/exalted sign, Mangal-Shukra
  * conjunction, Jupiter in kendra, Mars in kendra from Lagna & Moon).
  */
-export function computeMangalDosha(chart: ChartData): MangalDoshaReport {
+export function computeMangalDosha(chart: ChartData, locale: LocaleCode = "en"): MangalDoshaReport {
   const ascLon = chart.ascendantLongitude;
   const mars = planetByName(chart, "Mars");
   const moon = planetByName(chart, "Moon");
@@ -347,23 +490,27 @@ export function computeMangalDosha(chart: ChartData): MangalDoshaReport {
   const isPresent = lagnaBase.inManglikHouse || moonBase.inManglikHouse || venusBase.inManglikHouse;
 
   const cancellations: string[] = [];
+  const cancelEN = MANGAL_CANCELLATIONS_EN;
+  const cancelHI = MANGAL_CANCELLATIONS_HI;
+  const L = (en: string, hi: string) => locale === "hi" ? hi : en;
+
   if (MARS_OWN_SIGNS.includes(marsSign)) {
-    cancellations.push("Mars is in its own sign (Aries/Scorpio), which cancels Mangal Dosha.");
+    cancellations.push(L(cancelEN[0], cancelHI[0]));
   }
   if (marsSign === MARS_EXALTED_SIGN) {
-    cancellations.push("Mars is exalted in Capricorn, which neutralises the Dosha.");
+    cancellations.push(L(cancelEN[1], cancelHI[1]));
   }
   if (mars && venus && marsSign === longitudeToSign(venusLon)) {
-    cancellations.push("Mars conjoins Venus (Mangal-Shukra yuti), a classic cancellation.");
+    cancellations.push(L(cancelEN[2], cancelHI[2]));
   }
   if (mars && jupiter) {
     const jupiterFromMars = houseFrom(jupiter.longitude, marsLon);
     if (KENDRA_HOUSES.includes(jupiterFromMars)) {
-      cancellations.push("Jupiter occupies a kendra from Mars, providing natural cancellation.");
+      cancellations.push(L(cancelEN[3], cancelHI[3]));
     }
   }
   if (KENDRA_HOUSES.includes(lagnaH) && KENDRA_HOUSES.includes(moonH)) {
-    cancellations.push("Mars sits in a kendra from both Lagna and Moon, balancing its energy.");
+    cancellations.push(L(cancelEN[4], cancelHI[4]));
   }
 
   let severity: MangalSeverity = "none";
@@ -381,26 +528,17 @@ export function computeMangalDosha(chart: ChartData): MangalDoshaReport {
 
   let description = "";
   if (!isPresent) {
-    description = "Mars does not occupy a Manglik house from the Lagna, Moon or Venus — no Mangal Dosha is present.";
+    description = L(MANGAL_DESC_NONE_EN(lagnaH, moonH, venusH), MANGAL_DESC_NONE_HI(lagnaH, moonH, venusH));
   } else if (cancellations.length > 0) {
-    description = `Mars is in house ${lagnaH} from Lagna (house ${moonH} from Moon), but the Dosha is neutralised: ${cancellations[0]}`;
+    description = L(MANGAL_DESC_NEUTRALIZED_EN(lagnaH, moonH, cancellations[0]), MANGAL_DESC_NEUTRALIZED_HI(lagnaH, moonH, cancellations[0]));
   } else {
-    description = `Mars occupies house ${lagnaH} from the Lagna (house ${moonH} from the Moon, house ${venusH} from Venus), triggering Mangal Dosha.`;
+    description = L(MANGAL_DESC_ACTIVE_EN(lagnaH, moonH, venusH), MANGAL_DESC_ACTIVE_HI(lagnaH, moonH, venusH));
   }
 
   const isNeutralized = isPresent && cancellations.length > 0;
 
-  const strongRemedies = [
-    "Recite Hanuman Chalisa every Tuesday for 43 days.",
-    "Worship Lord Hanuman and offer sindoor at the temple.",
-    "Consider Kumbh Vivah (symbolic marriage to a water-pot) before the final wedding.",
-    "Donate wheat, jaggery and red cloth on Tuesdays.",
-    "Wear a properly-charged red coral (Moonga) ring on the ring finger of the dominant hand.",
-  ];
-  const lightRemedies = [
-    "No strong Manglik remedies are required; maintain regular spiritual practice.",
-    "Avoid unnecessary delays or doubts in partnerships.",
-  ];
+  const strongRemedies = locale === "hi" ? MANGAL_REMEDIES_STRONG_HI : MANGAL_REMEDIES_STRONG_EN;
+  const lightRemedies = locale === "hi" ? MANGAL_REMEDIES_LIGHT_HI : MANGAL_REMEDIES_LIGHT_EN;
 
   return {
     isPresent,
@@ -453,7 +591,7 @@ function findSignEquals(from: Date, targetSign: number, maxDays: number): Date |
  * Boundaries are computed from Saturn's *mean* sidereal longitude (monotonic,
  * no retrograde wobble) so the half-open phase windows are reproducible.
  */
-export function computeSadeSati(chart: ChartData, referenceDate: Date = new Date()): SadeSatiReport {
+export function computeSadeSati(chart: ChartData, referenceDate: Date = new Date(), locale: LocaleCode = "en"): SadeSatiReport {
   const moon = planetByName(chart, "Moon");
   const moonSign = longitudeToSign(moon ? moon.longitude : 0);
 
@@ -516,21 +654,19 @@ export function computeSadeSati(chart: ChartData, referenceDate: Date = new Date
   }
 
   const remedies = inSadeArc
-    ? [
-        "Recite Shani Chalisa daily, especially on Saturdays.",
-        "Offer mustard oil, black sesame and urad dal to Lord Shani at the temple every Saturday.",
-        "Donate black cloth, iron articles and black sesame on Saturdays.",
-        "Observe a Saturday fast or eat a single satvik meal.",
-        "Serve the elderly and underprivileged through regular seva.",
-      ]
-    : ["Maintain your regular spiritual practice; no special Sade Sati remedy is required right now."];
+    ? (locale === "hi" ? SADE_SATI_REMEDIES_ACTIVE_HI : SADE_SATI_REMEDIES_ACTIVE_EN)
+    : (locale === "hi" ? SADE_SATI_REMEDIES_INACTIVE_HI : SADE_SATI_REMEDIES_INACTIVE_EN);
 
   let description: string;
   if (inSadeArc) {
-    description = `Saturn is transiting the ${phase} phase of Sade Sati (12th/1st/2nd from the natal Moon in sign ${moonSign}).`;
+    description = locale === "hi"
+      ? SADE_SATI_DESC_ACTIVE_HI(phase, moonSign)
+      : SADE_SATI_DESC_ACTIVE_EN(phase, moonSign);
   } else {
     const next = entry ? isoDate(entry) : "a coming date";
-    description = `Saturn is not currently in Sade Sati from the natal Moon (sign ${moonSign}). The next cycle begins around ${next}.`;
+    description = locale === "hi"
+      ? SADE_SATI_DESC_INACTIVE_HI(next, moonSign)
+      : SADE_SATI_DESC_INACTIVE_EN(next, moonSign);
   }
 
   return {
@@ -552,7 +688,7 @@ export function computeSadeSati(chart: ChartData, referenceDate: Date = new Date
  * Deterministic Kaal Sarp Dosha: all 7 natural planets sit on one
  * 180° semicircle between Rahu and Ketu.
  */
-export function computeKaalSarp(chart: ChartData): KaalSarpReport {
+export function computeKaalSarp(chart: ChartData, locale: LocaleCode = "en"): KaalSarpReport {
   const rahu = planetByName(chart, "Rahu");
   const ketu = planetByName(chart, "Ketu");
   if (!rahu || !ketu) {
@@ -560,8 +696,8 @@ export function computeKaalSarp(chart: ChartData): KaalSarpReport {
       isPresent: false,
       RahuSign: 0,
       KetuSign: 0,
-      description: "Insufficient planet data to evaluate Kaal Sarp Dosha.",
-      remedies: [],
+    description: locale === "hi" ? KAAL_SARP_DESC_INSUFFICIENT_HI : KAAL_SARP_DESC_INSUFFICIENT_EN,
+       remedies: [],
     };
   }
 
@@ -580,27 +716,22 @@ export function computeKaalSarp(chart: ChartData): KaalSarpReport {
   const ketuSign = longitudeToSign(ketu.longitude);
 
   const description = isPresent
-    ? "All seven natural planets sit on one side of the Rahu-Ketu axis, forming Kaal Sarp Dosha."
-    : "The seven planets are distributed on both sides of the Rahu-Ketu axis; no Kaal Sarp Dosha is formed.";
+    ? (locale === "hi" ? KAAL_SARP_DESC_PRESENT_HI : KAAL_SARP_DESC_PRESENT_EN)
+    : (locale === "hi" ? KAAL_SARP_DESC_ABSENT_HI : KAAL_SARP_DESC_ABSENT_EN);
 
   const remedies = isPresent
-    ? [
-        "Recite the Kaal Sarp mantra 'Om Hraam Hreem Hoom Hanu Hanat Hanapathakaya Sarvadosha Kshaya Hreem Shreem Mahalakshaye Namaha' daily.",
-        "Perform Rudra Abhishek on Maha Shivaratri and every Shukla Paksha Trayodashi.",
-        "Keep a crystal or rudraksha in the south-west corner of the home.",
-        "Complete the Navratri Kanya Puja and Durga Saptashati path.",
-      ]
-    : ["No Kaal Sarp Dosha remedies are required."];
+    ? (locale === "hi" ? KAAL_SARP_REMEDIES_PRESENT_HI : KAAL_SARP_REMEDIES_PRESENT_EN)
+    : (locale === "hi" ? KAAL_SARP_REMEDIES_ABSENT_HI : KAAL_SARP_REMEDIES_ABSENT_EN);
 
   return { isPresent, RahuSign: rahuSign, KetuSign: ketuSign, description, remedies };
 }
 
 /** Aggregate of all deterministic dosha checks. */
-export function computeDoshaReport(chart: ChartData, referenceDate: Date = new Date()): DoshaReport {
+export function computeDoshaReport(chart: ChartData, referenceDate: Date = new Date(), locale: LocaleCode = "en"): DoshaReport {
   return {
-    mangal: computeMangalDosha(chart),
-    sadeSati: computeSadeSati(chart, referenceDate),
-    kaalSarp: computeKaalSarp(chart),
+    mangal: computeMangalDosha(chart, locale),
+    sadeSati: computeSadeSati(chart, referenceDate, locale),
+    kaalSarp: computeKaalSarp(chart, locale),
   };
 }
 
@@ -636,7 +767,7 @@ function yogaStrength(present: boolean, strong = false): YogaStrength {
  * Deterministic major yoga detection: Gajakesari, Budha-Aditya and a set of
  * classic Dhana (wealth) yogas, all derived from the birth chart positions.
  */
-export function computeYogaReport(chart: ChartData): YogaReport {
+export function computeYogaReport(chart: ChartData, locale: LocaleCode = "en"): YogaReport {
   const moonSign = planetSign(chart, "Moon");
   const jupiterSign = planetSign(chart, "Jupiter");
   const sunSign = planetSign(chart, "Sun");
@@ -789,7 +920,8 @@ export function computeYogaReport(chart: ChartData): YogaReport {
 export function computeKundliCalculations(
   chart: ChartData,
   birthDate: string,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  locale: LocaleCode = "en"
 ): KundliCalculations {
   const lagna: LagnaSummary = {
     ascendantSign: longitudeToSign(chart.ascendantLongitude),
@@ -805,8 +937,8 @@ export function computeKundliCalculations(
     divisionalCharts: computeDivisionalCharts(chart),
     ashtakavarga: computeAshtakavargaReport(chart),
     vimshottari: computeVimshottari(birthDate, chart, referenceDate),
-    doshas: computeDoshaReport(chart, referenceDate),
-    yogas: computeYogaReport(chart),
+    doshas: computeDoshaReport(chart, referenceDate, locale),
+    yogas: computeYogaReport(chart, locale),
     metadata: {
       engineVersion: CHART_ENGINE_VERSION,
       referenceDate: isoDate(new Date(referenceDate)),

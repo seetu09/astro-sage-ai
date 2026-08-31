@@ -2,6 +2,7 @@
 
 import { SectionHeading, StatTile, KeyValueRow, Badge } from '../primitives';
 import type { ReportModel } from '../reportModel';
+import { localizePlanet } from '../reportModel';
 
 const DAY_INFOS = [
   { en: 'Monday', hi: 'सोमवार', planet: 'Moon', color: 'cyan' as const },
@@ -46,13 +47,13 @@ export function DailyGuidanceSection({ model }: { model: ReportModel }) {
 
             <div className="rpt-stat-grid">
         <StatTile label={t('Day', 'दिवस')} value={t(todayInfo.en, todayInfo.hi)} />
-        <StatTile label={t('Benefic Planet', 'दैवत')} value={todayInfo.planet} />
+        <StatTile label={t('Benefic Planet', 'दैवत')} value={localizePlanet(model.language, todayInfo.planet)} />
       </div>
 
       <div className="rpt-badge-group">
-        <Badge label={t('Day Lord', 'दिवस स्वामी')} value={todayInfo.planet} tone={dayTone} />
-        {cur && <Badge label={t('Running', 'चल रही')} value={cur.mahadasha} tone="violet" />}
-        {cur && <Badge label={t('Sub-Period', 'उप-अवधि')} value={cur.antardasha} tone="cyan" />}
+        <Badge label={t('Day Lord', 'दिवस स्वामी')} value={localizePlanet(model.language, todayInfo.planet)} tone={dayTone} />
+        {cur && <Badge label={t('Running', 'चल रही')} value={localizePlanet(model.language, cur.mahadasha)} tone="violet" />}
+        {cur && <Badge label={t('Sub-Period', 'उप-अवधि')} value={localizePlanet(model.language, cur.antardasha)} tone="cyan" />}
       </div>
 
       <SectionHeading

@@ -143,7 +143,7 @@ export function MilestoneTable({
               {m.outcome && (
                 <td>
                   <span className={`rpt-outcome ${OUTCOME_TONE[m.outcome]}`}>
-                    {m.outcome}
+                    {t.report.outcome[m.outcome]}
                   </span>
                 </td>
               )}

@@ -51,7 +51,7 @@ export default function DoshaCheckerPage() {
         ...form,
         name: form.name || (language === 'hi' ? "आपका" : "Your"),
       };
-      setResult(checkDoshas(details));
+      setResult(checkDoshas(details, language));
       setLoading(false);
     }, 800);
   };

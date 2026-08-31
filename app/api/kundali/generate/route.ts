@@ -767,7 +767,7 @@ export async function POST(req: NextRequest) {
     }
 
     // --- 5. Deterministic calculations layer (pure TypeScript, cache-friendly) ---
-    const calculations = computeKundliCalculations(chartData, details.birthDate, new Date());
+    const calculations = computeKundliCalculations(chartData, details.birthDate, new Date(), lang);
 
     // --- 3+4. SINGLE-SHOT AI report (interpretation + free/paid tiers + pillars) ---
     // One Gemini call populates every narrative field at once — no separate

@@ -260,6 +260,8 @@ export interface Translations {
       lagna: string;
       noPlanetsHere: string;
        notAvailable: string;
+      yes: string;
+      no: string;
       orderId: string;
       paymentId: string;
       close: string;
@@ -288,6 +290,26 @@ export interface Translations {
       outlook: string;
       page: string;
       of: string;
+      outcome: {
+        positive: string;
+        neutral: string;
+        caution: string;
+      };
+      element: {
+        fire: string;
+        earth: string;
+        air: string;
+        water: string;
+      };
+      weekday: {
+        sunday: string;
+        monday: string;
+        tuesday: string;
+        wednesday: string;
+        thursday: string;
+        friday: string;
+        saturday: string;
+      };
     };
     preview: {
     title: string;
@@ -1089,6 +1111,8 @@ export const translations: Record<Language, Translations> = {
       lagna: 'Lagna',
       noPlanetsHere: 'No planets in this house',
       notAvailable: 'Not available',
+      yes: 'Yes',
+      no: 'No',
       orderId: 'Order ID:',
       paymentId: 'Payment ID:',
       close: 'Close',
@@ -1128,6 +1152,26 @@ export const translations: Record<Language, Translations> = {
       outlook: 'Outlook',
       page: 'Page',
       of: 'of',
+      outcome: {
+        positive: 'Positive',
+        neutral: 'Neutral',
+        caution: 'Caution',
+      },
+      element: {
+        fire: 'Fire',
+        earth: 'Earth',
+        air: 'Air',
+        water: 'Water',
+      },
+      weekday: {
+        sunday: 'Sunday',
+        monday: 'Monday',
+        tuesday: 'Tuesday',
+        wednesday: 'Wednesday',
+        thursday: 'Thursday',
+        friday: 'Friday',
+        saturday: 'Saturday',
+      },
     },
     preview: {
       title: 'Limited Free Preview',
@@ -1559,6 +1603,9 @@ export const translations: Record<Language, Translations> = {
         sunSign: 'Sun Sign',
         lagna: 'Lagna',
         houseShort: 'House',
+        outcomePositive: 'Positive',
+        outcomeNeutral: 'Neutral',
+        outcomeCaution: 'Caution',
       },
     },
     profile: {
@@ -2070,6 +2117,8 @@ export const translations: Record<Language, Translations> = {
       lagna: 'लग्न',
       noPlanetsHere: 'इस घर में कोई ग्रह नहीं',
       notAvailable: 'उपलब्ध नहीं',
+      yes: 'हाँ',
+      no: 'नहीं',
       orderId: 'ऑर्डर आईडी:',
       paymentId: 'भुगतान आईडी:',
       close: 'बंद करें',
@@ -2109,6 +2158,26 @@ export const translations: Record<Language, Translations> = {
       outlook: 'दृष्टिकोण',
       page: 'पृष्ठ',
       of: 'की',
+      outcome: {
+        positive: 'सकारात्मक',
+        neutral: 'तटस्थ',
+        caution: 'सावधानी',
+      },
+      element: {
+        fire: 'अग्नि',
+        earth: 'पृथ्वी',
+        air: 'हवा',
+        water: 'जल',
+      },
+      weekday: {
+        sunday: 'रविवार',
+        monday: 'सोमवार',
+        tuesday: 'मंगलवार',
+        wednesday: 'बुधवार',
+        thursday: 'गुरुवार',
+        friday: 'शुक्रवार',
+        saturday: 'शनिवार',
+      },
     },
     preview: {
       title: 'सीमित मुफ़्त पूर्वावलोकन',
@@ -2540,6 +2609,9 @@ export const translations: Record<Language, Translations> = {
         sunSign: 'सूर्य राशि',
         lagna: 'लग्न',
         houseShort: 'भाव',
+        outcomePositive: 'सकारात्मक',
+        outcomeNeutral: 'तटस्थ',
+        outcomeCaution: 'सावधानी',
       },
     },
     profile: {

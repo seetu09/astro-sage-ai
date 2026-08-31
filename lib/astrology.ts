@@ -8,6 +8,8 @@ import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
 
 export const DEFAULT_NOON_TIME = "12:00";
 
+export type LocaleCode = 'en' | 'hi';
+
 /**
  * Resolve the birth time for calculations.
  * When the time is unknown or missing, default to 12:00 (noon),
@@ -281,10 +283,11 @@ export function getNakshatra(longitude: number): { index: number; pada: number }
   return { index: index + 1, pada }; // 1-27
 }
 
-/** Get the nakshatra name (English) for a longitude. */
-export function getNakshatraName(longitude: number): string {
+/** Get the nakshatra name for a longitude, optionally localized. */
+export function getNakshatraName(longitude: number, locale: LocaleCode = 'en'): string {
   const { index } = getNakshatra(longitude);
-  return NAKSHATRA_NAMES.en[index - 1] ?? "Revati";
+  const i = index - 1;
+  return NAKSHATRA_NAMES[locale]?.[i] ?? NAKSHATRA_NAMES.en[i] ?? "Revati";
 }
 
 /** Get the nakshatra name with Hindi, e.g. "Shravana (श्रवण)". */

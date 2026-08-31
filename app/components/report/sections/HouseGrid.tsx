@@ -72,10 +72,10 @@ export function HouseGridSection({ model }: { model: ReportModel }) {
                   value={<span className="rpt-muted">{desc}</span>}
                 />
                 <StatTile label={t('Lord', 'स्वामी')} value={lord || '--'} />
-                <StatTile
-                  label={t('Occupants', 'निवासी')}
-                  value={(occupying.length ? occupying.join(', ') : '--') as string}
-                />
+                  <StatTile
+                    label={t('Occupants', 'निवासी')}
+                    value={(occupying.length ? occupying.map((p) => localizePlanet(model.language, p)).join(', ') : '--')}
+                  />
               </div>
             </div>
           );
