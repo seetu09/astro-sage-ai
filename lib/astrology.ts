@@ -306,6 +306,148 @@ export function formatDegreeDMS(degree: number): string {
   return `${String(d).padStart(2, "0")}°${String(mm).padStart(2, "0")}'`;
 }
 
+// ─── Panchang limbs (Tithi / Karana / Yoga) ─────────────────────────────────
+// The five limbs of the Hindu calendar — Tithi, Vara, Nakshatra, Yoga, Karana
+// (plus Lagna). These three are derived purely from the Sun & Moon sidereal
+// longitudes (0-360), using the same Lahiri Ayanamsa positions the rest of this
+// module produces, so they never drift from the chart below them.
+//
+//   Tithi  = lunar day, 30 of them (12° bins of Moon-Sun elongation).
+//            1–15 = Shukla paksha (waxing), 16–30 = Krishna paksha (waning).
+//   Yoga   = Nitya Yoga, 27 of them (13°20' bins of the Sun+Moon longitude sum).
+//   Karana = half a tithi, 11 named types cycling through 60 half-tithis.
+// Formulas follow the Surya Siddhanta / Chitra Paksha (Lahiri) tradition used
+// by the Rashtriya Panchang.
+
+/** The 15 Tithi names within Shukla paksha (Purnima = index 14). */
+const TITHI_SHUKLA_EN = [
+  "Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami", "Shashthi",
+  "Saptami", "Ashtami", "Navami", "Dashami", "Ekadashi", "Dwadashi",
+  "Trayodashi", "Chaturdashi", "Purnima",
+];
+/** The 15 Tithi names within Krishna paksha (Amavasya = index 14). */
+const TITHI_KRISHNA_EN = [
+  "Pratipada", "Dwitiya", "Tritiya", "Chaturthi", "Panchami", "Shashthi",
+  "Saptami", "Ashtami", "Navami", "Dashami", "Ekadashi", "Dwadashi",
+  "Trayodashi", "Chaturdashi", "Amavasya",
+];
+const TITHI_SHUKLA_HI = [
+  "प्रतिपदा", "द्वितीया", "तृतीया", "चतुर्थी", "पंचमी", "षष्ठी", "सप्तमी",
+  "अष्टमी", "नवमी", "दशमी", "एकादशी", "द्वादशी", "त्रयोदशी", "चतुर्दशी",
+  "पूर्णिमा",
+];
+const TITHI_KRISHNA_HI = [
+  "प्रतिपदा", "द्वितीया", "तृतीया", "चतुर्थी", "पंचमी", "षष्ठी", "सप्तमी",
+  "अष्टमी", "नवमी", "दशमी", "एकादशी", "द्वादशी", "त्रयोदशी", "चतुर्दशी",
+  "अमावस्या",
+];
+
+/** The 27 Nitya Yoga names (Vishkumbha = 1 … Vaidhriti = 27). */
+const YOGA_NAMES_EN = [
+  "Vishkumbha", "Preeti", "Aayushman", "Saubhagya", "Shobhan", "Atigand",
+  "Sukarma", "Dhriti", "Shool", "Gand", "Vriddhi", "Dhruv", "Vyaghat",
+  "Harshan", "Vajra", "Sidhi", "Vyatipat", "Variyaan", "Parigh", "Shiv",
+  "Sidh", "Sadhya", "Shubh", "Shukla", "Brahma", "Aindra", "Vaidhriti",
+];
+const YOGA_NAMES_HI = [
+  "विश्कम्भ", "प्रीति", "आयुष्मान", "सौभाग्य", "शोभन", "अतिगंध", "सुकर्मा",
+  "धृति", "शूल", "गंध", "वृद्धि", "ध्रुव", "व्याघात", "हर्षण", "वज्र",
+  "सिध्दि", "व्यतिपात", "वैर्यान", "परिघ", "शिव", "सिध", "साध्य", "शुभ",
+  "शुक्ल", "ब्रह्म", "ऐंद्र", "वैधृति",
+];
+
+/** Seven recurring (Chara) Karanas in cycle order. */
+const CHARA_KARANAS_EN = ["Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti"];
+const CHARA_KARANAS_HI = ["बव", "बालव", "कौलव", "तैतिल", "गरज", "वणिज", "विष्टि"];
+/** Four fixed (Sthira) Karanas in their monthly position order. */
+const STHIRA_KARANAS_EN = ["Shakuni", "Chatushpada", "Naga"];
+const STHIRA_KARANAS_HI = ["शकुनि", "चतुष्पद", "नाग"];
+const KIMSTUGHNA_EN = "Kimstughna";
+const KIMSTUGHNA_HI = "किंस्तुघ्न";
+
+// Canonical 1-11 listing of the 11 distinct Karanas (Bava = 1 … Kimstughna = 11).
+const KARANA_LIST_EN = [...CHARA_KARANAS_EN, ...STHIRA_KARANAS_EN, KIMSTUGHNA_EN];
+const KARANA_LIST_HI = [...CHARA_KARANAS_HI, ...STHIRA_KARANAS_HI, KIMSTUGHNA_HI];
+
+/**
+ * Result of a Panchang limb computation for one instant.
+ * `number` is the canonical index; `name` is localized and ready to render.
+ */
+export interface PanchangResult {
+  tithi: string;
+  tithiNumber: number;
+  karana: string;
+  karanaNumber: number;
+  yoga: string;
+  yogaNumber: number;
+}
+
+const norm360Local = (x: number): number => ((x % 360) + 360) % 360;
+
+/** The Karana (localized name) occupying the `pos`-th half-tithi of the month (0-59). */
+function karanaAtPosition(pos: number, locale: LocaleCode): string {
+  const c = locale === "hi" ? CHARA_KARANAS_HI : CHARA_KARANAS_EN;
+  const s = locale === "hi" ? STHIRA_KARANAS_HI : STHIRA_KARANAS_EN;
+  let name: string;
+  if (pos === 0) {
+    name = locale === "hi" ? KIMSTUGHNA_HI : KIMSTUGHNA_EN; // 1st half of Shukla Pratipada
+  } else if (pos >= 57) {
+    name = s[pos - 57]; // Shakuni(57), Chatushpada(58), Naga(59)
+  } else {
+    name = c[(pos - 1) % 7]; // Chara cycle (positions 1-56)
+  }
+  return name;
+}
+
+/**
+ * Compute the Panchang limbs (Tithi, Karana, Yoga) from the Sun and Moon
+ * sidereal longitudes. Pure & deterministic — identical inputs always yield
+ * the same output, so it is safe under Edge/Serverless runtimes and testable.
+ *
+ * @param sunLongitude   Sidereal longitude of the Sun (0-360).
+ * @param moonLongitude  Sidereal longitude of the Moon (0-360).
+ * @param locale         'en' or 'hi' for localized names.
+ */
+export function computePanchang(sunLongitude: number, moonLongitude: number, locale: LocaleCode = "en"): PanchangResult {
+  const sun = Number.isFinite(sunLongitude) ? norm360Local(sunLongitude) : NaN;
+  const moon = Number.isFinite(moonLongitude) ? norm360Local(moonLongitude) : NaN;
+
+  if (!Number.isFinite(sun) || !Number.isFinite(moon)) {
+    return { tithi: "", tithiNumber: 0, karana: "", karanaNumber: 0, yoga: "", yogaNumber: 0 };
+  }
+
+  // Tithi: Moon-Sun elongation in 12° bins (30 tithis). 1-15 Shukla, 16-30 Krishna.
+  const elongation = norm360Local(moon - sun);
+  const tithiNumber = Math.floor(elongation / 12) + 1; // 1-30
+  const isShukla = tithiNumber <= 15;
+  const localIndex = (tithiNumber - 1) % 15; // 0-14
+  const sh = locale === "hi" ? TITHI_SHUKLA_HI : TITHI_SHUKLA_EN;
+  const kr = locale === "hi" ? TITHI_KRISHNA_HI : TITHI_KRISHNA_EN;
+  const paksha = isShukla ? (locale === "hi" ? "शुक्ल" : "Shukla") : (locale === "hi" ? "कृष्ण" : "Krishna");
+  const tithi = isShukla ? sh[localIndex] : kr[localIndex];
+
+  // Yoga: Sun+Moon longitude sum in 13°20' (360/27) bins (27 yogas).
+  const sum = norm360Local(sun + moon);
+  const yogaNumber = Math.floor(sum / (360 / 27)) + 1; // 1-27
+  const yn = locale === "hi" ? YOGA_NAMES_HI : YOGA_NAMES_EN;
+  const yoga = yn[yogaNumber - 1];
+
+  // Karana: half-tithi (6° bins of elongation → 60 half-tithis per month).
+  const pos = Math.floor(elongation / 6); // 0-59
+  const karana = karanaAtPosition(pos, locale);
+  const kn = locale === "hi" ? KARANA_LIST_HI : KARANA_LIST_EN;
+  const karanaNumber = kn.indexOf(karana) + 1; // 1-11
+
+  return {
+    tithi: `${paksha} ${tithi}`,
+    tithiNumber,
+    karana,
+    karanaNumber: karanaNumber || 0,
+    yoga,
+    yogaNumber,
+  };
+}
+
 /**
  * Calculate the Ascendant (Lagna) for a given Julian Day (UT),
  * geographic latitude and east-positive longitude, using Lahiri Ayanamsa.

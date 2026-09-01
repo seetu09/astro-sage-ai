@@ -32,7 +32,7 @@ import {
 } from '@/lib/astrologyDictionary';
 import { useAuth } from '@/app/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { resolveBirthTime } from '@/lib/astrology';
+import { resolveBirthTime, computePanchang } from '@/lib/astrology';
 import { saveKundaliHistory } from '@/lib/user-history';
 import { trackEvent } from '@/lib/analytics';
 import { FreeTierData, PaidTierData, DashaRoadmapEntry, type KundliCalculations, type RichMilestone, type RichPredictionReport } from '@/types/kundali';
@@ -96,6 +96,16 @@ interface KundliData {
   paidTier?: PaidTierData;
   /** Six AI Life-Pillar narratives returned by the single-shot report generation. */
   pillars?: LifePillarConfig[];
+  /** Deterministic Panchang limbs (Tithi/Yoga/Karana) computed from the Sun &
+   * Moon sidereal longitudes returned by the generate API. */
+  panchangSnapshot?: {
+    tithi: string;
+    tithiNumber: number;
+    karana: string;
+    karanaNumber: number;
+    yoga: string;
+    yogaNumber: number;
+  };
   /** Dedicated rich-prediction AI output (deep ~250/200-word domain narratives). */
   richPredictions?: RichPredictionReport;
 }
@@ -281,6 +291,15 @@ function buildKundliData(
     throw new Error('Invalid chart data received from the server');
   }
 
+  // Deterministic Panchang limbs (Tithi / Yoga / Karana) from the Sun & Moon
+  // sidereal longitudes the engine already returned — no AI or extra round-trips.
+  const planetsList = Array.isArray(chartData.planets) ? chartData.planets : [];
+  const sunPlanet = planetsList.find((p: any) => p?.name === 'Sun');
+  const moonPlanet = planetsList.find((p: any) => p?.name === 'Moon');
+  const sunLong = typeof sunPlanet?.longitude === 'number' ? sunPlanet.longitude : NaN;
+  const moonLong = typeof moonPlanet?.longitude === 'number' ? moonPlanet.longitude : NaN;
+  const panchangSnapshot = computePanchang(sunLong, moonLong, selectedLanguage);
+
   return {
     name: details.name,
     email: details.email,
@@ -318,8 +337,9 @@ function buildKundliData(
     pillars: Array.isArray(result.pillars) && result.pillars.length === 6
       ? (result.pillars as LifePillarConfig[])
       : undefined,
-    richPredictions: (result.richPredictions as RichPredictionReport | null | undefined) ?? undefined,
-    chartData: {
+     richPredictions: (result.richPredictions as RichPredictionReport | null | undefined) ?? undefined,
+     panchangSnapshot,
+     chartData: {
       lagna: chartData?.lagna,
       ascendant: chartData?.ascendant,
       rashi: chartData?.rashi,
@@ -900,41 +920,41 @@ export default function KundaliPage() {
                 </div>
               </div>
 
-              {/* Panchang Snapshot card (free tier — Tithi/Yoga/Karana populate in premium) */}
-              <div className="glass-card rounded-xl p-4 sm:p-6">
-                <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
-                  <span className="truncate">
-                    {t('kundali.sections.panchangSnapshot')}
-                  </span>
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-                  {[
-                    {
-                      label: t('kundali.tithi'),
-                      value: '--',
-                    },
-                    {
-                      label: t('kundali.vara'),
-                      value: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
-                    },
-                    {
-                      label: t('kundali.nakshatra'),
-                      value:
-                        localizeNakshatraClean(
-                          kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
-                          selectedLanguage
-                        ) || '--',
-                    },
-                    {
-                      label: t('kundali.yoga'),
-                      value: '--',
-                    },
-                    {
-                      label: t('kundali.karana'),
-                      value: '--',
-                    },
-                  ].map((item) => (
+               {/* Panchang Snapshot card (free tier — Tithi/Vara/Nakshatra/Yoga/Karana) */}
+               <div className="glass-card rounded-xl p-4 sm:p-6">
+                 <h2 className="text-base sm:text-lg font-serif font-bold text-indigo-950 dark:text-[#F3F4F6] flex items-center gap-2 mb-3">
+                   <Moon className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                   <span className="truncate">
+                     {t('kundali.sections.panchangSnapshot')}
+                   </span>
+                 </h2>
+                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+                   {[
+                     {
+                       label: t('kundali.tithi'),
+                       value: kundliData?.panchangSnapshot?.tithi || '--',
+                     },
+                     {
+                       label: t('kundali.vara'),
+                       value: weekdayFromDate(kundliData?.dateOfBirth, selectedLanguage),
+                     },
+                     {
+                       label: t('kundali.nakshatra'),
+                       value:
+                         localizeNakshatraClean(
+                           kundliData?.chartData?.nakshatra || kundliData?.nakshatra,
+                           selectedLanguage
+                         ) || '--',
+                     },
+                     {
+                       label: t('kundali.yoga'),
+                       value: kundliData?.panchangSnapshot?.yoga || '--',
+                     },
+                     {
+                       label: t('kundali.karana'),
+                       value: kundliData?.panchangSnapshot?.karana || '--',
+                     },
+                   ].map((item) => (
                     <div
                       key={item.label}
                       className="rounded-xl p-2.5 sm:p-3 bg-slate-50/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/10"
