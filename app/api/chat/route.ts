@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { consumeChatCredit, getUserFromAuthHeader, refundChatCredit } from '@/lib/serverWallet';
 
 // --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
 const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
@@ -41,6 +42,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    // --- Server-side paywall: debit one credit (free tier or ₹5 wallet) before
+    // spending Gemini tokens. The client counter is only a UX hint; this is the
+    // authoritative check. Unauthenticated users are blocked (sign-in required).
+    const user = await getUserFromAuthHeader(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Please sign in to ask the astrologer a question.', code: 'AUTH_REQUIRED' },
+        { status: 401 }
+      );
+    }
+
+    const charge = await consumeChatCredit(user.id);
+    if (!charge) {
+      return NextResponse.json(
+        { error: 'The astrologer is unavailable right now. Please try again shortly.' },
+        { status: 503 }
+      );
+    }
+    if (charge.result === 'insufficient') {
+      return NextResponse.json(
+        { error: "You're out of free questions and wallet balance. Please top up to continue.", code: 'INSUFFICIENT_BALANCE' },
+        { status: 402 }
+      );
+    }
+
     // Friendly guard if the Gemini key isn't configured in this environment
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -74,6 +100,9 @@ export async function POST(request: NextRequest) {
     );
 
     if (!geminiResponse.ok || !geminiResponse.body) {
+      // The user was already charged a credit — refund it since we can't answer.
+      await refundChatCredit(user.id, charge.result);
+
       let upstreamDetail = '';
       try {
         upstreamDetail = await geminiResponse.text();

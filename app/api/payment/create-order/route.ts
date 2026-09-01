@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { getUserFromAuthHeader } from '@/lib/serverWallet';
 
 const MIN_AMOUNT_INR = 20; // ₹20 minimum top-up
 const MIN_AMOUNT_PAISE = MIN_AMOUNT_INR * 100;
@@ -24,6 +25,20 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const { amount, currency = 'INR', userEmail, paymentType = 'wallet_topup' } = body;
+
+    // Wallet top-ups must be tied to a signed-in account — the credit is
+    // applied server-side in /api/payment/verify using this identity.
+    let walletUserId: string | undefined;
+    if (paymentType === 'wallet_topup') {
+      const user = await getUserFromAuthHeader(req);
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Please sign in before adding funds to your wallet.' },
+          { status: 401 }
+        );
+      }
+      walletUserId = user.id;
+    }
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -68,6 +83,7 @@ export async function POST(req: Request) {
         notes: {
           userEmail: userEmail || 'unknown',
           productType: paymentType,
+          ...(walletUserId ? { userId: walletUserId } : {}),
         },
       }),
     });

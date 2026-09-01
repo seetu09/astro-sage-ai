@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
+import { getSupabaseClient } from "@/lib/supabase";
 import type { WalletTransaction } from "@/types/user";
 
 const FREE_MESSAGES_LIMIT = 3;
@@ -10,11 +11,16 @@ const PRICE_PER_QUESTION = 5;
 interface WalletContextType {
   freeMessagesLeft: number;
   walletBalance: number;
+  transactions: WalletTransaction[];
+  isLoading: boolean;
   isTopUpOpen: boolean;
   pendingPrompt: string | null;
-  transactions: WalletTransaction[];
+  /** Optimistic local check for UX — /api/chat performs the authoritative debit. */
   consumeMessage: () => "free" | "wallet" | "blocked";
-  addFunds: (amount: number, payment?: { orderId: string; paymentId: string }) => void;
+  /** Credits via the server (single source of truth) then refreshes from it. */
+  addFunds: (amount: number, payment?: { orderId: string; paymentId: string }) => Promise<void>;
+  /** Re-fetch the authoritative wallet state from /api/wallet. */
+  refresh: () => Promise<void>;
   setPendingPrompt: (prompt: string) => void;
   clearPendingPrompt: () => void;
   openTopUp: () => void;
@@ -24,11 +30,13 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType>({
   freeMessagesLeft: FREE_MESSAGES_LIMIT,
   walletBalance: 0,
+  transactions: [],
+  isLoading: false,
   isTopUpOpen: false,
   pendingPrompt: null,
-  transactions: [],
   consumeMessage: () => "free",
-  addFunds: () => {},
+  addFunds: async () => {},
+  refresh: async () => {},
   setPendingPrompt: () => {},
   clearPendingPrompt: () => {},
   openTopUp: () => {},
@@ -41,69 +49,75 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [freeMessagesLeft, setFreeMessagesLeft] = useState(FREE_MESSAGES_LIMIT);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [pendingPrompt, setPendingPromptState] = useState<string | null>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [transactionsHydrated, setTransactionsHydrated] = useState(false);
 
-  const transactionStorageKey = user ? `astroveda-wallet-transactions-${user.id}` : null;
-
-  // Hydrate state from localStorage on mount
-  useEffect(() => {
-    try {
-      const storedFree = localStorage.getItem("astroveda-free-messages");
-      if (storedFree !== null) {
-        setFreeMessagesLeft(Math.min(FREE_MESSAGES_LIMIT, Math.max(0, parseInt(storedFree, 10) || 0)));
-      }
-      const storedWallet = localStorage.getItem("astroveda-wallet-balance");
-      if (storedWallet !== null) {
-        setWalletBalance(Math.max(0, parseFloat(storedWallet) || 0));
-      }
-    } catch {
-      // localStorage unavailable — keep defaults
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!transactionStorageKey) {
+  /**
+   * Pull the authoritative wallet state from the server. The Supabase access
+   * token from the client SDK authenticates the request; balances can no
+   * longer be forged via localStorage.
+   */
+  const refresh = useCallback(async () => {
+    if (!user) {
+      setFreeMessagesLeft(FREE_MESSAGES_LIMIT);
+      setWalletBalance(0);
       setTransactions([]);
-      setTransactionsHydrated(false);
       return;
     }
-
+    setIsLoading(true);
     try {
-      const stored = localStorage.getItem(transactionStorageKey);
-      setTransactions(stored ? JSON.parse(stored) : []);
+      const supabase = getSupabaseClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+
+      const res = await fetch("/api/wallet", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setWalletBalance(Math.max(0, Number(data.balance) || 0));
+      setFreeMessagesLeft(Math.max(0, Number(data.freeLeft) || 0));
+      setTransactions(
+        (Array.isArray(data.transactions) ? data.transactions : []).map(
+          (tx: Record<string, unknown>) => ({
+            id: String(tx.id),
+            userId: user.id,
+            type: String(tx.type),
+            amount: Number(tx.amount) || 0,
+            currency: String(tx.currency || "INR"),
+            status: String(tx.status || "completed"),
+            createdAt: String(tx.createdAt),
+            orderId: (tx.orderId as string) ?? undefined,
+            paymentId: (tx.paymentId as string) ?? undefined,
+            description: (tx.description as string) ?? undefined,
+          })
+        )
+      );
     } catch {
-      setTransactions([]);
+      // Network/config failure — keep the last known state; the server
+      // remains the enforcement point regardless of what the UI shows.
     } finally {
-      setTransactionsHydrated(true);
+      setIsLoading(false);
     }
-  }, [transactionStorageKey]);
+  }, [user]);
 
-  // Persist state to localStorage
+  // Load server state on sign-in / user change.
   useEffect(() => {
-    try {
-      localStorage.setItem("astroveda-free-messages", freeMessagesLeft.toString());
-      localStorage.setItem("astroveda-wallet-balance", walletBalance.toFixed(2));
-    } catch {
-      // localStorage unavailable — ignore
-    }
-  }, [freeMessagesLeft, walletBalance]);
+    refresh();
+  }, [refresh]);
 
-  useEffect(() => {
-    if (!transactionStorageKey || !transactionsHydrated) return;
-
-    try {
-      localStorage.setItem(transactionStorageKey, JSON.stringify(transactions));
-    } catch {
-      // localStorage unavailable - keep the in-memory transaction list.
-    }
-  }, [transactionStorageKey, transactions, transactionsHydrated]);
-
+  /**
+   * Optimistic local check so the UI can open the TopUp modal *before* an
+   * avoidable paid request. The server re-checks and debits atomically in
+   * /api/chat — a stale client can never grant a free question.
+   */
   const consumeMessage = useCallback((): "free" | "wallet" | "blocked" => {
     if (freeMessagesLeft > 0) {
-      setFreeMessagesLeft((prev) => prev - 1);
+      setFreeMessagesLeft((prev) => Math.max(0, prev - 1));
       return "free";
     }
     if (walletBalance >= PRICE_PER_QUESTION) {
@@ -113,27 +127,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return "blocked";
   }, [freeMessagesLeft, walletBalance]);
 
-  const addFunds = useCallback((amount: number, payment?: { orderId: string; paymentId: string }) => {
-    setWalletBalance((prev) => Math.round((prev + amount) * 100) / 100);
-    if (user) {
-      const createdAt = new Date().toISOString();
-      setTransactions((current) => [
-        {
-          id: payment?.paymentId || `topup-${Date.now()}`,
-          userId: user.id,
-          type: "wallet_topup",
-          amount,
-          currency: "INR",
-          status: "completed",
-          createdAt,
-          orderId: payment?.orderId,
-          paymentId: payment?.paymentId,
-          description: "Wallet top-up",
-        },
-        ...current,
-      ]);
-    }
-  }, [user]);
+  /**
+   * Called after Razorpay verification succeeds. The server already credited
+   * the wallet inside /api/payment/verify (idempotent on payment_id), so this
+   * simply re-syncs the UI from the source of truth.
+   */
+  const addFunds = useCallback(
+    async (_amount: number, _payment?: { orderId: string; paymentId: string }) => {
+      await refresh();
+    },
+    [refresh]
+  );
 
   const setPendingPrompt = useCallback((prompt: string) => {
     setPendingPromptState(prompt);
@@ -151,11 +155,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       value={{
         freeMessagesLeft,
         walletBalance,
+        transactions,
+        isLoading,
         isTopUpOpen,
         pendingPrompt,
-        transactions,
         consumeMessage,
         addFunds,
+        refresh,
         setPendingPrompt,
         clearPendingPrompt,
         openTopUp,

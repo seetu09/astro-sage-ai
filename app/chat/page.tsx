@@ -9,6 +9,7 @@ import { useWallet } from '@/app/context/WalletContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { saveChatHistory } from '@/lib/user-history';
+import { getSupabaseClient } from '@/lib/supabase';
 import { trackEvent } from '@/lib/analytics';
 import EmptyState from '@/app/components/EmptyState';
 import { SkeletonChat } from '@/app/components/SkeletonLoader';
@@ -44,6 +45,25 @@ function makeStreamHelpers(
   return { appendChunk, setContent };
 }
 
+// Supabase access token for the server-side paywall debit (/api/chat requires it).
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+interface StreamOutcome {
+  /** True when the server rejected on paywall grounds (401 not signed in, 402 out of credits). */
+  paywall: boolean;
+  status: number | null;
+  message: string | null;
+}
+
 // Read the /api/chat text stream and invoke onChunk for each delta as it arrives.
 // Failed responses carry friendly JSON messages ({ error }) which are surfaced via onError.
 async function streamAssistantReply(
@@ -52,10 +72,13 @@ async function streamAssistantReply(
   profile: unknown,
   onChunk: (chunk: string) => void,
   onError: (message: string) => void
-) {
+): Promise<StreamOutcome> {
   const response = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(await getAuthHeaders()),
+    },
     body: JSON.stringify({ message: prompt, language, profile }),
   });
 
@@ -68,8 +91,12 @@ async function streamAssistantReply(
     } catch {
       // Non-JSON error body — keep the default message
     }
+    if (response.status === 401 || response.status === 402) {
+      // Paywall state — the caller re-syncs the wallet and offers a top-up.
+      return { paywall: true, status: response.status, message: serverMessage };
+    }
     onError(serverMessage);
-    return;
+    return { paywall: false, status: response.status, message: serverMessage };
   }
 
   const reader = response.body.getReader();
@@ -80,13 +107,14 @@ async function streamAssistantReply(
     const chunk = decoder.decode(value, { stream: true });
     if (chunk) onChunk(chunk);
   }
+  return { paywall: false, status: null, message: null };
 }
 
 function ChatContent() {
   const { language, t } = useLanguage();
   const { user } = useAuth();
   const { profile } = useUserProfile();
-  const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp, pendingPrompt, setPendingPrompt, clearPendingPrompt } = useWallet();
+  const { freeMessagesLeft, walletBalance, consumeMessage, openTopUp, pendingPrompt, setPendingPrompt, clearPendingPrompt, refresh } = useWallet();
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -131,7 +159,11 @@ function ChatContent() {
         };
         (async () => {
           try {
-            await streamAssistantReply(q, language, profile, onChunk, setAssistantContent);
+            const outcome = await streamAssistantReply(q, language, profile, onChunk, setAssistantContent);
+            if (outcome.paywall) {
+              await refresh();
+              openTopUp();
+            }
           } catch {
             setHasError(true);
             setAssistantContent(t.chat.error);
@@ -211,7 +243,14 @@ function ChatContent() {
     };
 
     try {
-      await streamAssistantReply(text, language, profile, onChunk, setAssistantContent);
+      const outcome = await streamAssistantReply(text, language, profile, onChunk, setAssistantContent);
+      if (outcome.paywall) {
+        // The server's authoritative wallet state disagrees with the optimistic
+        // local counter — re-sync from /api/wallet and offer a top-up.
+        await refresh();
+        setPendingPrompt(text);
+        openTopUp();
+      }
     } catch {
       setHasError(true);
       setAssistantContent(t.chat.error);
@@ -251,7 +290,14 @@ function ChatContent() {
       };
 
       try {
-        await streamAssistantReply(prompt, language, profile, onChunk, setAssistantContent);
+        const outcome = await streamAssistantReply(prompt, language, profile, onChunk, setAssistantContent);
+        if (outcome.paywall) {
+          // Still blocked after the top-up (e.g. partial payment) — re-sync,
+          // keep the prompt pending, and reopen the top-up modal.
+          await refresh();
+          setPendingPrompt(prompt);
+          openTopUp();
+        }
       } catch {
         setHasError(true);
         setAssistantContent(t.chat.error);

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import Script from "next/script";
 import { Loader2, Lock, AlertCircle } from "lucide-react";
 import { useTranslation } from "@/app/lib/i18n/useTranslation";
+import { useAuth } from "@/app/context/AuthContext";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export interface PaymentSuccessDetails {
   orderId: string;
@@ -40,6 +42,7 @@ export default function PaymentButton({
   disabled = false,
 }: PaymentButtonProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,11 +75,26 @@ export default function PaymentButton({
 
     setIsLoading(true);
 
+    // Authenticated requests carry the Supabase access token — required for
+    // wallet top-ups (server credits the signed-in account) and it lets
+    // /api/payment/verify bind the transaction to the user.
+    let authHeaders: Record<string, string> = {};
+    if (user) {
+      try {
+        const supabase = getSupabaseClient();
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (token) authHeaders = { Authorization: `Bearer ${token}` };
+      } catch {
+        // Token unavailable — request proceeds unauthenticated.
+      }
+    }
+
     try {
       // 1. Create order
       const orderResponse = await fetch(createOrderEndpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           amount,
           currency: "INR",
@@ -108,7 +126,7 @@ export default function PaymentButton({
           try {
             const verifyResponse = await fetch(verifyEndpoint, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...authHeaders },
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
