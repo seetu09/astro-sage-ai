@@ -105,7 +105,6 @@ export default function LoveMeter() {
 
   const handleDateChange = (setter: React.Dispatch<React.SetStateAction<PartnerForm>>, date: string) => {
     const sign = getSignFromDate(date);
-    console.log("date", date, "sign", sign);
     setter((prev) => ({ ...prev, birthDate: date, sign }));
   };
 

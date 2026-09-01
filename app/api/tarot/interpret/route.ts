@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { getCardById, type DrawnCard, type TarotTopic } from "@/lib/tarot-data";
 
-const DEV_MODE = true;
+const DEV_MODE = process.env.NODE_ENV !== "production";
 
 interface InterpretRequest {
   topic: TarotTopic;
@@ -47,6 +48,19 @@ function buildMockInterpretation(req: InterpretRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit — protect Moonshot spend (30 req / 60s / IP).
+    const { allowed, retryAfter } = checkRateLimit(
+      `tarot:${getClientIp(request)}`,
+      30,
+      60_000
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     const body: InterpretRequest = await request.json();
 
     if (!body.cards || !Array.isArray(body.cards) || body.cards.length !== 3) {
@@ -95,7 +109,13 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
-    return NextResponse.json({ interpretation: data.choices[0].message.content });
+    const interpretation = data?.choices?.[0]?.message?.content;
+    // Validate the LLM output — only serve it if it's a non-empty string.
+    // Malformed / empty output falls back to the deterministic mock reading.
+    if (typeof interpretation === "string" && interpretation.trim()) {
+      return NextResponse.json({ interpretation: interpretation.trim() });
+    }
+    return NextResponse.json({ interpretation: buildMockInterpretation(body) });
   } catch {
     return NextResponse.json({ error: "Failed to generate interpretation" }, { status: 500 });
   }

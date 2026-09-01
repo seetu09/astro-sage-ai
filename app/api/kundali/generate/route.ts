@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { getSupabaseClient } from "@/lib/supabase";
 import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
 import { computeKundliCalculations } from "@/lib/kundli-report";
@@ -688,6 +689,20 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit — this is the most expensive route: a cache miss triggers two
+    // Gemini calls, so throttle hard (12 req / 60s / IP) to cap AI spend..
+    const { allowed, retryAfter } = checkRateLimit(
+      `kundali-generate:${getClientIp(req)}`,
+      12,
+      60_000
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait a moment and try again." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     const body = await req.json();
 
     const { language, lang: langLegacy } = body;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
 import { generateReportHtml } from "@/lib/pdfHtmlTemplate";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
@@ -177,6 +178,20 @@ export async function POST(req: NextRequest) {
   let browser: Awaited<ReturnType<typeof import("puppeteer-core").launch>> | null = null;
 
   try {
+    // Rate limit — the Chromium render is compute/IO heavy;and PDFs are paid,
+    // so throttle per IP (10 req / 120s / IP) to cap cost and abuse.
+    const { allowed, retryAfter } = checkRateLimit(
+      `kundali-pdf:${getClientIp(req)}`,
+      10,
+      120_000
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "A JSON body is required" }, { status: 400 });

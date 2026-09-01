@@ -74,7 +74,6 @@ export default function PaymentButton({
 
     try {
       // 1. Create order
-      console.log('Creating order...');
       const orderResponse = await fetch(createOrderEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -88,7 +87,6 @@ export default function PaymentButton({
       });
 
       const orderData = await orderResponse.json();
-      console.log('Order response:', orderData);
 
       if (!orderResponse.ok) {
         throw new Error(orderData.error || `Failed to create order (Status: ${orderResponse.status})`);
@@ -107,7 +105,6 @@ export default function PaymentButton({
         description: "Detailed Kundli Report",
         order_id: orderData.orderId,
         handler: async function (response: any) {
-          console.log('Payment handler response:', response);
           try {
             const verifyResponse = await fetch(verifyEndpoint, {
               method: "POST",
@@ -120,7 +117,6 @@ export default function PaymentButton({
             });
 
             const verifyData = await verifyResponse.json();
-            console.log('Verify response:', verifyData);
 
             if (verifyData.success) {
               setIsLoading(false);
@@ -150,7 +146,6 @@ export default function PaymentButton({
         },
         modal: {
           ondismiss: function() {
-            console.log('Payment modal dismissed');
             setIsLoading(false);
           },
           escape: true,
@@ -182,7 +177,6 @@ export default function PaymentButton({
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="lazyOnload"
         onLoad={() => {
-          console.log('Razorpay script loaded');
           setScriptLoaded(true);
         }}
         onError={() => {

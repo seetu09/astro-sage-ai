@@ -48,7 +48,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               Oops! Something broke
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">
-              We encountered an unexpected error. Don't worry — your data is safe. Try refreshing the page.
+              We encountered an unexpected error. Don&apos;t worry — your data is safe. Try refreshing the page.
             </p>
             <button
               onClick={this.handleReset}

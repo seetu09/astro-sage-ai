@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 // --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
 const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
@@ -10,41 +11,10 @@ SAFETY BOUNDARY — you must refuse to make definitive predictions on:
 
 When a user raises these sensitive topics, politely acknowledge their concern, explain that this falls outside responsible astrology, and steer them toward certified professionals: doctors for health matters, psychologists or therapists for mental well-being, and legal professionals for legal matters. Never diagnose, never predict medical outcomes, and never advise on ongoing court cases.`;
 
-// --- IP-based rate limiting: max 15 requests / 60s per IP (in-memory sliding window) ---
+// --- IP-based rate limiting: max 15 requests / 60s per IP (in-memory sliding
+// window, shared via lib/rateLimit) — protects Gemini spend from bot abuse. ---
 const RATE_LIMIT = 15;
 const RATE_WINDOW_MS = 60_000;
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown'
-  );
-}
-
-function checkRateLimit(ip: string): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-
-  // Periodically purge expired entries to prevent memory growth
-  if (rateLimitMap.size > 1000) {
-    rateLimitMap.forEach((entry, key) => {
-      if (entry.resetAt < now) rateLimitMap.delete(key);
-    });
-  }
-
-  const entry = rateLimitMap.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return { allowed: true, retryAfter: 0 };
-  }
-
-  entry.count += 1;
-  if (entry.count > RATE_LIMIT) {
-    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
-  }
-  return { allowed: true, retryAfter: 0 };
-}
 
 // --- Wrap plain text deltas into a streaming Response ---
 function textStream(stream: ReadableStream<Uint8Array>): Response {
@@ -54,7 +24,11 @@ function textStream(stream: ReadableStream<Uint8Array>): Response {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit check — protect API costs from bot abuse
-    const { allowed, retryAfter } = checkRateLimit(getClientIp(request));
+    const { allowed, retryAfter } = checkRateLimit(
+      `chat:${getClientIp(request)}`,
+      RATE_LIMIT,
+      RATE_WINDOW_MS
+    );
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many requests. Please wait a minute before asking another question.' },

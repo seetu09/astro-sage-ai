@@ -87,7 +87,7 @@ export default function Testimonials() {
 
               {/* Quote text */}
               <p className="text-[var(--text-primary)] text-sm leading-relaxed mb-6">
-                "{t.quote[language]}"
+                &ldquo;{t.quote[language]}&rdquo;
               </p>
 
               {/* Author */}

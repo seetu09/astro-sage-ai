@@ -411,7 +411,6 @@ export default function KundaliPage() {
   };
   // State guard: isPaid defaults to false in AppContext; coerce undefined/null to false (locked)
   const isPaidSafe = !!isPaid;
-  console.log("[PAYWALL] User tier:", isPaid);
   const { user } = useAuth();
   const toast = useToast();
   const [name, setName] = useState('');

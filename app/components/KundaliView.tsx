@@ -388,7 +388,7 @@ export default function KundaliView({
                     userName={userName}
                     paymentType="kundli_report"
                     buttonText={ctaLabel}
-                    onSuccess={() => markAsPaid()}
+                    onSuccess={(details) => markAsPaid(details)}
                   />
                 </div>
               </div>

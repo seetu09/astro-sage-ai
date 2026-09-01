@@ -126,7 +126,7 @@ export function generateMetadata({ params }: { params: { lang?: string } }): Met
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
-      title: "AstroSage",
+      title: "AstroVeda",
     },
     icons: {
       icon: [
@@ -138,8 +138,8 @@ export function generateMetadata({ params }: { params: { lang?: string } }): Met
     other: {
       "mobile-web-app-capable": "yes",
       "apple-mobile-web-app-capable": "yes",
-      "application-name": "AstroSage",
-      "apple-mobile-web-app-title": "AstroSage",
+      "application-name": "AstroVeda",
+      "apple-mobile-web-app-title": "AstroVeda",
       "msapplication-TileColor": "#4F46E5",
       "msapplication-TileImage": "/icons/icon-192x192.png",
     },

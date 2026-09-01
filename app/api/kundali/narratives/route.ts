@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { FullKundliReportData } from "@/types/kundali";
 import {
   buildFallbackPillars,
@@ -35,6 +36,19 @@ const GEMINI_MODEL = "gemini-2.0-flash";
  */
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit — protect Gemini pillar-spend from abuse (20 req / 60s / IP).);
+    const { allowed, retryAfter } = checkRateLimit(
+      `kundali-narratives:${getClientIp(req)}`,
+      20,
+      60_000
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "A JSON body is required" }, { status: 400 });

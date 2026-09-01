@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
-const DEV_MODE = true;
+// Serve deterministic mock data in development (and as the automatic fallback
+// whenever the production LLM call fails or returns unparsable output). In
+// production the real Moonshot path below is always attempted first.
+const DEV_MODE = process.env.NODE_ENV !== "production";
 
 export interface HoroscopeResponse {
   sign: string;
@@ -159,8 +163,91 @@ function buildMockHoroscope(sign: string, period: string, lang: string = "en"): 
   };
 }
 
+/**
+ * Extract and validate a HoroscopeResponse from raw LLM text. Returns `null`
+ * when the text contains no parsable JSON or the parsed object is missing any
+ * required field, so callers can fall back to the deterministic mock.
+ */
+function parseHoroscopeJson(
+  text: string,
+  sign: string,
+  period: string,
+  date: string,
+  isHi: boolean
+): HoroscopeResponse | null {
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    const scores = parsed.scores as { career: number; love: number; money: number; health: number } | undefined;
+    const insights = parsed.insights as { career: string; love: string; money: string; health: string } | undefined;
+    const lucky = parsed.lucky as { color?: string; number?: number; time?: string } | undefined;
+
+    if (
+      typeof parsed.prediction !== "string" ||
+      !parsed.prediction.trim() ||
+      !scores ||
+      typeof scores.career !== "number" ||
+      typeof scores.love !== "number" ||
+      typeof scores.money !== "number" ||
+      typeof scores.health !== "number" ||
+      !insights ||
+      typeof insights.career !== "string" ||
+      typeof insights.love !== "string" ||
+      typeof insights.money !== "string" ||
+      typeof insights.health !== "string" ||
+      !lucky
+    ) {
+      return null;
+    }
+
+    // Clamp scores to the accepted 1-5 range.
+    const clamp = (n: number) => Math.max(1, Math.min(5, Math.round(n)));
+
+    return {
+      sign,
+      period: period as HoroscopeResponse["period"],
+      date,
+      prediction: String(parsed.prediction).trim(),
+      lucky: {
+        color: typeof lucky.color === "string" && lucky.color.trim() ? lucky.color : isHi ? "सुनहरा" : "Gold",
+        number: typeof lucky.number === "number" ? lucky.number : 7,
+        time: typeof lucky.time === "string" && lucky.time.trim() ? lucky.time : "12:00 PM - 2:00 PM",
+      },
+      scores: {
+        career: clamp(scores.career),
+        love: clamp(scores.love),
+        money: clamp(scores.money),
+        health: clamp(scores.health),
+      },
+      insights: {
+        career: String(insights.career).trim(),
+        love: String(insights.love).trim(),
+        money: String(insights.money).trim(),
+        health: String(insights.health).trim(),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit — protect Moonshot spend from bot abuse (30 req / 60s / IP).
+    const { allowed, retryAfter } = checkRateLimit(
+      `horoscope:${getClientIp(request)}`,
+      30,
+      60_000
+    );
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const sign = searchParams.get("sign")?.toLowerCase() || "aries";
     const period = searchParams.get("period")?.toLowerCase() || "today";
@@ -217,11 +304,21 @@ export async function GET(request: NextRequest) {
     });
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
-    // Parse JSON from LLM response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return NextResponse.json(JSON.parse(jsonMatch[0]));
+    const content = data?.choices?.[0]?.message?.content;
+    if (typeof content === "string") {
+      // Parse + validate the LLM JSON against the expected HoroscopeResponse
+      // shape. Treat malformed / structurally-incomplete output as a failure
+      // and fall back to the deterministic mock rather than serving bad data.
+      const parsed = parseHoroscopeJson(
+        content,
+        sign,
+        period,
+        getDateForPeriod(period),
+        isHi
+      );
+      if (parsed) {
+        return NextResponse.json(parsed);
+      }
     }
     return NextResponse.json(buildMockHoroscope(sign, period, lang));
   } catch {

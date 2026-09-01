@@ -37,8 +37,13 @@ const defaultValue: AppContextType = {
 
 const AppContext = createContext<AppContextType>(defaultValue);
 
-const IS_PAID_STORAGE_KEY = 'astroveda-is-paid';
 const UNLOCK_TOKEN_STORAGE_KEY = 'astroveda-unlock-token';
+
+// SECURITY: the paywall flag (`isPaid`) derives from a SERVER-MINTED unlock token —
+// never from a client-writable flag. A crafted sessionStorage/localStorage value must
+// not unlock the paid report. Only `/api/payment/verify` (which mints a token after
+// Razorpay captures a real payment) can produce a valid token, so the report stays
+// locked unless a genuine payment happened on the server.
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isPaid, setIsPaid] = useState(false);
@@ -46,10 +51,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { language, setLanguage } = useLanguage();
 
   // --- Restore persisted payment state (hydration-safe) ---------------------
-  // SECURITY: localStorage is restored here, but it is NEVER written from URL
-  // params. markAsPaid() (backed by a server-verified payment) is the ONLY
-  // code path that can set isPaid=true — visiting ?payment=success or any
-  // crafted query string cannot unlock the report.
+  // SECURITY: isPaid only ever becomes true when a SERVER-MINTED unlock token is
+  // present (restored here or passed to markAsPaid() by the post-payment handler).
+  // A client-writable sessionStorage/localStorage flag can never unlock the report —
+  // only `/api/payment/verify`, which revalidates the order against Razorpay and mints
+  // a token, can. Visiting a crafted query string does nothing here.
   useEffect(() => {
     try {
       // Dev-mode guard: clear stale localStorage so it doesn't poison tests.
@@ -59,12 +65,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUnlockToken(null);
         return;
       }
-      if (sessionStorage.getItem(IS_PAID_STORAGE_KEY) === 'true') {
-        setIsPaid(true);
-      }
+      // A client-writable sessionStorage/localStorage flag cannot unlock the paid
+      // report — only a server-minted unlock token from `/api/payment/verify` can.
       const savedToken = localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
       if (savedToken) {
+        setIsPaid(true);
         setUnlockToken(savedToken);
+      } else {
+        setIsPaid(false);
       }
     } catch {
       // localStorage unavailable — stay locked
@@ -72,18 +80,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markAsPaid = useCallback((details?: PaymentSuccessDetails) => {
+    // Require a server-minted unlock token (only `/api/payment/verify` produces
+    // one after Razorpay confirms the order is paid). Without it, the paywall stays
+    // locked — a caller-only flag can no longer flip isPaid.;
+    if (!details?.unlockToken) {
+      // No server proof of payment — refuse to unlock. This also guards against
+      // code paths that previously called markAsPaid() with no token.;
+      return;
+    }
     try {
-      sessionStorage.setItem(IS_PAID_STORAGE_KEY, 'true');
-      if (details?.unlockToken) {
-        localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, details.unlockToken);
-      }
+      localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, details.unlockToken);
     } catch {
       // ignore storage failures — in-memory unlock still works this session
     }
     setIsPaid(true);
-    if (details?.unlockToken) {
-      setUnlockToken(details.unlockToken);
-    }
+    setUnlockToken(details.unlockToken);
   }, []);
 
   const resetPayment = useCallback(() => {

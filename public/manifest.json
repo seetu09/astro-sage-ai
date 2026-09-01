@@ -1,6 +1,6 @@
 {
-  "name": "AstroSage",
-  "short_name": "AstroSage",
+  "name": "AstroVeda",
+  "short_name": "AstroVeda",
   "description": "AI-powered Vedic astrology, Kundali generation, and cosmic guidance",
   "start_url": "/",
   "display": "standalone",
