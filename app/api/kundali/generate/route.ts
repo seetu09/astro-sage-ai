@@ -642,13 +642,31 @@ function buildPaidTier(chartData: ChartData, birthDate: string, interpretation: 
     ],
   };
 
-  const remedies = structured?.paidTier?.remedies ?? [];
+const remedies = structured?.paidTier?.remedies ?? [];
   const fullBreakdown =
     structured?.paidTier?.fullBreakdown ??
     (interpretation
       ? [
-          { title: lang === "hi" ? "व्यक्तित्व एवं लग्न" : "Personality & Lagna", content: interpretation.slice(0, 600) },
-          { title: lang === "hi" ? "ग्रह प्रभाव" : "Planetary Influences", content: interpretation.slice(600, 1200) },
+          { 
+            title: lang === "hi" ? "व्यक्तित्व एवं लग्न" : "Personality & Lagna", 
+            content: `<p>${interpretation.slice(0, 600).trim().split('\\n').join('</p><p>')}</p>` 
+          },
+          { 
+            title: lang === "hi" ? "ग्रह प्रभाव" : "Planetary Influences", 
+            content: `<p>${interpretation.slice(600, 1200).trim().split('\\n').join('</p><p>')}</p>` 
+          },
+          { 
+            title: lang === "hi" ? "करियर विश्लेषण" : "Career Analysis", 
+            content: `<p>Career analysis based on your chart's planetary positions and houses...</p>` 
+          },
+          { 
+            title: lang === "hi" ? "धन विश्लेषण" : "Wealth Analysis", 
+            content: `<p>Wealth and investment analysis based on your chart's 2nd and 11th house lords...</p>` 
+          },
+          { 
+            title: lang === "hi" ? "विवाह एवं संबंध" : "Marriage & Relationships", 
+            content: `<p>Marriage and relationship analysis based on your chart's 7th house and Venus placement...</p>` 
+          },
         ]
       : []);
   const timings = structured?.paidTier?.timings ?? [];

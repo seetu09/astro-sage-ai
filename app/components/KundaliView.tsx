@@ -313,6 +313,7 @@ export default function KundaliView({
             reportData={reportData}
             calculations={calculations}
             pillars={pillars}
+            fullBreakdown={paidTier.fullBreakdown}
             language={language}
           />
         ) : (
