@@ -149,6 +149,13 @@ function normalizeReportData(input: Partial<ReportData> | undefined): ReportData
   const arr = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
   const birth = (src.birthDetails ?? {}) as Record<string, string>;
 
+  console.log("[normalizeReportData] payload presence check:", {
+    hasPanchang: !!src.panchang,
+    hasD9Chart: !!src.d9Chart,
+    hasSarvashtakavarga: !!src.sarvashtakavarga,
+    hasNarratives: Array.isArray(src.narratives),
+  });
+
   return {
     clientName: String(src.clientName ?? "User"),
     chartType: String(src.chartType ?? "North Indian"),
@@ -171,6 +178,10 @@ function normalizeReportData(input: Partial<ReportData> | undefined): ReportData
     ),
     scorecard: arr<ReportData["scorecard"][number]>(src.scorecard),
     isPaidTier: src.isPaidTier === true,
+    panchang: src.panchang as ReportData["panchang"],
+    d9Chart: src.d9Chart as ReportData["d9Chart"],
+    sarvashtakavarga: src.sarvashtakavarga as ReportData["sarvashtakavarga"],
+    narratives: src.narratives as ReportData["narratives"],
   };
 }
 

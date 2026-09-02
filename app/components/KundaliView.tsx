@@ -23,6 +23,7 @@ import PaymentButton from '@/app/components/PaymentButton';
 import KundliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
+import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
 import {
   FreeTierData,
   PaidTierData,
@@ -184,6 +185,39 @@ export default function KundaliView({
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
     isPaidTier: isPaid,
+    panchang: birthDetails.date
+      ? (() => {
+          const dayIndex = new Date(birthDetails.date).getDay();
+          const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const nakshatraIndex = NAKSHATRA_NAMES.en.indexOf(cp.nakshatra);
+          return {
+            varaWeekday: weekdayNames[dayIndex],
+            nakshatra: cp.nakshatra || undefined,
+            nakshatraLord: nakshatraIndex >= 0 ? NAKSHATRA_LORDS[nakshatraIndex] : undefined,
+            moonSign: cp.moonSign || undefined,
+            sunSign: cp.sunSign || undefined,
+            lagna: cp.ascendant || undefined,
+          };
+        })()
+      : undefined,
+    d9Chart: calculations?.divisionalCharts?.D9
+      ? {
+          ascendantSign: calculations.divisionalCharts.D9.ascendantSign,
+          planets: calculations.divisionalCharts.D9.planetCoordinates.map((p) => ({
+            planet: p.planet === 'ASC' ? 'Lagna' : p.planet,
+            sign: p.sign,
+            house: p.house,
+            retrograde: p.retrograde,
+          })),
+        }
+      : undefined,
+    sarvashtakavarga: calculations?.ashtakavarga
+      ? {
+          bindus: calculations.ashtakavarga.sarvashtakavarga,
+          beneficialHouses: calculations.ashtakavarga.beneficialHouses,
+        }
+      : undefined,
+    narratives: pillars,
   };
 
   return (
@@ -403,7 +437,15 @@ export default function KundaliView({
                     client-side quick print. */}
         {isPaid && (
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            <KundliPdfButton reportData={reportData} userName={userName} />
+            {(() => {
+              console.log('[KundaliView] reportData payload check:', {
+                hasPanchang: !!reportData.panchang,
+                hasD9Chart: !!reportData.d9Chart,
+                hasSarvashtakavarga: !!reportData.sarvashtakavarga,
+                hasNarratives: !!reportData.narratives,
+              });
+              return <KundliPdfButton reportData={reportData} userName={userName} />;
+            })()}
           </div>
         )}
         </>

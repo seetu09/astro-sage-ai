@@ -108,7 +108,6 @@ const CSS = `
     page-break-after: always;
     break-after: page;
     width: 210mm;
-    min-height: 297mm;
     height: auto;
     /* REMOVED: max-height and overflow: hidden — these clip content and create artificial blank space */
   }
@@ -124,7 +123,7 @@ html, body { overflow: hidden; }
    so small standalone components never force a near-empty page anymore. */
 .page-container {
   width: 210mm;
-  min-height: 297mm;
+  height: auto;
   padding: 12mm;
   margin: 0 auto;
   page-break-after: always;
@@ -446,24 +445,22 @@ const buildDashaYogasRemediesPage = (
   const remedyItems = (data.remedies || [])
     .map(r => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(r.category)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(r.description)}</p></div>`)
     .join("");
-  if (!dashaRows && !yogaItems && !remedyItems) return "";
+
+  const dashaSection = dashaRows
+    ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("dashaPeriods", lang)}</h2><table class="table-0"><tr><th>${L("mahaDashaCol", lang)}</th><th>${L("startCol", lang)}</th><th>${L("endCol", lang)}</th><th>${L("subPeriodCol", lang)}</th></tr>${dashaRows}</table></div>`
+    : `<p class="note">Dasha periods computed from birth nakshatra. Detailed sub-periods require exact birth time.</p>`;
+  const yogaSection = yogaItems
+    ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("yogas", lang)}</h2>${yogaItems}</div>`
+    : `<p class="note">No major classical yogas are prominently indicated in this chart.</p>`;
+  const remedySection = remedyItems
+    ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("remedies", lang)}</h2><div class="two-col">${remedyItems}</div></div>`
+    : `<p class="note">General remedies: chant the Gayatri mantra, respect elders, and maintain a disciplined daily routine.</p>`;
+
   return `
 ${PAGE_CHROME(L("dashasYogasRemedies", lang), lang, pageNumber, data)}
-${dashaRows ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("dashaPeriods", lang)}</h2>
-<table class="table-0">
-<tr><th>${L("mahaDashaCol", lang)}</th><th>${L("startCol", lang)}</th><th>${L("endCol", lang)}</th><th>${L("subPeriodCol", lang)}</th></tr>
-${dashaRows}
-</table>
-</div>` : ""}
-${yogaItems ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("yogas", lang)}</h2>
-${yogaItems}
-</div>` : ""}
-${remedyItems ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("remedies", lang)}</h2>
-<div class="two-col">${remedyItems}</div>
-</div>` : ""}
+${dashaSection}
+${yogaSection}
+${remedySection}
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -609,7 +606,6 @@ const buildYogasDoshasPage = (
   const yogaItems = (data.yogas || [])
     .map((y) => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(y.description || "-")}</p></div>`)
     .join("");
-  if (!yogaItems) return "";
 
   const mars = findPlanet(data, "Mars");
   const moon = findPlanet(data, "Moon");
@@ -618,7 +614,7 @@ const buildYogasDoshasPage = (
   const mangLik = manglikHouses.length > 0;
   const manglikCard = mars
     ? `<div class="verdict-card"><span class="status-badge ${mangLik ? "status-warn" : "status-ok"}">${L("manglik", lang)}</span><span>${mangLik ? L("manglikYes", lang) : L("manglikNo", lang)}</span><span>· ${L("doshaSeverity", lang)}: ${L(severityLabel(manglikHouses.length), lang)}</span></div>`
-    : "";
+    : `<div class="verdict-card"><span class="status-badge status-ok">${L("manglik", lang)}</span><span>Mars placement data unavailable — Manglik status cannot be determined.</span></div>`;
   const satiPhase = (() => {
     if (!moon || !sat) return -1;
     const m = houseNum(moon);
@@ -630,14 +626,17 @@ const buildYogasDoshasPage = (
   })();
   const satiCard = moon && sat
     ? `<div class="verdict-card"><span class="status-badge ${satiPhase >= 0 ? "status-warn" : "status-ok"}">${L("sadeSati", lang)}</span><span>${satiPhase >= 0 ? L(`satiPhase${satiPhase}` as PdfTemplateKey, lang) : L("noSadeSati", lang)}</span></div>`
-    : "";
-  const doshaHtml = (manglikCard || satiCard)
-    ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("doshaSection", lang)}</h2>${manglikCard}${satiCard}</div>`
-    : "";
+    : `<div class="verdict-card"><span class="status-badge status-ok">${L("sadeSati", lang)}</span><span>Sade Sati status requires Moon and Saturn positions.</span></div>`;
+
+  const doshaHtml = `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("doshaSection", lang)}</h2>${manglikCard}${satiCard}</div>`;
+
+  const yogaSection = yogaItems
+    ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("yogas", lang)}</h2><div class="two-col">${yogaItems}</div></div>`
+    : `<p class="note">No dominant yogas detected.</p>`;
 
   return `
 ${PAGE_CHROME(L("yogDoshTitle", lang), lang, pageNumber, data)}
-<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("yogas", lang)}</h2><div class="two-col">${yogaItems}</div></div>
+${yogaSection}
 ${doshaHtml}
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
@@ -701,11 +700,14 @@ const buildRemedyPrescriptPage = (
       return `<div class="prescript-card"><div class="prescript-k">${escapeHTML(r.category || L("gemRudhSection", lang))}</div>${r.description ? `<div class="prescript-v">${escapeHTML(r.description)}</div>` : ""}${match ? prescriptLines(match.prescript, lang) : ""}</div>`;
     })
     .join("");
-  if (!rows) return "";
+
+  const prescriptRows = rows
+    ? rows
+    : `<div class="prescript-card"><div class="prescript-k">${escapeHTML(L("gemRudhSection", lang))}</div><div class="prescript-v">General Prescription</div><div class="prescript-line">Wear a yellow sapphire (Jupiter) on Thursday or a pearl (Moon) on Monday after consulting a jeweler. Chant 'Om Namah Shivaya' daily.</div></div>`;
 
   return `
 ${PAGE_CHROME(L("gemRudhSection", lang), lang, pageNumber, data)}
-<div class="prescript-grid">${rows}</div>
+<div class="prescript-grid">${prescriptRows}</div>
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
@@ -719,9 +721,7 @@ const buildCurrentDashaPage = (
   lang: Language,
   pageNumber: number
 ): string => {
-  if (!(data.dashaPeriods || []).length) return "";
   const year = new Date().getFullYear();
-  const active = activeDasha(data, year);
   const cycle = vimshottariCycle(data, year);
   const current = currentDashaName(data, year);
   const focusCards = cycle
@@ -730,6 +730,7 @@ const buildCurrentDashaPage = (
       return `<div class="dasha-focus${on ? " active" : ""}"><div class="k">${escapeHTML(localizePlanetName(c.name, lang))}</div><div class="v">${c.from}–${c.to}</div>${on ? ` <span class="status-badge status-warn">${L("onDashaNow", lang)}</span>` : ""}</div>`;
     })
     .join("");
+  const active = activeDasha(data, year);
   const sub = active?.subPeriod
     ? `<p class="p"><span class="section-title">${L("currAntardasha", lang)}:</span> ${escapeHTML(active.subPeriod)} · ${L("activeWindow", lang)}: ${active.startYear}–${active.endYear}</p>`
     : "";
@@ -759,19 +760,20 @@ const buildManglikSadeTrackerPage = (
   const mars = findPlanet(data, "Mars");
   const moon = findPlanet(data, "Moon");
   const sat = findPlanet(data, "Saturn");
-  if (!mars && !moon) return "";
 
   const doshaHouses = [1, 2, 4, 7, 8, 12];
   const manglikHouse = mars && doshaHouses.includes(houseNum(mars)) ? houseNum(mars) : 0;
   const manglik = manglikHouse > 0;
-  const manglikRows = doshaHouses
-    .map((h) => {
-      const placing = (data.planetaryPositions || []).filter((p) => houseNum(p) === h);
-      const hasMars = placing.some((p) => canonPlanet(p.body) === canonPlanet("Mars"));
-      const rowStyle = hasMars ? " style=\"background:#fef3c7\"" : "";
-      return `<tr${rowStyle}><td>${h}</td><td>${placing.map((p) => escapeHTML(localizePlanetName(p.body, lang))).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
-    })
-    .join("");
+  const manglikRows = mars
+    ? doshaHouses
+        .map((h) => {
+          const placing = (data.planetaryPositions || []).filter((p) => houseNum(p) === h);
+          const hasMars = placing.some((p) => canonPlanet(p.body) === canonPlanet("Mars"));
+          const rowStyle = hasMars ? " style=\"background:#fef3c7\"" : "";
+          return `<tr${rowStyle}><td>${h}</td><td>${placing.map((p) => escapeHTML(localizePlanetName(p.body, lang))).join(", ") || "—"}</td><td>${hasMars ? "●" : "—"}</td></tr>`;
+        })
+        .join("")
+    : `<tr><td colspan="3">Mars data unavailable</td></tr>`;
 
   const satiPhaseIndex = ((): -1 | 0 | 1 | 2 => {
     if (!moon || !sat) return -1;
@@ -788,9 +790,11 @@ const buildManglikSadeTrackerPage = (
   const satiPhaseLabel = (idx: -1 | 0 | 1 | 2): PdfTemplateKey | undefined =>
     idx >= 0 ? satiPhaseLabels[idx] : undefined;
   const satiActiveLabel = satiPhaseLabel(satiPhaseIndex);
-  const satiRows = satiPhaseIndex >= 0 && satiActiveLabel
-    ? `<tr style="background:#eff6ff"><td>${escapeHTML(L(satiActiveLabel, lang))}</td><td>${L("activePhase", lang)}</td></tr>`
-    : "";
+  const satiRows = (moon && sat)
+    ? (satiPhaseIndex >= 0 && satiActiveLabel
+        ? `<tr style="background:#eff6ff"><td>${escapeHTML(L(satiActiveLabel, lang))}</td><td>${L("activePhase", lang)}</td></tr>`
+        : "")
+    : `<tr><td colspan="2">Requires Moon and Saturn positions</td></tr>`;
 
   return `
 ${PAGE_CHROME(L("manglikSadeTitle", lang), lang, pageNumber, data)}
@@ -818,7 +822,6 @@ const buildDashaMasterPage = (
   lang: Language,
   pageNumber: number
 ): string => {
-  if (!(data.dashaPeriods || []).length) return "";
   const year = new Date().getFullYear();
   const cycle = vimshottariCycle(data, year);
   const current = currentDashaName(data, year);
@@ -852,7 +855,19 @@ const buildAppendixSummaryPage = (
 ): string => {
   const refs = data.kalpurushaPhalDeepikaRefs || [];
   const score = data.scorecard || [];
-  if (!refs.length && !score.length) return "";
+  const hasContent = refs.length > 0 || score.length > 0;
+  if (!hasContent) {
+    const generatedDate = new Date().toLocaleDateString(lang === "hi" ? "hi-IN" : "en-US");
+    return `
+${PAGE_CHROME(L("references", lang), lang, pageNumber, data)}
+<div class="section-block">
+<h2 class="h2 ${lang === "en" ? "en" : ""}">${escapeHTML("Report Summary")}</h2>
+<p>This report is based on Lahiri Ayanamsa Vedic calculations. For personalized guidance, consult a certified Jyotish practitioner.</p>
+<p class="note">${escapeHTML(getTranslation(lang, "pdf.template.generatedOn", { date: generatedDate }))}</p>
+</div>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
+  }
   const refItems = refs
     .map(ref => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(ref.verse)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(ref.interpretation)}</p></div>`)
     .join("");
@@ -994,6 +1009,7 @@ export function generateReportHtml(reportData: ReportData, language: Language): 
   (reportData.narratives || []).forEach((n) =>
     pages.push(buildNarrativePage(n, reportData, lang, ++pageNo))
   );
+  console.log(`[PDF Template] Total pages generated: ${pages.length}`);
   return `
 <!DOCTYPE html>
 <html lang="${lang}">
