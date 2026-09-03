@@ -272,13 +272,15 @@ function printReportHtml(html: string): void {
   // over pagination (hard A4 page breaks per .page-container).
   iframe.onload = () => {
     setTimeout(() => {
+      const pageCount = (html.match(/class="page-container"/g) || []).length;
+      console.log(`[Print Fallback] Rendering ${pageCount} pages via window.print()`);
       try {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
       } finally {
         setTimeout(() => iframe.parentNode?.removeChild(iframe), 1000);
       }
-    }, 400);
+    }, 800);
   };
 }
 
@@ -370,8 +372,10 @@ export default function KundliPdfButton({
           payload = await resolvePayload(null, pillars, historyEntry, language);
         }
 
-        if (mode === 'print') {
-          trackEvent('kundli_pdf_print_fallback', { lang: language, source: 'manual' });
+if (mode === 'print') {
+          trackEvent('kundali_pdf_print_fallback', { lang: language, source: 'manual' });
+          const pageCount = generateReportHtml(payload.reportData, language).match(/class="page-container"/g)?.length || 0;
+          console.log(`[KundliPdfButton] Print fallback: ${pageCount} pages, ${payload.reportData.domainInsights?.length || 0} domains, ${payload.pillars?.length || 0} narratives.`);
           printReportHtml(generateReportHtml(payload.reportData, language));
           setModalOpen(false);
           return;

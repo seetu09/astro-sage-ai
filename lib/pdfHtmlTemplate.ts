@@ -1074,6 +1074,7 @@ ${PAGE_FOOTER(pageNumber, lang)}
       ${PAGE_FOOTER(pageNumber, lang)}
     `;
   };
+  export function generateReportHtml(reportData: ReportData, language: Language): string {
   const lang = language;
   let pageNo = 0;
   const pages: string[] = [];
@@ -1136,6 +1137,18 @@ push(buildDashaMasterPage(reportData, lang, ++pageNo));
     pages.push(buildNarrativePage(n, reportData, lang, ++pageNo))
   );
   console.log(`[PDF Template] Total pages generated: ${pages.length}`);
+  // ── Dev guard: catch thin reports before they reach users ─────────────────
+  if (process.env.NODE_ENV === 'development') {
+    const MIN_PAGES = 18;
+    if (pages.length < MIN_PAGES) {
+      console.warn(
+        `[PDF Template] WARNING: Generated only ${pages.length} pages (minimum promised: ${MIN_PAGES}). ` +
+        `Missing content detected. Check which builders returned fallback content.`
+      );
+    } else {
+      console.log(`[PDF Template] OK: ${pages.length} pages generated.`);
+    }
+  }
   return `
 <!DOCTYPE html>
 <html lang="${lang}">
@@ -1158,3 +1171,9 @@ ${pages.join("")}
 }
 
 export const PDF_HTML_TEMPLATE_VERSION = "2.1.0";
+
+/**
+ * Returns the expected minimum page count for a full report.
+ * Use this in tests or UI to validate before download.
+ */
+export const MIN_PROMISED_PAGES = 18;
