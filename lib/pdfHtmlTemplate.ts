@@ -491,58 +491,57 @@ const buildLifeDomainsPage = (
   pageNumber: number
 ): string => {
   const currentYear = new Date().getFullYear();
-const fallbackPrediction = (domainKey: string, lang: Language): string => {
-  if (lang === 'hi') {
-    return `${getTranslation(lang, \`pdf.template.domain${capitalize(domainKey)}\`)} का विस्तृत विश्लेषण पूर्ण कुंडली परीक्षण के आधार पर किया जाता है। संबंधित भाव स्वामी, ग्रह दृष्टि और वर्तमान दशा प्रभाव से इस क्षेत्र की गहन जानकारी प्राप्त होती है।`;
-  }
-  return \`A detailed \${domainKey} analysis is derived from the relevant bhava lords, planetary aspects, and current dasha influences. This section examines the specific house significations and planetary placements governing \${domainKey} outcomes.\`;
-};
+  const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+  const fallbackPrediction = (domainKey: string): string => {
+    if (lang === 'hi') {
+      return `${getTranslation(lang, `pdf.template.domain${capitalize(domainKey)}`)} का विस्तृत विश्लेषण पूर्ण कुंडली परीक्षण के आधार पर किया जाता है। संबंधित भाव स्वामी, ग्रह दृष्टि और वर्तमान दशा प्रभाव से इस क्षेत्र की गहन जानकारी प्राप्त होती है।`;
+    }
+    return `A detailed ${domainKey} analysis is derived from the relevant bhava lords, planetary aspects, and current dasha influences. This section examines the specific house significations and planetary placements governing ${domainKey} outcomes.`;
+  };
 
-const domainObjects: ReportData["domainInsights"][] = [];
-keys.forEach((key) => {
-  const domain = domains.find((d) => d.domain === key);
-  if (domain && domain.prediction?.length >= 50) {
-    domainObjects.push(domain);
-  } else {
-    const fallbackPred = fallbackPrediction(key, lang);
-    const fallbackDomain: ReportData["domainInsights"] = {
-      domain: key,
-      prediction: fallbackPred,
-      analysis: "",
-      timeframe: undefined,
-    };
-    domainObjects.push(fallbackDomain);
-  }
-});
+  const domainObjects: ReportData["domainInsights"][] = [];
+  keys.forEach((key) => {
+    const domain = domains.find((d) => d.domain === key);
+    if (domain && (domain.prediction || "").length >= 50) {
+      domainObjects.push(domain);
+    } else {
+      domainObjects.push({
+        domain: key,
+        prediction: fallbackPrediction(key),
+        analysis: "",
+        timeframe: undefined,
+      } as ReportData["domainInsights"]);
+    }
+  });
 
-const sectionHtml = domainObjects.map((domain) => {
-  const title = L(DOMAIN_LABEL_KEYS[domain.domain] ?? "domainCareer", lang);
-  const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
-  const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
-  const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
-  const firstWindow = data.dashaPeriods?.[0]
-    ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
-    : domain.timeframe || "—";
-  const badges = [
-    `${L("houseWord", lang)} ${focusHouse}`,
-    `${L("lordWord", lang)}: ${localizePlanetName(lord, lang)}`,
-    firstWindow,
-  ];
-  const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
-  const narrative = narrativeParts.length
-    ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
-    : escapeHTML(getTranslation(lang, "pdf.template.detailedPremiumAnalysis", { domain: title.toLowerCase() }));
-  // Milestone table — at most TWO rows, showing only the NEXT upcoming windows.
-  const upcomingWindows = (data.dashaPeriods || [])
-    .filter((d) => {
-      const endYear = parseInt(String(d.endYear), 10);
-      return Number.isNaN(endYear) || endYear >= currentYear;
-    })
-    .slice(0, 2);
-  const milestoneRows = upcomingWindows.length
-    ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([localizePlanetName(d.mahaDasha, lang), d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
-    : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
-  return `<div class="domain-half">
+  const sectionHtml = domainObjects
+    .map((domain) => {
+      const title = L(DOMAIN_LABEL_KEYS[domain.domain] ?? "domainCareer", lang);
+      const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
+      const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
+      const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
+      const firstWindow = data.dashaPeriods?.[0]
+        ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
+        : domain.timeframe || "—";
+      const badges = [
+        `${L("houseWord", lang)} ${focusHouse}`,
+        `${L("lordWord", lang)}: ${localizePlanetName(lord, lang)}`,
+        firstWindow,
+      ];
+      const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
+      const narrative = narrativeParts.length
+        ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
+        : escapeHTML(getTranslation(lang, "pdf.template.detailedPremiumAnalysis", { domain: title.toLowerCase() }));
+      const upcomingWindows = (data.dashaPeriods || [])
+        .filter((d) => {
+          const endYear = parseInt(String(d.endYear), 10);
+          return Number.isNaN(endYear) || endYear >= currentYear;
+        })
+        .slice(0, 2);
+      const milestoneRows = upcomingWindows.length
+        ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([localizePlanetName(d.mahaDasha, lang), d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
+        : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
+      return `<div class="domain-half">
     <h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
     <div class="domain-badges">${badges.map((b) => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
     <p class="domain-narrative ${lang === "en" ? "en" : ""}">${narrative}</p>
@@ -551,7 +550,15 @@ const sectionHtml = domainObjects.map((domain) => {
       ${milestoneRows}
     </table>
   </div>`;
-});
+    })
+    .join(`<div class="domain-divider"></div>`);
+  return `
+${PAGE_CHROME(L("lifeDomains", lang), lang, pageNumber, data)}
+<div class="dual-domain-grid">
+${sectionHtml}
+</div>
+${PAGE_FOOTER(pageNumber, lang)}
+`;
 };
 
 
