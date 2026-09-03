@@ -182,6 +182,7 @@ function normalizeReportData(input: Partial<ReportData> | undefined): ReportData
     d9Chart: src.d9Chart as ReportData["d9Chart"],
     sarvashtakavarga: src.sarvashtakavarga as ReportData["sarvashtakavarga"],
     narratives: src.narratives as ReportData["narratives"],
+    doshas: arr<ReportData["doshas"][number]>(src.doshas),
   };
 }
 

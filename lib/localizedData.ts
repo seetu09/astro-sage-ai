@@ -117,28 +117,28 @@ export const DOSHA_NAMES: Record<string, Record<Language, string>> = {
 
 export const DOSHA_DESCRIPTIONS: Record<string, Record<Language, string>> = {
   "Manglik (Kuja) Dosha": {
-    en: "Mars occupies a sensitive house, indicating intensity in relationships.",
-    hi: "मंगल एक संवेदनशील भाव में स्थित है, जो संबंधों में तीव्रता का संकेत देता है।",
+    en: "Manglik Dosha arises when Mars occupies the 1st, 2nd, 4th, 7th, 8th, or 12th house from the Ascendant or Moon. It can create friction in marriage and relationships, delay in finding a partner, or challenges in marital harmony. The intensity depends on Mars' strength and house placement. With awareness and remedies, its effects can be significantly reduced or neutralized. Remedies: Kumbh Vivah or Hanuman worship; chant \"Om Mangalaya Namaha\" 108 times daily; wear red coral on Tuesdays; feed red leather bulls on Tuesdays; donate red lentils and jaggery.",
+    hi: "मंगल दोष तभी उत्पन्न होता है जब मंगल लग्न या चंद्र से 1वें, 2वें, 4वें, 7वें, 8वें या 12वें भाव में हो। यह विवाह और संबंधों में बाधा उत्पन्न कर सकता है, साथी ढूंढने या संबंधों में चुनौतियों का कारण बन सकता है। तीव्रता मंगल की शक्ति और भाव स्थिति पर निर्भर करती है। जागरूकता और उपायों के साथ इसके प्रभावों को कम या निर्प्रभावी किया जा सकता है। उपाय: कुंभ विवाह या हनुमान पूजा; रोज़ाना \"ओम मंगलाय नमः\" 108 बार जप करें; मंगलवार को लाल मूंगा पहनें; मंगलवार को लाल चमड़ी वाली बैल को खिलाएं; लाल दाल और गड़ी का दान करें।",
   },
   "Kaal Sarp Dosha": {
-    en: "All planets are hemmed between Rahu and Ketu, creating a karmic blockage.",
-    hi: "राहु और केतु के बीच सभी ग्रह आ जाते हैं, जिससे कर्म संबंधी अवरोध उत्पन्न होता है।",
+    en: "Kaal Sarp Dosha occurs when all planets are hemmed between Rahu and Ketu, creating a \"serpent enclosure.\" It can bring constriction, distractions, karmic obstacles, and delays in career, relationships, and life progress. Remedies: Perform Puja at a Nag temple on Nag Panchami; chant \"Om Jalamindraya Namaha\" 108 times daily; wear an emerald (if benefic) or blue sapphire (if malefic); offer milk and betel leaves to snake idols.",
+    hi: "काल सर्प दोष तभी उत्पन्न होता है जब सभी ग्रह राहु और केतु के बीच में स्थित होते हैं, जिससे एक \"नाग आवली\" बनती है। यह संकुचन, विचलन, कार्मिक बाधाएँ और करियर, संबंधों और जीवन की प्रगति में देरी ला सकती है। उपाय: नाग पंचमी पर नाग मंदिर में पूजा करें; \"ओम जलामिंद्राय नमः\" 108 बार दैनिक जप करें; यदि शुभ हो तो हीरा या यदि अशुभ हो तो नीलम पहनें; सर्प मूर्तियों को दूध और बेल के पत्ते चढ़ाएं।",
   },
   "Sade Sati": {
-    en: "Saturn transits the 12th, 1st, and 2nd houses from the Moon, bringing a testing phase.",
-    hi: "चंद्र से बारहवें, पहले और दूसरे भाव में शनि की गोचर, एक परीक्षा की अवधि लाती है।",
+    en: "Sade Sati occurs when Saturn transits the 12th, 1st, and 2nd houses from the Moon, spanning roughly 7.5 years. This period brings discipline, karmic lessons, and responsibility, often with delays and obstacles. Three phases: Phase 1 (12th house — subtle preparation), Phase 2 (conjunct Moon — maximum intensity), Phase 3 (2nd house — challenges diminishing). Patience, spiritual practice, and inner resilience are essential. Remedies: Recite Shani Chalisa daily on Saturdays; chant \"Om Sham Shanicharaya Namaha\" 108 times; donate black sesame, iron, and black cloth on Saturdays; observe Saturday fast; worship Lord Hanuman for protection.",
+    hi: "साढ़े सती तभी उत्पन्न होता है जब शनि आपके चंद्र राशि से 12वें, 1वें और 2वें भाव में लगभग 7.5 वर्षों तक संक्रमण करता है। यह अवधि अनुशासन, कार्मिक पाठ और ज़िम्मेदारी लाती है, अक्सर देरी और बाधाओं के साथ। तीन चरण: चरण 1 (12वें में सूक्ष्म तैयारी), चरण 2 (चंद्र और शनि के संयुक्त होने पर अधिकतम तीव्रता), चरण 3 (2वें में चुनौतियाँ कम हो रही हैं)। धैर्य, आध्यात्मिक अभ्यास और आंतरिक लचीलापन की आवश्यकता है। उपाय: शनिवार को रोज़ाना शनि चालीसा का पाठ; \"ओम शां शनिचराय नमः\" 108 बार जप करें; शनिवार को काली तिल, लोहा और काला कपड़ा दान करें; शनिवार उपवास रखें; सुरक्षा के लिए भगवान हनुमान की पूजा करें।",
   },
   "Pitra Dosha": {
-    en: "An afflicted Sun or the 9th house indicates ancestral karma to be resolved.",
-    hi: "पीड़ित सूर्य या नवम भाव पूर्वजों से संबंधित कर्म का संकेत देते हैं, जिन्हें हल करना होता है।",
+    en: "An afflicted Sun or the 9th house indicates ancestral karma to be resolved. It may manifest as delays in career, obstacles in higher education, or a sense of disconnection from one's roots. Remedates: Offer water to the Sun (Arghya) every Saturday; perform Tarpan for ancestors during Pitra Paksha; donate food and clothes to the needy; chant \"Om Suryaya Namaha\" 108 times.",
+    hi: "पीड़ित सूर्य या नवम भाव पूर्वजों से संबंधित कर्म का संकेत देते हैं, जिन्हें हल करना होता है। यह करियर में देरी, उच्च शिक्षा में बाधाएं या अपनी जड़ों से अलगाव की भावना के रूप में प्रकट हो सकता है। उपाय: हर शनिवार को सूर्य को जल (अर्घ्य) अर्पित करें; पितृ पक्ष में पूर्वजों के लिए तर्पण करें; ज़रूरतमंदों को भोजन और कपड़े दान करें; \"ओम सूर्याय नमः\" 108 बार जप करें।",
   },
   "Guru Chandal Dosha": {
-    en: "Jupiter is associated with Rahu, mixing wisdom with illusion and unconventional thinking.",
-    hi: "गुरु का राहु से संबंध ज्ञान को भ्रम और अपरंपरागत सोच के साथ मिला देता है।",
+    en: "Jupiter is associated with Rahu, mixing wisdom with illusion and unconventional thinking. It can create conflicts between tradition and modernity, or lead to unorthodox life choices. Remedies: Worship Lord Vishnu and Brihaspati (Jupiter); chant \"Om Gurave Namaha\" 108 times daily; donate yellow items on Thursdays; wear a yellow sapphire (if benefic) after consulting an astrologer.",
+    hi: "गुरु का राहु से संबंध ज्ञान को भ्रम और अपरंपरागत सोच के साथ मिला देता है। यह परंपरा और आधुनिकता के बीच संघर्ष पैदा कर सकता है, या अपरंपरागत जीवन विकल्पों की ओर ले जा सकता है। उपाय: भगवान विष्णु और बृहस्पति (गुरु) की पूजा करें; \"ओम गुरवे नमः\" 108 बार दैनिक जप करें; गुरुवार को पीली वस्तुएं दान करें; ज्योतिषी से परामर्श करके पुखराज पहनें।",
   },
   "Angarak Dosha": {
-    en: "Mars in certain houses creates marital stress and delays in relationships.",
-    hi: "विशेष भावों में मंगल वैवाहिक तनाव और संबंधों में विलंब उत्पन्न करता है।",
+    en: "Mars in certain houses creates marital stress and delays in relationships. It can lead to arguments, impatience, or aggression in partnerships. Remedies: Chant \"Om Mangalaya Namaha\" 108 times daily; perform Kumbh Vivah (symbolic marriage to a banana tree or pot); donate red items on Tuesdays; wear red coral after consulting an astrologer; practice patience and mindfulness in relationships.",
+    hi: "विशेष भावों में मंगल वैवाहिक तनाव और संबंधों में विलंब उत्पन्न करता है। यह साझेदारी में बहस, अधीरता या आक्रामकता का कारण बन सकता है। उपाय: \"ओम मंगलाय नमः\" 108 बार दैनिक जप करें; कुंभ विवाह (केले के पेड़ या घड़े से प्रतीकात्मक विवाह) करें; मंगलवार को लाल वस्तुएं दान करें; ज्योतिषी से परामर्श करके लाल मूंगा पहनें; संबंधों में धैर्य और सचेतनता का अभ्यास करें।",
   },
 };
 

@@ -14,7 +14,13 @@ export interface ReportData {
   houseCusps: { house: number; sign: string; degree: string }[];
   dashaPeriods: { mahaDasha: string; startYear: string; endYear: string; subPeriod?: string }[];
   yogas: { name: string; description: string }[];
-  remedies: { category: string; description: string }[];
+    remedies: { category: string; description: string }[];
+  /**
+   * AI-generated dosha descriptions (Manglik, Sade Sati, Kaal Sarp, etc.).
+   * When present, the Yogas & Doshas page renders detailed explanations —
+   * timing, effects, and remedies — instead of bare verdict badges.
+   */
+  doshas: { name: string; description: string; severity: "low" | "moderate" | "high"; isNeutralized: boolean }[];
   domainInsights: { domain: "career" | "marriage" | "wealth" | "health" | "finance" | "education"; prediction: string; analysis: string; timeframe?: string }[];
   northIndianChartSvg: string;
   kalpurushaPhalDeepikaRefs: { verse: string; interpretation: string }[];
@@ -115,7 +121,7 @@ const CSS = `
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Inter', sans-serif; font-size: 12pt; line-height: 1.4; color: #1a1a1a; background: #fff; }
-html, body { overflow: hidden; }
+html, body { overflow: visible; }
 @page :first { margin: 0; }
 
 /* Dense A4 sheet — standard 210mm × 297mm portrait with uniform 12mm padding.
@@ -187,12 +193,12 @@ html, body { overflow: hidden; }
 
 /* Dual-domain layout — two life domains packed onto ONE A4 sheet. */
 .dual-domain-grid { display: flex; flex-direction: column; gap: 4mm; }
-.domain-half { flex: 1; min-height: 0; }
+.domain-half { width: 100%; box-sizing: border-box; }
 .domain-title { font-size: 11.5pt; font-weight: 700; margin-bottom: 0.15cm; color: #333; }
 .domain-title.en { font-family: 'Inter', sans-serif; }
 .domain-badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5mm; margin-bottom: 0.2cm; }
 .domain-badges .tag { text-align: center; padding: 2pt 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.domain-narrative { font-size: 9pt; text-align: justify; line-height: 1.5; max-height: 65mm; overflow: hidden; margin-bottom: 0.2cm; }
+.domain-narrative { font-size: 9pt; text-align: justify; line-height: 1.5; margin-bottom: 0.2cm; }
 .mini-table { width: 100%; border-collapse: collapse; }
 .mini-table th, .mini-table td { border: 0.5pt solid #bbb; padding: 2mm 4px; text-align: left; font-size: 8.5pt; }
 .mini-table th { background: #f0f0f0; }
@@ -223,6 +229,11 @@ html, body { overflow: hidden; }
 .tracker-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
 .tracker-table th, .tracker-table td { border: 0.4pt solid #ccc; padding: 1.5mm 2mm; text-align: left; }
 .tracker-table th { background: #f0f0f0; }
+/* Enhanced dosha detail block — detailed description below the verdict card. */
+.dosha-detail-block { margin-bottom: 0.3cm; }
+.dosha-detail-block .dosha-description { font-size: 9pt; text-align: justify; line-height: 1.5; margin-bottom: 0.15cm; }
+.dosha-detail-block .dosha-remedies { font-size: 8.5pt; line-height: 1.4; }
+.dosha-details { margin-top: 0.2cm; }
 `;
 
 const PAGE_CHROME = (title: string, lang: Language, pageNumber: number, data: Pick<ReportData, "clientName" | "isPaidTier">): string => `<div class="page-container">
@@ -528,9 +539,9 @@ const buildLifeDomainsPage = (
         `${L("lordWord", lang)}: ${localizePlanetName(lord, lang)}`,
         firstWindow,
       ];
-      const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
+            const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
       const narrative = narrativeParts.length
-        ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
+        ? escapeHTML(narrativeParts.join(" "))
         : escapeHTML(getTranslation(lang, "pdf.template.detailedPremiumAnalysis", { domain: title.toLowerCase() }));
       const upcomingWindows = (data.dashaPeriods || [])
         .filter((d) => {
@@ -627,7 +638,7 @@ const buildYogasDoshasPage = (
   pageNumber: number
 ): string => {
   const yogaItems = (data.yogas || [])
-    .map((y) => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(y.description || "-")}</p></div>`)
+    .map((y) => `<div style="margin-bottom:0.18cm;"><span class="section-title">${escapeHTML(y.name)}</span><p class="p ${lang === "en" ? "en" : ""}">${escapeHTML(y.description || "-")} </p></div>`)
     .join("");
 
   const mars = findPlanet(data, "Mars");
@@ -651,7 +662,56 @@ const buildYogasDoshasPage = (
     ? `<div class="verdict-card"><span class="status-badge ${satiPhase >= 0 ? "status-warn" : "status-ok"}">${L("sadeSati", lang)}</span><span>${satiPhase >= 0 ? L(`satiPhase${satiPhase}` as PdfTemplateKey, lang) : L("noSadeSati", lang)}</span></div>`
     : `<div class="verdict-card"><span class="status-badge status-ok">${L("sadeSati", lang)}</span><span>Sade Sati status requires Moon and Saturn positions.</span></div>`;
 
-  const doshaHtml = `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("doshaSection", lang)}</h2>${manglikCard}${satiCard}</div>`;
+    // ── Detailed dosha explanations with remedies ────────────────────────────
+  // Look up AI-generated dosha descriptions from data.doshas. When absent,
+  // fall back to deterministic translations keyed by the dosha name.
+  const findDoshaDesc = (key: string, fallbackKey: PdfTemplateKey): { desc: string } => {
+    const aiDosha = data.doshas?.find(
+      (d) => d.name.toLowerCase().includes(key)
+    );
+    if (aiDosha && aiDosha.description) {
+      return { desc: aiDosha.description };
+    }
+    if (key === "mangal") return { desc: L("doshaManglikDesc", lang) };
+    if (key === "sade sati") return { desc: L("doshaSadeSatiDesc", lang) };
+    if (key.includes("kaal") && key.includes("sarp"))
+      return { desc: aiDosha?.description || L("doshaKaalSarpDesc", lang) };
+    return { desc: "" };
+  };
+
+  const manglikDesc = findDoshaDesc("mangal", "doshaManglikDesc");
+  const satiDesc = findDoshaDesc("sade sati", "doshaSadeSatiDesc");
+  const kaalSarpDesc = data.doshas?.find((d) =>
+    d.name.toLowerCase().includes("kaal") && d.name.toLowerCase().includes("sarp")
+  );
+
+  const doshaDetailItems: string[] = [];
+  if (manglikDesc.desc) {
+    doshaDetailItems.push(
+      `<div class="dosha-detail-block"><h3 class="h2 ${lang === "en" ? "en" : ""}">${escapeHTML(L("manglikDosha", lang))}</h3>` +
+      `<p class="dosha-description ${lang === "en" ? "en" : ""}">${escapeHTML(manglikDesc.desc)}</p>` +
+      `<p class="dosha-remedies"><span class="section-title">${escapeHTML(L("doshaRemediesHeading", lang))}</span> ${escapeHTML(L("doshaManglikRemedy", lang))}</p></div>`
+    );
+  }
+  if (satiDesc.desc) {
+    doshaDetailItems.push(
+      `<div class="dosha-detail-block"><h3 class="h2 ${lang === "en" ? "en" : ""}">${escapeHTML(L("sadeSati", lang))}</h3>` +
+      `<p class="dosha-description ${lang === "en" ? "en" : ""}">${escapeHTML(satiDesc.desc)}</p>` +
+      `<p class="dosha-remedies"><span class="section-title">${escapeHTML(L("doshaRemediesHeading", lang))}</span> ${escapeHTML(L("doshaSadeSatiRemedy", lang))}</p></div>`
+    );
+  }
+  if (kaalSarpDesc && kaalSarpDesc.description) {
+    doshaDetailItems.push(
+      `<div class="dosha-detail-block"><h3 class="h2 ${lang === "en" ? "en" : ""}">${escapeHTML(kaalSarpDesc.name)}</h3>` +
+      `<p class="dosha-description ${lang === "en" ? "en" : ""}">${escapeHTML(kaalSarpDesc.description)}</p></div>`
+    );
+  }
+
+  const doshaDetailsHtml = doshaDetailItems.length
+    ? doshaDetailItems.join("")
+    : `<p class="p">${escapeHTML(L("doshaNoDosha", lang))}</p>`;
+
+  const doshaHtml = `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("doshaSection", lang)}</h2>${manglikCard}${satiCard}<div class="dosha-details">${doshaDetailsHtml}</div></div>`;
 
   const yogaSection = yogaItems
     ? `<div class="section-block"><h2 class="h2 ${lang === "en" ? "en" : ""}">${L("yogas", lang)}</h2><div class="two-col">${yogaItems}</div></div>`
@@ -758,10 +818,33 @@ const buildCurrentDashaPage = (
     ? `<p class="p"><span class="section-title">${L("currAntardasha", lang)}:</span> ${escapeHTML(active.subPeriod)} · ${L("activeWindow", lang)}: ${active.startYear}–${active.endYear}</p>`
     : "";
 
+  // ── Dasha period meaning explanations ─────────────────────────────────────
+  const dashaMeaningMap: Record<string, PdfTemplateKey> = {
+    ketu: "dashaMeaningKetu",
+    venus: "dashaMeaningVenus",
+    sun: "dashaMeaningSun",
+    moon: "dashaMeaningMoon",
+    mars: "dashaMeaningMars",
+    rahu: "dashaMeaningRahu",
+    jupiter: "dashaMeaningJupiter",
+    saturn: "dashaMeaningSaturn",
+    mercury: "dashaMeaningMercury",
+  };
+
+  const currentKey = current.toLowerCase().replace(/[^a-z]/g, "");
+  const currentMeaning = dashaMeaningMap[currentKey]
+    ? L(dashaMeaningMap[currentKey], lang)
+    : "";
+
+  const meaningHtml = currentMeaning
+    ? `<div class="divider"></div><h3 class="h3 ${lang === "en" ? "en" : ""}">${L("dashaMeaningHeading", lang)}</h3><p class="p">${escapeHTML(currentMeaning)}</p>`
+    : "";
+
   return `
 ${PAGE_CHROME(L("currDashaTitle", lang), lang, pageNumber, data)}
 <div class="dasha-focus-row">${focusCards}</div>
 ${sub}
+${meaningHtml}
 <p class="note">${escapeHTML(L("currentRemark", lang))}</p>
 <div class="divider"></div>
 <h2 class="h2 ${lang === "en" ? "en" : ""}">${L("dashaCycle", lang)}</h2>

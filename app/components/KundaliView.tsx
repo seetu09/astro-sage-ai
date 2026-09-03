@@ -218,6 +218,12 @@ export default function KundaliView({
         }
       : undefined,
     narratives: pillars,
+    doshas: (paidTier.doshas || []).map((d) => ({
+      name: d.name,
+      description: d.description,
+      severity: d.severity,
+      isNeutralized: d.isNeutralized,
+    })),
   };
 
   return (

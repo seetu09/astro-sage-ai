@@ -202,7 +202,7 @@ Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
     "marriageDynamics": { "overview": "", "strengths": ["",""], "challenges": [], "favorable": [{"period":"","note":""}] },
     "wealthAllocation": { "overview": "", "allocation": [{"category":"","percentage":0,"note":""}] },
     "yogas": [{"name":"","presence":true,"impact":"layman impact","description":"","benefit":""}],
-    "doshas": [{"name":"","description":"","severity":"low|moderate|high","isNeutralized":true}],
+    "doshas": [{"name":"e.g. Manglik Dosha","description":"2-3 detailed sentences explaining what this dosha is, how it manifests in the chart, its effects on the person's life, and recommended remedies","severity":"low|moderate|high","isNeutralized":true}],
     "remedies": [{"type":"","description":""}],
     "fullBreakdown": [{"title":"","content":""}],
     "timings": [{"event":"","timing":"","note":""}],
@@ -216,8 +216,8 @@ Return STRICT JSON only (no markdown, no commentary) with EXACTLY this shape:
   "pillars": {
     "career": {
       "badges": { "score": "short strength tag with houses", "timeframe": "active window like '2026–2034'", "lord": "ruling planet" },
-      "narrativeEn": "2-3 empathetic sentences about career (max 420 chars)",
-      "narrativeHi": "SAME meaning in pure Devanagari Hindi, zero English (max 300 chars)",
+      "narrativeEn": "4-6 detailed, empathetic sentences about career (max 850 chars)",
+      "narrativeHi": "SAME meaning in pure Devanagari Hindi, zero English (max 600 chars)",
       "milestones": [{"period":"2026–2028","event":"","note":"","outcome":"positive|neutral|caution"}]
     },
     "wealth": { "badges": { "score": "", "timeframe": "", "lord": "" }, "narrativeEn": "", "narrativeHi": "", "milestones": [] },

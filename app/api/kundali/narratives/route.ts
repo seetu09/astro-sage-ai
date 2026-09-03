@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
               systemInstruction: { parts: [{ text: system }] },
               contents: [{ role: "user", parts: [{ text: user }] }],
               generationConfig: {
-                temperature: 0.3,
-                maxOutputTokens: 4096,
+                temperature: 0.4,
+                maxOutputTokens: 8192,
                 responseMimeType: "application/json",
               },
             }),

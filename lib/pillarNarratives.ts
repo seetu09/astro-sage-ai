@@ -61,8 +61,8 @@ export const PILLAR_LIMITS = {
   badgeScore: 26,
   badgeTimeframe: 16,
   badgeLord: 14,
-  narrativeEn: 420,
-  narrativeHi: 300,
+  narrativeEn: 850,
+  narrativeHi: 600,
   milestonePeriod: 22,
   milestoneEvent: 56,
   milestoneNote: 88,
@@ -318,7 +318,7 @@ ${boundary}
 
 ${LANGUAGE_RULE[lang]}
 
-You generate the narrative content for the six "Life Pillar" pages of a printed kundli report. The output is consumed directly by a fixed A4 layout, so every string MUST respect the exact character budgets given below — longer text is truncated and would break the page. Be concise, specific, empathetic and chart-grounded. Never invent planetary positions; base everything strictly on the supplied chart facts.`;
+You generate the narrative content for the six "Life Pillar" pages of a printed kundli report. The output is consumed directly by a fixed A4 layout, so every string MUST respect the exact character budgets given below — longer text is truncated and would break the page. Be detailed, specific, empathetic and chart-grounded. Write 4-6 rich sentences per narrative that explain the astrological influences, their practical impact, and actionable guidance. Never invent planetary positions; base everything strictly on the supplied chart facts.`;
 }
 
 export function buildPillarUserPrompt(report: FullKundliReportData, lang: "en" | "hi"): string {
@@ -331,7 +331,7 @@ export function buildPillarUserPrompt(report: FullKundliReportData, lang: "en" |
     const guidance = PILLAR_GUIDANCE[key];
     return `"${key}": {
   "badges": { "score": "short strength tag incl. relevant houses, e.g. '${badges.score}' (max ${l.badgeScore} chars)", "timeframe": "active window like '${badges.timeframe}' (max ${l.badgeTimeframe} chars)", "lord": "ruling planet name, e.g. '${badges.lord}' (max ${l.badgeLord} chars)" },
-  "narrativeEn": "2-3 empathetic sentences for ${guidance} — plain English, what to expect + gentle practical guidance (max ${l.narrativeEn} chars)",
+  "narrativeEn": "4-6 detailed, empathetic sentences for ${guidance} — plain English, explaining astrological influences + practical impact + actionable guidance (max ${l.narrativeEn} chars)",
   "narrativeHi": "the SAME meaning in pure Devanagari Hindi, zero English words (max ${l.narrativeHi} chars)",
   "milestones": "an array of 2-3 short forecast rows: each has \"period\" like '2024–2026' (max ${l.milestonePeriod} chars), \"event\" (max ${l.milestoneEvent} chars), \"note\" (max ${l.milestoneNote} chars), \"outcome\" one of 'positive' | 'neutral' | 'caution'"
 }`;

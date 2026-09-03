@@ -239,6 +239,12 @@ function mapGenerateResultToReportData(
     })(),
     isPaidTier: true,
     ...(aiPillars ? { narratives: aiPillars } : {}),
+    doshas: (Array.isArray(paid.doshas) ? paid.doshas : []).map((d: Record<string, unknown>) => ({
+      name: String(d.name ?? ''),
+      description: String(d.description ?? ''),
+      severity: (['low', 'moderate', 'high'].includes(String(d.severity)) ? String(d.severity) : 'moderate') as 'low' | 'moderate' | 'high',
+      isNeutralized: Boolean(d.isNeutralized),
+    })),
   };
 }
 
