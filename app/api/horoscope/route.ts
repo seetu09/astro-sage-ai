@@ -3,7 +3,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 // Serve deterministic mock data in development (and as the automatic fallback
 // whenever the production LLM call fails or returns unparsable output). In
-// production the real Moonshot path below is always attempted first.
+// production the real Gemini path below is always attempted first.
 const DEV_MODE = process.env.NODE_ENV !== "production";
 
 export interface HoroscopeResponse {
@@ -163,79 +163,9 @@ function buildMockHoroscope(sign: string, period: string, lang: string = "en"): 
   };
 }
 
-/**
- * Extract and validate a HoroscopeResponse from raw LLM text. Returns `null`
- * when the text contains no parsable JSON or the parsed object is missing any
- * required field, so callers can fall back to the deterministic mock.
- */
-function parseHoroscopeJson(
-  text: string,
-  sign: string,
-  period: string,
-  date: string,
-  isHi: boolean
-): HoroscopeResponse | null {
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    const scores = parsed.scores as { career: number; love: number; money: number; health: number } | undefined;
-    const insights = parsed.insights as { career: string; love: string; money: string; health: string } | undefined;
-    const lucky = parsed.lucky as { color?: string; number?: number; time?: string } | undefined;
-
-    if (
-      typeof parsed.prediction !== "string" ||
-      !parsed.prediction.trim() ||
-      !scores ||
-      typeof scores.career !== "number" ||
-      typeof scores.love !== "number" ||
-      typeof scores.money !== "number" ||
-      typeof scores.health !== "number" ||
-      !insights ||
-      typeof insights.career !== "string" ||
-      typeof insights.love !== "string" ||
-      typeof insights.money !== "string" ||
-      typeof insights.health !== "string" ||
-      !lucky
-    ) {
-      return null;
-    }
-
-    // Clamp scores to the accepted 1-5 range.
-    const clamp = (n: number) => Math.max(1, Math.min(5, Math.round(n)));
-
-    return {
-      sign,
-      period: period as HoroscopeResponse["period"],
-      date,
-      prediction: String(parsed.prediction).trim(),
-      lucky: {
-        color: typeof lucky.color === "string" && lucky.color.trim() ? lucky.color : isHi ? "सुनहरा" : "Gold",
-        number: typeof lucky.number === "number" ? lucky.number : 7,
-        time: typeof lucky.time === "string" && lucky.time.trim() ? lucky.time : "12:00 PM - 2:00 PM",
-      },
-      scores: {
-        career: clamp(scores.career),
-        love: clamp(scores.love),
-        money: clamp(scores.money),
-        health: clamp(scores.health),
-      },
-      insights: {
-        career: String(insights.career).trim(),
-        love: String(insights.love).trim(),
-        money: String(insights.money).trim(),
-        health: String(insights.health).trim(),
-      },
-    };
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
-    // Rate limit — protect Moonshot spend from bot abuse (30 req / 60s / IP).
+    // Rate limit — protect Gemini spend from bot abuse (30 req / 60s / IP).
     const { allowed, retryAfter } = checkRateLimit(
       `horoscope:${getClientIp(request)}`,
       30,
@@ -270,54 +200,54 @@ export async function GET(request: NextRequest) {
     const isHi = lang === "hi";
     const localizedSignName = isHi ? (SIGN_NAMES_HI[sign] || "मेष") : (SIGN_NAMES[sign] || "Aries");
     const localizedPeriodLabel = isHi ? (PERIOD_LABELS_HI[period] || "आज") : (PERIOD_LABELS[period] || "Today");
-    const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.MOONSHOT_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "moonshot-v1-8k",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert Vedic astrologer. Generate a daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}. 
-            Respond with STRICT JSON only in this exact format:
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not set for horoscope");
+      return NextResponse.json(buildMockHoroscope(sign, period, lang));
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text: `You are an expert Vedic astrologer. Generate a daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}. Respond with STRICT JSON only in this exact format:\n{\n  "sign": "${sign}",\n  "period": "${period}",\n  "date": "${getDateForPeriod(period)}",\n  "prediction": "2-3 sentence prediction",\n  "lucky": { "color": "color name", "number": 7, "time": "time range" },\n  "scores": { "career": 1-5, "love": 1-5, "money": 1-5, "health": 1-5 },\n  "insights": { "career": "one sentence", "love": "one sentence", "money": "one sentence", "health": "one sentence" }\n}`,
+              },
+            ],
+          },
+          contents: [
             {
-              "sign": "${sign}",
-              "period": "${period}",
-              "date": "${getDateForPeriod(period)}",
-              "prediction": "2-3 sentence prediction",
-              "lucky": { "color": "color name", "number": 7, "time": "time range" },
-              "scores": { "career": 1-5, "love": 1-5, "money": 1-5, "health": 1-5 },
-              "insights": { "career": "one sentence", "love": "one sentence", "money": "one sentence", "health": "one sentence" }
-            }`,
+              role: "user",
+              parts: [
+                {
+                  text: `Provide the daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}.`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500,
+            responseMimeType: "application/json",
           },
-          {
-            role: "user",
-            content: `Provide the daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}.`,
-          },
-],
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
-    });
+        }),
+      }
+    );
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (typeof content === "string") {
-      // Parse + validate the LLM JSON against the expected HoroscopeResponse
-      // shape. Treat malformed / structurally-incomplete output as a failure
-      // and fall back to the deterministic mock rather than serving bad data.
-      const parsed = parseHoroscopeJson(
-        content,
-        sign,
-        period,
-        getDateForPeriod(period),
-        isHi
-      );
-      if (parsed) {
+      try {
+        const parsed = JSON.parse(content);
         return NextResponse.json(parsed);
+      } catch (error) {
+        console.error("Failed to parse Gemini JSON:", error);
+        return NextResponse.json(buildMockHoroscope(sign, period, lang));
       }
     }
     return NextResponse.json(buildMockHoroscope(sign, period, lang));

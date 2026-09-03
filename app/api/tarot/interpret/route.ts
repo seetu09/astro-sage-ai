@@ -48,12 +48,12 @@ function buildMockInterpretation(req: InterpretRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit — protect Moonshot spend (30 req / 60s / IP).
-    const { allowed, retryAfter } = checkRateLimit(
-      `tarot:${getClientIp(request)}`,
-      30,
-      60_000
-    );
+     // Rate limit — protect Gemini spend (30 req / 60s / IP).
+     const { allowed, retryAfter } = checkRateLimit(
+       `tarot:${getClientIp(request)}`,
+       30,
+       60_000
+     );
     if (!allowed) {
       return NextResponse.json(
         { error: "Too many requests. Please try again shortly." },
@@ -76,42 +76,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ interpretation: buildMockInterpretation(body) });
     }
 
-    // Production: call LLM API
-    const cardDescriptions = body.cards
-      .map((c) => {
-        const card = getCardById(c.cardId);
-        return `${POSITION_NAMES[c.position]}: ${card?.name} (${c.reversed ? "reversed" : "upright"}) - ${c.reversed ? card?.reversed : card?.upright}`;
-      })
-      .join("; ");
+     // Production: call LLM API
+     const cardDescriptions = body.cards
+       .map((c) => {
+         const card = getCardById(c.cardId);
+         return `${POSITION_NAMES[c.position]}: ${card?.name} (${c.reversed ? "reversed" : "upright"}) - ${c.reversed ? card?.reversed : card?.upright}`;
+       })
+       .join("; ");
 
-    const response = await fetch("https://api.moonshot.cn/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.MOONSHOT_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "moonshot-v1-8k",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert tarot reader. Provide a concise interpretation under 180 words. Use exactly 3 bold bullet points (one per card position) and end with a practical conclusion. Be encouraging and constructive.",
-          },
-          {
-            role: "user",
-            content: `Topic: ${body.topic}. Drawn cards: ${cardDescriptions}. Provide the interpretation.`,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 300,
-      }),
-    });
+     const response = await fetch(
+       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+       {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+         },
+         body: JSON.stringify({
+           systemInstruction: {
+             parts: [
+               {
+                 text: "You are an expert tarot reader. Provide a concise interpretation under 180 words. Use exactly 3 bold bullet points (one per card position) and end with a practical conclusion. Be encouraging and constructive.",
+               },
+             ],
+           },
+           contents: [
+             {
+               role: "user",
+               parts: [
+                 {
+                   text: `Topic: ${body.topic}. Drawn cards: ${cardDescriptions}. Provide the interpretation.`,
+                 },
+               ],
+             },
+           ],
+           generationConfig: {
+             temperature: 0.7,
+             maxOutputTokens: 300,
+             responseMimeType: "text/plain",
+           },
+         }),
+       }
+     );
 
-    const data = await response.json();
-    const interpretation = data?.choices?.[0]?.message?.content;
-    // Validate the LLM output — only serve it if it's a non-empty string.
-    // Malformed / empty output falls back to the deterministic mock reading.
+     const data = await response.json();
+     const interpretation = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+     // Validate the LLM output — only serve it if it's a non-empty string.
+     // Malformed / empty output falls back to the deterministic mock reading.
     if (typeof interpretation === "string" && interpretation.trim()) {
       return NextResponse.json({ interpretation: interpretation.trim() });
     }

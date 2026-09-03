@@ -17,7 +17,7 @@ AI-powered Vedic astrology platform built with Next.js 14 (App Router) — Kundl
 
 ## Tech Stack
 
-Next.js 14 · React 18 · TypeScript · Tailwind CSS · Supabase · Razorpay · Google Gemini & Moonshot AI · Puppeteer (PDF) · Vitest
+Next.js 14 · React 18 · TypeScript · Tailwind CSS · Supabase · Razorpay · Google Gemini · Puppeteer (PDF) · Vitest
 
 ## Getting Started
 
@@ -26,7 +26,7 @@ Next.js 14 · React 18 · TypeScript · Tailwind CSS · Supabase · Razorpay · 
 - Node.js 20+
 - A Supabase project (auth + kundli cache)
 - Razorpay keys (test mode works fine locally)
-- Gemini and/or Moonshot API keys
+- Gemini API keys
 
 ### Setup
 
