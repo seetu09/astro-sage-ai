@@ -499,7 +499,7 @@ const buildLifeDomainsPage = (
     return `A detailed ${domainKey} analysis is derived from the relevant bhava lords, planetary aspects, and current dasha influences. This section examines the specific house significations and planetary placements governing ${domainKey} outcomes.`;
   };
 
-  const domainObjects: ReportData["domainInsights"][] = [];
+  const domainObjects: ReportData["domainInsights"][number][] = [];
   keys.forEach((key) => {
     const domain = domains.find((d) => d.domain === key);
     if (domain && (domain.prediction || "").length >= 50) {
@@ -510,7 +510,7 @@ const buildLifeDomainsPage = (
         prediction: fallbackPrediction(key),
         analysis: "",
         timeframe: undefined,
-      } as ReportData["domainInsights"]);
+      } as ReportData["domainInsights"][number]);
     }
   });
 
@@ -1032,38 +1032,36 @@ ${PAGE_FOOTER(pageNumber, lang)}
   ): string => {
     // Build house-to-planet mapping from planetary positions
     const housePlanets: Record<number, string[]> = {};
-    (data.planetaryPositions || []).forEach(p => {
+    (data.planetaryPositions || []).forEach((p) => {
       const houseNum = parseInt(p.house, 10);
       if (!isNaN(houseNum) && houseNum >= 1 && houseNum <= 12) {
-        const signIndex = getSignIndex(p.sign);
-        const houseLord = SIGN_LORDS[signIndex] || "Moon";
         if (!housePlanets[houseNum]) housePlanets[houseNum] = [];
         housePlanets[houseNum].push(p.body);
+      }
     });
-    
-    const houseRows = Object.entries(housePlanets)
-      .map(([houseNum, planets]) => {
-        const signIndex = getSignIndex(data.houseCusps?.find(c => c.house === houseNum)?.sign || "1");
-        const houseLord = SIGN_LORDS[signIndex] || "Moon";
-        const planetList = planets.length > 0 ? planets.join(", ") : "—";
-        return `<tr>
+
+    const houseRows: string[] = Object.entries(housePlanets).map(([houseKey, planets]) => {
+      const houseNum = parseInt(houseKey, 10);
+      const signIndex = getSignIndex(data.houseCusps?.find((c) => c.house === houseNum)?.sign || "1");
+      const houseLord = SIGN_LORDS[signIndex] || "Moon";
+      const planetList = planets.length > 0 ? planets.join(", ") : "—";
+      return `<tr>
           <td>${houseNum}</td>
           <td>${escapeHTML(localizeSignName(signIndex, lang))}</td>
           <td>${escapeHTML(houseLord)}</td>
           <td>${escapeHTML(planetList)}</td>
         </tr>`;
-      })
-      .join("");
-    
+    });
+
     // Add houses with no planets
     for (let i = 1; i <= 12; i++) {
       if (!housePlanets[i]) {
-        const signIndex = getSignIndex(data.houseCusps?.find(c => c.house === i)?.sign || "1");
+        const signIndex = getSignIndex(data.houseCusps?.find((c) => c.house === i)?.sign || "1");
         const houseLord = SIGN_LORDS[signIndex] || "Moon";
         houseRows.push(`<tr><td>${i}</td><td>${escapeHTML(localizeSignName(signIndex, lang))}</td><td>${escapeHTML(houseLord)}</td><td>—</td></tr>`);
       }
     }
-    
+
     return `
       ${PAGE_CHROME("Bhava Lords", lang, pageNumber, data)}
       <div class="section-block">
@@ -1075,7 +1073,7 @@ ${PAGE_FOOTER(pageNumber, lang)}
             <th>${L("bhavaLord", lang)}</th>
             <th>${L("planets", lang)}</th>
           </tr>
-          ${houseRows || "<tr><td colspan=\"4\">No house data available</td></tr>"}
+          ${houseRows.join("") || "<tr><td colspan=\"4\">No house data available</td></tr>"}
         </table>
       </div>
       ${PAGE_FOOTER(pageNumber, lang)}
