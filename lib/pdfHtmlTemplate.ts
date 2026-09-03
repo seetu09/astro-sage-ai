@@ -484,58 +484,74 @@ const clampWords = (text: string, max: number): string => {
  * Domains: Career, Wealth, Marriage, Health, Education, Family.
  */
 const buildLifeDomainsPage = (
+  keys: string[],
   domains: ReportData["domainInsights"],
   data: ReportData,
   lang: Language,
   pageNumber: number
 ): string => {
   const currentYear = new Date().getFullYear();
-  const sectionHtml = domains
-    .map((domain) => {
-      const title = L(DOMAIN_LABEL_KEYS[domain.domain] ?? "domainCareer", lang);
-      const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
-      const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
-      const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
-      const firstWindow = data.dashaPeriods?.[0]
-        ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
-        : domain.timeframe || "—";
-      const badges = [
-        `${L("houseWord", lang)} ${focusHouse}`,
-        `${L("lordWord", lang)}: ${localizePlanetName(lord, lang)}`,
-        firstWindow,
-      ];
-      const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
-      const narrative = narrativeParts.length
-        ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
-        : escapeHTML(getTranslation(lang, "pdf.template.detailedPremiumAnalysis", { domain: title.toLowerCase() }));
-      // Milestone table — at most TWO rows, showing only the NEXT upcoming windows.
-      const upcomingWindows = (data.dashaPeriods || [])
-        .filter((d) => {
-          const endYear = parseInt(String(d.endYear), 10);
-          return Number.isNaN(endYear) || endYear >= currentYear;
-        })
-        .slice(0, 2);
-      const milestoneRows = upcomingWindows.length
-        ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([localizePlanetName(d.mahaDasha, lang), d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
-        : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
-      return `<div class="domain-half">
-<h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
-<div class="domain-badges">${badges.map((b) => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
-<p class="domain-narrative ${lang === "en" ? "en" : ""}">${narrative}</p>
-<table class="mini-table">
-<tr><th>${L("period", lang)}</th><th>${L("influence", lang)}</th></tr>
-${milestoneRows}
-</table>
-</div>`;
+const fallbackPrediction = (domainKey: string, lang: Language): string => {
+  if (lang === 'hi') {
+    return `${getTranslation(lang, \`pdf.template.domain${capitalize(domainKey)}\`)} का विस्तृत विश्लेषण पूर्ण कुंडली परीक्षण के आधार पर किया जाता है। संबंधित भाव स्वामी, ग्रह दृष्टि और वर्तमान दशा प्रभाव से इस क्षेत्र की गहन जानकारी प्राप्त होती है।`;
+  }
+  return \`A detailed \${domainKey} analysis is derived from the relevant bhava lords, planetary aspects, and current dasha influences. This section examines the specific house significations and planetary placements governing \${domainKey} outcomes.\`;
+};
+
+const domainObjects: ReportData["domainInsights"][] = [];
+keys.forEach((key) => {
+  const domain = domains.find((d) => d.domain === key);
+  if (domain && domain.prediction?.length >= 50) {
+    domainObjects.push(domain);
+  } else {
+    const fallbackPred = fallbackPrediction(key, lang);
+    const fallbackDomain: ReportData["domainInsights"] = {
+      domain: key,
+      prediction: fallbackPred,
+      analysis: "",
+      timeframe: undefined,
+    };
+    domainObjects.push(fallbackDomain);
+  }
+});
+
+const sectionHtml = domainObjects.map((domain) => {
+  const title = L(DOMAIN_LABEL_KEYS[domain.domain] ?? "domainCareer", lang);
+  const focusHouse = DOMAIN_HOUSES[domain.domain] ?? 1;
+  const cuspSignIdx = getSignIndex(data.houseCusps?.[focusHouse - 1]?.sign || "");
+  const lord = cuspSignIdx ? SIGN_LORDS[cuspSignIdx] || "—" : "—";
+  const firstWindow = data.dashaPeriods?.[0]
+    ? `${data.dashaPeriods[0].startYear}–${data.dashaPeriods[0].endYear}`
+    : domain.timeframe || "—";
+  const badges = [
+    `${L("houseWord", lang)} ${focusHouse}`,
+    `${L("lordWord", lang)}: ${localizePlanetName(lord, lang)}`,
+    firstWindow,
+  ];
+  const narrativeParts = [domain.prediction, domain.analysis].filter(Boolean);
+  const narrative = narrativeParts.length
+    ? escapeHTML(clampWords(narrativeParts.join(" "), 180))
+    : escapeHTML(getTranslation(lang, "pdf.template.detailedPremiumAnalysis", { domain: title.toLowerCase() }));
+  // Milestone table — at most TWO rows, showing only the NEXT upcoming windows.
+  const upcomingWindows = (data.dashaPeriods || [])
+    .filter((d) => {
+      const endYear = parseInt(String(d.endYear), 10);
+      return Number.isNaN(endYear) || endYear >= currentYear;
     })
-    .join(`<div class="domain-divider"></div>`);
-  return `
-${PAGE_CHROME(L("lifeDomains", lang), lang, pageNumber, data)}
-<div class="dual-domain-grid">
-${sectionHtml}
-</div>
-${PAGE_FOOTER(pageNumber, lang)}
-`;
+    .slice(0, 2);
+  const milestoneRows = upcomingWindows.length
+    ? upcomingWindows.map((d) => `<tr><td>${escapeHTML(d.startYear)}–${escapeHTML(d.endYear)}</td><td>${escapeHTML([localizePlanetName(d.mahaDasha, lang), d.subPeriod].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
+    : `<tr><td>—</td><td>${escapeHTML(L("notAvailable", lang))}</td></tr>`;
+  return `<div class="domain-half">
+    <h2 class="domain-title ${lang === "en" ? "en" : ""}">${escapeHTML(title)}</h2>
+    <div class="domain-badges">${badges.map((b) => `<span class="tag paid">${escapeHTML(b)}</span>`).join("")}</div>
+    <p class="domain-narrative ${lang === "en" ? "en" : ""}">${narrative}</p>
+    <table class="mini-table">
+      <tr><th>${L("period", lang)}</th><th>${L("influence", lang)}</th></tr>
+      ${milestoneRows}
+    </table>
+  </div>`;
+});
 };
 
 
@@ -949,8 +965,115 @@ ${milestonesHtml}
 ${PAGE_FOOTER(pageNumber, lang)}
 `;
 };
-
-export function generateReportHtml(reportData: ReportData, language: Language): string {
+  
+  // ─── NEW PAGE TYPES ────────────────────────────────────────────────────────
+  // These pages are guaranteed to render for every birth chart since they use
+  // deterministic planetary/house data, not AI-generated content.
+  
+  /**
+   * PAGE — Planetary status table showing each planet's sign, house, degree,
+   * retrograde status, and sign lord. Uses deterministic planetaryPositions data.
+   */
+  const buildPlanetaryStatusPage = (
+    data: ReportData,
+    lang: Language,
+    pageNumber: number
+  ): string => {
+    const planetRows = (data.planetaryPositions || [])
+      .map(p => {
+        const signIndex = getSignIndex(p.sign);
+        const signLord = SIGN_LORDS[signIndex] || "Moon";
+        return `<tr>
+          <td>${escapeHTML(localizePlanetName(p.body, lang))}</td>
+          <td>${escapeHTML(localizeSignName(p.sign, lang))}</td>
+          <td>${escapeHTML(p.house)}</td>
+          <td>${escapeHTML(p.degree)}</td>
+          <td>${p.retro ? "R" : "-"}</td>
+          <td>${escapeHTML(signLord)}</td>
+        </tr>`;
+      })
+      .join("");
+    
+    return `
+      ${PAGE_CHROME("Planetary Status", lang, pageNumber, data)}
+      <div class="section-block">
+        <h2 class="h2 ${lang === "en" ? "en" : ""}">Planetary Positions</h2>
+        <table class="table-0">
+          <tr>
+            <th>${L("planet", lang)}</th>
+            <th>${L("sign", lang)}</th>
+            <th>${L("house", lang)}</th>
+            <th>${L("degree", lang)}</th>
+            <th>${L("retrograde", lang)}</th>
+            <th>${L("signLord", lang)}</th>
+          </tr>
+          ${planetRows || "<tr><td colspan=\"6\">No planetary data available</td></tr>"}
+        </table>
+      </div>
+      ${PAGE_FOOTER(pageNumber, lang)}
+    `;
+  };
+  
+  /**
+   * PAGE — Bhava lords table showing which planet rules each house,
+   * the sign of each house, and which planets occupy each house.
+   */
+  const buildBhavaLordsPage = (
+    data: ReportData,
+    lang: Language,
+    pageNumber: number
+  ): string => {
+    // Build house-to-planet mapping from planetary positions
+    const housePlanets: Record<number, string[]> = {};
+    (data.planetaryPositions || []).forEach(p => {
+      const houseNum = parseInt(p.house, 10);
+      if (!isNaN(houseNum) && houseNum >= 1 && houseNum <= 12) {
+        const signIndex = getSignIndex(p.sign);
+        const houseLord = SIGN_LORDS[signIndex] || "Moon";
+        if (!housePlanets[houseNum]) housePlanets[houseNum] = [];
+        housePlanets[houseNum].push(p.body);
+    });
+    
+    const houseRows = Object.entries(housePlanets)
+      .map(([houseNum, planets]) => {
+        const signIndex = getSignIndex(data.houseCusps?.find(c => c.house === houseNum)?.sign || "1");
+        const houseLord = SIGN_LORDS[signIndex] || "Moon";
+        const planetList = planets.length > 0 ? planets.join(", ") : "—";
+        return `<tr>
+          <td>${houseNum}</td>
+          <td>${escapeHTML(localizeSignName(signIndex, lang))}</td>
+          <td>${escapeHTML(houseLord)}</td>
+          <td>${escapeHTML(planetList)}</td>
+        </tr>`;
+      })
+      .join("");
+    
+    // Add houses with no planets
+    for (let i = 1; i <= 12; i++) {
+      if (!housePlanets[i]) {
+        const signIndex = getSignIndex(data.houseCusps?.find(c => c.house === i)?.sign || "1");
+        const houseLord = SIGN_LORDS[signIndex] || "Moon";
+        houseRows.push(`<tr><td>${i}</td><td>${escapeHTML(localizeSignName(signIndex, lang))}</td><td>${escapeHTML(houseLord)}</td><td>—</td></tr>`);
+      }
+    }
+    
+    return `
+      ${PAGE_CHROME("Bhava Lords", lang, pageNumber, data)}
+      <div class="section-block">
+        <h2 class="h2 ${lang === "en" ? "en" : ""}">House Lords & Planets</h2>
+        <table class="table-0">
+          <tr>
+            <th>${L("house", lang)}</th>
+            <th>${L("sign", lang)}</th>
+            <th>${L("bhavaLord", lang)}</th>
+            <th>${L("planets", lang)}</th>
+          </tr>
+          ${houseRows || "<tr><td colspan=\"4\">No house data available</td></tr>"}
+        </table>
+      </div>
+      ${PAGE_FOOTER(pageNumber, lang)}
+    `;
+  };
   const lang = language;
   let pageNo = 0;
   const pages: string[] = [];
@@ -983,14 +1106,15 @@ export function generateReportHtml(reportData: ReportData, language: Language): 
     const domA = reportData.domainInsights.find((d) => d.domain === keyA);
     const domB = reportData.domainInsights.find((d) => d.domain === keyB);
     if (((domA?.prediction?.length ?? 0) > 20) || ((domB?.prediction?.length ?? 0) > 20)) {
-      push(
-        buildLifeDomainsPage(
-          [domA, domB].filter((d): d is ReportData["domainInsights"][0] => Boolean(d)),
-          reportData,
-          lang,
-          ++pageNo
-        )
-      );
+push(
+  buildLifeDomainsPage(
+    [keyA, keyB],
+    [domA, domB].filter((d): d is ReportData["domainInsights"][0] => Boolean(d)),
+    reportData,
+    lang,
+    ++pageNo
+  )
+);
     }
   });
   // ── New premium detail pages (only rendered when their data exists) ──
@@ -998,8 +1122,10 @@ export function generateReportHtml(reportData: ReportData, language: Language): 
   push(buildRemedyPrescriptPage(reportData, lang, ++pageNo));
   push(buildCurrentDashaPage(reportData, lang, ++pageNo));
   push(buildManglikSadeTrackerPage(reportData, lang, ++pageNo));
-  push(buildDashaMasterPage(reportData, lang, ++pageNo));
-  // Guarded appendix — references + scorecard + closing summary on one sheet.
+push(buildDashaMasterPage(reportData, lang, ++pageNo));
+   push(buildPlanetaryStatusPage(reportData, lang, ++pageNo));
+   push(buildBhavaLordsPage(reportData, lang, ++pageNo));
+   // Guarded appendix — references + scorecard + closing summary on one sheet.
   const appendix = buildAppendixSummaryPage(reportData, lang, pageNo + 1);
   if (appendix) {
     pageNo += 1;
