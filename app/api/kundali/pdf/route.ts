@@ -1,30 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { PdfData, ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
-import { generatePdfHtml } from "@/lib/pdfHtmlTemplate";
+import { renderPdfToBuffer } from "@/lib/PdfDocument";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
-import { renderPdfFromHtml } from "html-pdf-lite";
-import path from "path";
 
 /**
  * POST /api/kundali/pdf — Vercel serverless "Download Full 25-Page Kundli".
  *
  * Renders the localized A4 report (deterministic chart data + AI Life-Pillar
- * narratives) through `html-pdf-lite` (PDFKit-based, NO Chromium) and streams
- * the PDF back as an attachment download.
+ * narratives) using `@react-pdf/renderer` — pure JavaScript with NO native
+ * dependencies. Works reliably on Vercel without bundling issues.
  *
- * ─── Why html-pdf-lite instead of puppeteer-core + @sparticuz/chromium-min ─
- * Chromium-based rendering needed a ~70 MB (compressed) browser tarball
- * downloaded from a CDN into /tmp on every cold start, which regularly blew
- * past Vercel's function limits and produced "Print Server Failed". The
- * PDFKit renderer here is pure JS, has no binary download, and starts in
- * ~100 ms — a 25-page report renders well under 10 s cold.
- *
- * Devanagari (Hindi) and Latin text are covered by the Noto Sans /
- * Noto Sans Devanagari TTFs bundled in `public/fonts` and registered through
- * the `fonts` option (PDFKit has no web-font loading, so files must exist on
- * disk). `outputFileTracingIncludes` in next.config.js keeps them inside the
- * lambda on Vercel.
+ * Devanagari (Hindi) and Latin text are covered by the Mukta font family
+ * bundled in `public/fonts`. `outputFileTracingIncludes` in next.config.js
+ * keeps them inside the lambda on Vercel.
  *
  * Request body:
  *   {
@@ -48,24 +37,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Lang = "en" | "hi";
-
-/**
- * Bundled PDF font — a single family covering BOTH Latin and Devanagari.
- * html-pdf-lite picks the first font-family in the CSS list and only falls
- * back to *system* fonts (absent on Vercel), so one script-complete face
- * (Mukta) is used everywhere instead of pairing Noto Sans (Latin) with
- * Noto Sans Devanagari.
- */
-const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
-const PDF_FONTS: Record<
-  string,
-  { regular: string; bold: string; italic?: string; boldItalic?: string }
-> = {
-  Mukta: {
-    regular: path.join(FONTS_DIR, "Mukta-Regular.ttf"),
-    bold: path.join(FONTS_DIR, "Mukta-Bold.ttf"),
-  },
-};
 
 function slugifyFileName(value: unknown): string {
   return String(value ?? "")
@@ -285,37 +256,22 @@ export async function POST(req: NextRequest) {
           paidTier: {},
         };
 
-    const html = generatePdfHtml(pdfData, lang);
-
-    // ── Render the PDF (pure-JS PDFKit engine — no Chromium) ──
-    // Margins are small (the template controls its own section spacing) but
-    // non-zero so content never touches the paper edge.
-    const pdfBytes = await renderPdfFromHtml(html, {
-      margins: { top: 24, right: 24, bottom: 24, left: 24 },
-      fonts: PDF_FONTS,
-      // Avoid the color-emoji resolver probing system fonts on every request
-      // (Vercel lambdas have none; the template uses styled text, not emoji).
-      autoResolveEmojiFont: false,
-    });
+    // ── Render the PDF using @react-pdf/renderer (pure JS, no native deps) ──
+    const pdfBuffer = await renderPdfToBuffer(pdfData);
 
     const stem =
       (typeof body.fileName === "string" && body.fileName.trim()) ||
       reportData.clientName ||
       "kundli";
     const safeFileName = `${slugifyFileName(stem) || "kundli"}-kundli-${lang}.pdf`;
-    // Count real PDF pages (layout flows across pages; .page divs are only
-    // section-break markers, so a 6-section doc can easily exceed 20 pages).
-    const pdfString = pdfBytes.toString("latin1");
-    const pageCount = (pdfString.match(/\/Type\s*\/Page[^s]/g) || []).length;
 
-    return new NextResponse(new Uint8Array(pdfBytes), {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${safeFileName}"`,
-        "Content-Length": String(pdfBytes.byteLength),
+        "Content-Length": String(pdfBuffer.byteLength),
         "Cache-Control": "no-store",
-        "X-Kundli-Pages": String(pageCount),
       },
     });
   } catch (error) {

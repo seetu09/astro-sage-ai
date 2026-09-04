@@ -1,7 +1,7 @@
 // lib/pdfHtmlTemplate.ts — rich, data-driven A4 report template.
 //
-// Rendered by `html-pdf-lite` (PDFKit engine — no Chromium). Layout rules for
-// this engine:
+// Rendered by `@react-pdf/renderer` (pure JavaScript, no native dependencies).
+// Layout rules for this engine:
 //   • Only the FIRST font-family in a CSS list is used — a single bundled face
 //     ("Mukta", registered by the PDF route) covers Latin + Devanagari, so
 //     mixed English/Hindi text renders without missing glyphs.
@@ -125,7 +125,7 @@ export function generatePdfHtml(data: PdfData, lang: string = 'en'): string {
   };
 
   // Font stack: Mukta is bundled by the PDF route (Latin + Devanagari).
-  // html-pdf-lite only reads the FIRST family — keep it stable.
+  // @react-pdf/renderer only reads the FIRST family — keep it stable.
   const BODY_FONT = "'Mukta', sans-serif";
 
   let html = `<!DOCTYPE html>

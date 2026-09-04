@@ -15,13 +15,14 @@ const withPWA = require('next-pwa')({
 
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {},
-  // The PDF renderer (`html-pdf-lite`/PDFKit) loads the bundled Noto/Mukta TTFs
-  // from disk at runtime. outputFileTracing keeps those files inside the
-  // Vercel lambda — without this the fonts would be missing in production and
-  // Devanagari text would render as blank/missing glyphs.
-  outputFileTracingIncludes: {
-    '/api/kundali/pdf': ['./public/fonts/**/*'],
+  experimental: {
+    // The PDF renderer (`@react-pdf/renderer`) loads the bundled Mukta TTFs
+    // from disk at runtime. outputFileTracing keeps those files inside the
+    // Vercel lambda — without this the fonts would be missing in production and
+    // Devanagari text would render as blank/missing glyphs.
+    outputFileTracingIncludes: {
+      '/api/kundali/pdf': ['./public/fonts/**/*'],
+    },
   },
 }
 
