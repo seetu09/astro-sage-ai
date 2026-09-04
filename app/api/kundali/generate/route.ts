@@ -723,6 +723,8 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
+    const debug = body.debug === true;
+
     const { language, lang: langLegacy } = body;
     // Accept both the canonical `language` field and the legacy `lang` key.
     const requestedLang = typeof language === "string" && language.trim() !== ""
@@ -809,8 +811,8 @@ export async function POST(req: NextRequest) {
     // below still guarantee a complete, renderable report.
     const FALLBACK_INTERPRETATION =
       lang === "hi"
-        ? "आपका चार्ट सफलतापूर्वक तैयार हो गया है। ज्योतिष पठन अस्थायी रूप से अनुपलब्ध है।"
-        : "Your chart was generated successfully. Astrological reading is temporarily unavailable.";
+        ? "आपका चार्ट सफलतापूर्वक तैयार हो गया है। आपका जन्म कुंडली विश्लेषण उपलब्ध है जो आपके जीवन के प्रमुख क्षेत्रों — करियर, समृद्धि, विवाह, स्वास्थ्य, शिक्षा और परिवार — के बारे में विस्तृत मार्गदर्शन प्रदान करता है।"
+        : "Your chart was generated successfully. Your kundali analysis is available, providing detailed guidance on key life areas — career, wealth, marriage, health, education, and family.";
 
     const birthDateKey = details.birthDate;
     let interpretation = "";
@@ -892,6 +894,31 @@ export async function POST(req: NextRequest) {
       paidTier.lifeDomains![key] = { ...current, overview: finalText };
     }
 
+
+    // Debug mode: return raw computed data without PDF generation
+    if (debug) {
+      return NextResponse.json({
+        success: true,
+        debug: true,
+        language: lang,
+        chartData,
+        calculations,
+        freeTier,
+        paidTier,
+        interpretation,
+        pillars,
+        richPredictions,
+        aiSource,
+        debugInfo: {
+          timestamp: new Date().toISOString(),
+          birthDetails: details,
+          cacheKey: cacheKey,
+          hasAiInterpretation: aiSource,
+          hasRichPredictions: richPredictions !== null,
+          calculationMetadata: calculations.metadata,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
