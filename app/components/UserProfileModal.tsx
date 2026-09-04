@@ -167,6 +167,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
       <div className="flex items-center gap-4 border-b border-amber-200/60 pb-5 dark:border-white/10">
         <div className="relative shrink-0">
           {form.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={form.avatar} alt={t('profile.uploadPicture')} className="h-16 w-16 rounded-full object-cover" />
           ) : (
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white dark:bg-[#FFD166] dark:text-[#080811]">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { PdfData, ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
-import { generatePdfHtml, generateReportHtml } from "@/lib/pdfHtmlTemplate";
+import { generatePdfHtml } from "@/lib/pdfHtmlTemplate";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
 
 /**

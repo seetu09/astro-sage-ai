@@ -37,6 +37,7 @@ function UserAvatar({ user }: { user: User }) {
 
   if (user.avatar) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={user.avatar}
         alt={`${user.name}'s profile`}

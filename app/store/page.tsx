@@ -58,6 +58,7 @@ export default function StorePage() {
             {filteredProducts.map((product) => (
               <motion.div key={product.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="astro-card group">
                 <div className="relative aspect-square rounded-lg overflow-hidden mb-4 bg-[var(--bg-secondary)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={product.image} alt={product.name[language]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   {!product.inStock && <div className="absolute inset-0 bg-[var(--bg-primary)]/70 flex items-center justify-center"><span className="px-3 py-1 rounded-full bg-[var(--text-muted)]/20 text-[var(--text-muted)] text-sm font-medium">{t.store.outOfStock}</span></div>}
                 </div>

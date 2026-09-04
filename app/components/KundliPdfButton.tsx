@@ -464,7 +464,7 @@ if (mode === 'print') {
         inFlight.current = false;
       }
     },
-    [reportData, pillars, chartData, calculations, freeTier, paidTier, historyEntry, unlockToken, toast, t]
+    [reportData, pillars, chartData, calculations, freeTier, paidTier, historyEntry, unlockToken, toast, t, userName]
   );
 
   const displayLabel = label || t(DEFAULT_LABEL_KEY);

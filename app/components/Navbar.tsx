@@ -154,6 +154,7 @@ export default function Navbar() {
                     aria-haspopup="menu"
                   >
                     {user?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={user.avatar}
                         alt={`${user.name}'s profile`}
@@ -250,6 +251,7 @@ export default function Navbar() {
                       aria-haspopup="menu"
                     >
                       {user?.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={user.avatar}
                           alt={`${user.name}'s profile`}

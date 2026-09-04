@@ -175,6 +175,9 @@ function ChatContent() {
       }, 1200);
       return () => clearTimeout(timer);
     }
+    // Context objects (profile/refresh/openTopUp/t) change identity on wallet
+    // refresh; re-running would duplicate the auto-sent assistant reply.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, language]);
 
   // Auto-scroll within the messages container only — never scroll the page.
@@ -308,6 +311,9 @@ function ChatContent() {
       }
     };
     runAssistant();
+    // Context objects (profile/refresh/openTopUp) change identity on wallet
+    // refresh; re-running would resend the pending prompt to the assistant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPrompt, walletBalance, clearPendingPrompt, language, t.chat.error]);
 
   const handleRetry = () => {

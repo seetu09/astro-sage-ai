@@ -66,6 +66,7 @@ export default function AboutPage() {
             {team.map((member, index) => (
               <motion.div key={index} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }} className="astro-card text-center group">
                 <div className="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-2 border-[var(--accent)]/30 group-hover:border-[var(--accent)] transition-all">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={member.image} alt={member.name[language]} className="w-full h-full object-cover" />
                 </div>
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{member.name[language]}</h3>
