@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Live Gemini Flash call via native fetch (SSE streaming — alt=sse yields incremental data events)
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${apiKey}&alt=sse`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?key=${apiKey}&alt=sse`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
