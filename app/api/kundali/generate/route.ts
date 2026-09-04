@@ -172,13 +172,8 @@ console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
 console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, isPaid: false, hasKey: !!process.env.GEMINI_API_KEY });
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
     {
-      console.log("🤖 Calling Gemini API");
-      console.log("🔑 API Key exists:", !!process.env.GEMINI_API_KEY);
-      console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
-      console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, isPaid: false, hasKey: !!process.env.GEMINI_API_KEY });
-    }
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -306,14 +301,8 @@ async function generateRichPredictions(
     calculations,
   } as FullKundliReportData);
 
-  const res = await fetch(
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
-    console.log("🤖 Calling Gemini API");
-    console.log("🔑 API Key exists:", !!process.env.GEMINI_API_KEY);
-    console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
-    console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, isPaid: false, hasKey: !!process.env.GEMINI_API_KEY });
-
     const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
