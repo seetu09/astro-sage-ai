@@ -11,19 +11,17 @@ const withPWA = require('next-pwa')({
   scope: '/',
   sw: 'sw.js',
   buildExcludes: [/middleware-manifest\.json$/, /_middleware\.js$/, /app-build-manifest\.json$/],
-  // Keep the headless-Chromium deps out of the generated SW pre-cache
-  // manifest so the SW payload stays small.
-  exclude: [/\.map$/, /puppeteer/, /@sparticuz/, /chromium/],
 })
 
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    // Keep headless-Chromium deps OUT of the serverless bundle:
-    // puppeteer-core ships no browser, and @sparticuz/chromium-min downloads
-    // its binary into /tmp at runtime — bundling either would blow the
-    // Vercel 50 MB function-size limit.
-    serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
+  experimental: {},
+  // The PDF renderer (`html-pdf-lite`/PDFKit) loads the bundled Noto/Mukta TTFs
+  // from disk at runtime. outputFileTracing keeps those files inside the
+  // Vercel lambda — without this the fonts would be missing in production and
+  // Devanagari text would render as blank/missing glyphs.
+  outputFileTracingIncludes: {
+    '/api/kundali/pdf': ['./public/fonts/**/*'],
   },
 }
 

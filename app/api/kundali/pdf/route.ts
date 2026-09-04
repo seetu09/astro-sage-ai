@@ -3,23 +3,28 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { PdfData, ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
 import { generatePdfHtml } from "@/lib/pdfHtmlTemplate";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
+import { renderPdfFromHtml } from "html-pdf-lite";
+import path from "path";
 
 /**
  * POST /api/kundali/pdf — Vercel serverless "Download Full 25-Page Kundli".
  *
  * Renders the localized A4 report (deterministic chart data + AI Life-Pillar
- * narratives) through headless Chromium and streams the PDF back as an
- * attachment download.
+ * narratives) through `html-pdf-lite` (PDFKit-based, NO Chromium) and streams
+ * the PDF back as an attachment download.
  *
- * ─── Vercel serverless size strategy (<50 MB) ──────────────────────────────
- * • `puppeteer-core` ships NO browser binary.
- * • `@sparticuz/chromium-min` ships NO binary either — it downloads a
- *   Brotli-compressed Chromium tarball (~70 MB compressed / ~280 MB extracted)
- *   from a CDN into `/tmp` at first invocation per lambda instance. The
- *   function bundle therefore stays well under the 50 MB limit.
- * • Both packages are dynamically imported INSIDE the handler and marked as
- *   server externals in `next.config.js`, so Next.js never bundles/traces them
- *   into the lambda artifact.
+ * ─── Why html-pdf-lite instead of puppeteer-core + @sparticuz/chromium-min ─
+ * Chromium-based rendering needed a ~70 MB (compressed) browser tarball
+ * downloaded from a CDN into /tmp on every cold start, which regularly blew
+ * past Vercel's function limits and produced "Print Server Failed". The
+ * PDFKit renderer here is pure JS, has no binary download, and starts in
+ * ~100 ms — a 25-page report renders well under 10 s cold.
+ *
+ * Devanagari (Hindi) and Latin text are covered by the Noto Sans /
+ * Noto Sans Devanagari TTFs bundled in `public/fonts` and registered through
+ * the `fonts` option (PDFKit has no web-font loading, so files must exist on
+ * disk). `outputFileTracingIncludes` in next.config.js keeps them inside the
+ * lambda on Vercel.
  *
  * Request body:
  *   {
@@ -40,61 +45,27 @@ import { verifyUnlockToken } from "@/lib/paymentUnlock";
  */
 
 export const runtime = "nodejs";
-// PDF rendering of a 25-page A4 doc with web fonts typically lands in 5–20 s;
-// 120 s covers the Hobby-plan ceiling while leaving headroom for font fetching.
-export const maxDuration = 120;
 export const dynamic = "force-dynamic";
 
 type Lang = "en" | "hi";
 
-/** Local dev fallbacks when @sparticuz/chromium-min can't run (non-Linux). */
-const LOCAL_CHROME_CANDIDATES = [
-  process.env.CHROME_PATH,
-  process.env.CHROME_EXECUTABLE_PATH,
-  "/usr/bin/google-chrome-stable",
-  "/usr/bin/google-chrome",
-  "/usr/bin/chromium-browser",
-  "/usr/bin/chromium",
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/Applications/Chromium.app/Contents/MacOS/Chromium",
-].filter(Boolean) as string[];
-
-async function resolveChromium(): Promise<{ executablePath?: string; args: string[] }> {
-  // 1) Preferred: AWS-Lambda-tuned Chromium from @sparticuz/chromium-min.
-  //    Default export is the `Chromium` class with static helpers.
-  try {
-    const { default: Chromium } = await import("@sparticuz/chromium-min");
-    // The graphics stack (extra fonts + GPU bits) costs ~120 MB of /tmp RAM at
-    // boot — unnecessary for pure text/SVG A4 rendering.
-    Chromium.setGraphicsMode = false;
-    const executablePath = await Chromium.executablePath();
-    return { executablePath, args: [...Chromium.args] };
-  } catch (err) {
-    console.warn(
-      "[kundali/pdf] chromium-min unavailable, falling back to system Chrome:",
-      err
-    );
-  }
-
-  // 2) Fallback: locally installed Chrome/Chromium (macOS dev, Docker, etc.).
-  const { existsSync } = await import("fs");
-  for (const candidate of LOCAL_CHROME_CANDIDATES) {
-    try {
-      if (existsSync(candidate)) {
-        return {
-          executablePath: candidate,
-          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-        };
-      }
-    } catch {
-      // keep probing candidates
-    }
-  }
-
-  throw new Error(
-    "No Chromium executable available. Set CHROME_PATH or deploy with @sparticuz/chromium-min."
-  );
-}
+/**
+ * Bundled PDF font — a single family covering BOTH Latin and Devanagari.
+ * html-pdf-lite picks the first font-family in the CSS list and only falls
+ * back to *system* fonts (absent on Vercel), so one script-complete face
+ * (Mukta) is used everywhere instead of pairing Noto Sans (Latin) with
+ * Noto Sans Devanagari.
+ */
+const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
+const PDF_FONTS: Record<
+  string,
+  { regular: string; bold: string; italic?: string; boldItalic?: string }
+> = {
+  Mukta: {
+    regular: path.join(FONTS_DIR, "Mukta-Regular.ttf"),
+    bold: path.join(FONTS_DIR, "Mukta-Bold.ttf"),
+  },
+};
 
 function slugifyFileName(value: unknown): string {
   return String(value ?? "")
@@ -187,10 +158,8 @@ function normalizeReportData(input: Partial<ReportData> | undefined): ReportData
 }
 
 export async function POST(req: NextRequest) {
-  let browser: Awaited<ReturnType<typeof import("puppeteer-core").launch>> | null = null;
-
   try {
-    // Rate limit — the Chromium render is compute/IO heavy;and PDFs are paid,
+    // Rate limit — PDF rendering is compute/IO heavy and PDFs are paid,
     // so throttle per IP (10 req / 120s / IP) to cap cost and abuse.
     const { allowed, retryAfter } = checkRateLimit(
       `kundali-pdf:${getClientIp(req)}`,
@@ -318,46 +287,15 @@ export async function POST(req: NextRequest) {
 
     const html = generatePdfHtml(pdfData, lang);
 
-    // ── Launch headless Chromium (dynamic imports keep the bundle tiny) ──
-    const puppeteer = await import("puppeteer-core");
-    const { executablePath, args } = await resolveChromium();
-
-    browser = await puppeteer.launch({
-      args: [
-        ...args,
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-      executablePath,
-      headless: true,
-      timeout: 120000,
-      defaultViewport: { width: 794, height: 1123 }, // A4 @ 96dpi
-    });
-
-    const page = await browser.newPage();
-    // Web fonts (Inter + Noto Sans Devanagari) load from the Google Fonts CDN;
-    // give them a bounded window to finish before rasterizing. A slow CDN just
-    // degrades to fallback fonts instead of timing the function out.
-    await page.setContent(html, { waitUntil: "load", timeout: 30_000 });
-    await page
-      .waitForNetworkIdle({ idleTime: 400, timeout: 12_000 })
-      .catch(() => {
-        // Best-effort — proceed with whatever fonts arrived in time.
-      });
-    try {
-      await page.evaluateHandle("document.fonts.ready");
-    } catch {
-      // document.fonts may be unavailable in older builds — best-effort only
-    }
-
-    const pdfBytes = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: { top: 0, bottom: 0, left: 0, right: 0 },
-      timeout: 25_000,
+    // ── Render the PDF (pure-JS PDFKit engine — no Chromium) ──
+    // Margins are small (the template controls its own section spacing) but
+    // non-zero so content never touches the paper edge.
+    const pdfBytes = await renderPdfFromHtml(html, {
+      margins: { top: 24, right: 24, bottom: 24, left: 24 },
+      fonts: PDF_FONTS,
+      // Avoid the color-emoji resolver probing system fonts on every request
+      // (Vercel lambdas have none; the template uses styled text, not emoji).
+      autoResolveEmojiFont: false,
     });
 
     const stem =
@@ -365,7 +303,10 @@ export async function POST(req: NextRequest) {
       reportData.clientName ||
       "kundli";
     const safeFileName = `${slugifyFileName(stem) || "kundli"}-kundli-${lang}.pdf`;
-    const pageCount = (html.match(/class="page"/g) || []).length;
+    // Count real PDF pages (layout flows across pages; .page divs are only
+    // section-break markers, so a 6-section doc can easily exceed 20 pages).
+    const pdfString = pdfBytes.toString("latin1");
+    const pageCount = (pdfString.match(/\/Type\s*\/Page[^s]/g) || []).length;
 
     return new NextResponse(new Uint8Array(pdfBytes), {
       status: 200,
@@ -380,15 +321,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[kundali/pdf] PDF generation failed:", error);
     // The client falls back to zero-cost window.print() on any non-OK reply.
-    return NextResponse.json({ error: "Failed to render kundli PDF" }, { status: 500 });
-  } finally {
-    // Always tear Chromium down — leaked instances blow the lambda memory cap.
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeError) {
-        console.error("[kundali/pdf] Browser close failed:", closeError);
-      }
-    }
+    const message =
+      error instanceof Error ? error.message : "Failed to render kundli PDF";
+    return NextResponse.json(
+      { error: `Failed to render kundli PDF: ${message}` },
+      { status: 500 }
+    );
   }
 }

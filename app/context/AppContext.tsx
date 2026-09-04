@@ -38,12 +38,20 @@ const defaultValue: AppContextType = {
 const AppContext = createContext<AppContextType>(defaultValue);
 
 const UNLOCK_TOKEN_STORAGE_KEY = 'astroveda-unlock-token';
+/** Unlock tokens expire after 30 days — mirrors `UNLOCK_TTL_MS` in lib/paymentUnlock.ts. */
+const UNLOCK_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 // SECURITY: the paywall flag (`isPaid`) derives from a SERVER-MINTED unlock token —
 // never from a client-writable flag. A crafted sessionStorage/localStorage value must
 // not unlock the paid report. Only `/api/payment/verify` (which mints a token after
 // Razorpay captures a real payment) can produce a valid token, so the report stays
 // locked unless a genuine payment happened on the server.
+
+/** Shape persisted to localStorage by `markAsPaid`. */
+interface StoredUnlock {
+  token: string;
+  expiry: string; // ISO timestamp
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isPaid, setIsPaid] = useState(false);
@@ -68,25 +76,76 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // A client-writable sessionStorage/localStorage flag cannot unlock the paid
       // report — only a server-minted unlock token from `/api/payment/verify` can.
       const stored = localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
-      if (stored) {
-        try {
-          const data = JSON.parse(stored);
-          if (data.expiry && new Date(data.expiry) < new Date()) {
+      if (!stored) {
+        setIsPaid(false);
+        return;
+      }
+
+      let token: string | null = null;
+      let expired = false;
+      try {
+        const data = JSON.parse(stored) as Partial<StoredUnlock> | string;
+        if (typeof data === 'string') {
+          // Legacy format: bare token string, no expiry metadata → treat as expired
+          // so the user re-pays/re-verifies; never trust an undated token.
+          token = data;
+          expired = true;
+        } else {
+          token = typeof data.token === 'string' && data.token ? data.token : null;
+          if (data.expiry && typeof data.expiry === 'string') {
+            const expiryTime = new Date(data.expiry).getTime();
+            if (Number.isNaN(expiryTime) || expiryTime <= Date.now()) {
+              expired = true;
+            }
+          } else {
+            // No expiry recorded → treat as expired (30-day TTL enforced).
+            expired = true;
+            token = null;
+          }
+        }
+      } catch {
+        // Unparseable JSON — never trust it.
+        token = null;
+        expired = true;
+      }
+
+      if (expired || !token) {
+        localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
+        setIsPaid(false);
+        setUnlockToken(null);
+        return;
+      }
+
+      // Token passed the client-side expiry check — verify it with the server
+      // before trusting it. Covers rotated secrets, tampered payloads, and
+      // clock-skew edge cases the localStorage date alone cannot catch.
+      fetch('/api/payment/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+        .then((res) => (res.ok ? res.json() : { valid: false }))
+        .then((data: { valid?: boolean }) => {
+          if (data?.valid === true) {
+            setIsPaid(true);
+            setUnlockToken(token);
+          } else {
             localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
             setIsPaid(false);
-          } else {
-            setIsPaid(true);
-            setUnlockToken(data.token || data);
+            setUnlockToken(null);
           }
-        } catch {
-          setIsPaid(true);
-          setUnlockToken(stored);
-        }
-      } else {
-        setIsPaid(false);
-      }
+        })
+        .catch(() => {
+          // Network/server hiccup: stay locked rather than unlocking on a
+          // stale token — a refresh will re-validate.
+          localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
+          setIsPaid(false);
+          setUnlockToken(null);
+        });
     } catch {
       // localStorage unavailable — stay locked
+      setIsPaid(false);
+      setUnlockToken(null);
     }
   }, []);
 
@@ -101,10 +160,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, JSON.stringify({
-        token: token,
-        expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      }));
+      localStorage.setItem(
+        UNLOCK_TOKEN_STORAGE_KEY,
+        JSON.stringify({
+          token,
+          expiry: new Date(Date.now() + UNLOCK_TTL_MS).toISOString(),
+        } satisfies StoredUnlock)
+      );
     } catch {
       // ignore storage failures — in-memory unlock still works this session
     }
@@ -113,6 +175,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetPayment = useCallback(() => {
+    // Fire-and-forget server notification — clears any future server-side
+    // session record tied to this unlock. The authoritative invalidation is
+    // the client discarding its copy of the token below.
+    fetch('/api/payment/reset', { method: 'POST' }).catch(() => {
+      // Best-effort only — a failed reset call must not keep the local unlock.
+    });
     try {
       localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
     } catch {

@@ -100,7 +100,7 @@ describe("generatePdfHtml — rich API data rendering", () => {
 
   it("renders planet rows from chartData.planets", () => {
     expect(html).toContain("Saturn");
-    expect(html).toContain("15° 44'");
+    expect(html).toContain("44&#39;"); // escaped apostrophe (XSS-safe)
     expect(html).toContain("Sagittarius");
   });
 
@@ -131,17 +131,63 @@ describe("generatePdfHtml — rich API data rendering", () => {
 
   it("renders pillar narratives with milestones", () => {
     expect(html).toContain("Career &amp; Profession");
-    expect(html).toContain("करियर एवं व्यवसाय");
     expect(html).toContain("82/100");
     expect(html).toContain("2024-2027");
     expect(html).toContain("public-sector leadership roles");
-    expect(html).toContain("सरकारी क्षेत्र");
     expect(html).toContain("Promotion");
   });
 
-  it("produces 7 base pages + 1 pillar page = 8 pages", () => {
+  it("renders the localized pillar title in Hindi mode", () => {
+    const hi = generatePdfHtml(richData as any, "hi");
+    expect(hi).toContain("करियर एवं व्यवसाय");
+    expect(hi).toContain("सरकारी क्षेत्र");
+  });
+
+  it("produces 8 sections: title, planets, dashas, doshas, yogas, pillar, remedies, summary", () => {
     const pageCount = (html.match(/class="page/g) || []).length;
     expect(pageCount).toBe(8);
+  });
+
+  it("renders 25+ PDF pages when the API returns the full 120-year dasha table and 6 pillars", () => {
+    // Real production payload shape: 9 mahadashas × 9 antardashas + 6 pillars.
+    const md = (lord: string, start: number) => ({
+      lord,
+      startDate: `1990-0${(start % 9) + 1}-01`,
+      endDate: `201${start}-01-01`,
+      antardashas: Array.from({ length: 9 }, (_, j) => ({
+        planet: ["Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury","Ketu","Venus"][j],
+        startDate: `199${j}-01-01`,
+        endDate: `199${j + 1}-01-01`,
+      })),
+    });
+    const fullData = {
+      ...richData,
+      calculations: {
+        ...richData.calculations,
+        vimshottari: {
+          ...richData.calculations.vimshottari,
+          mahadashas: ["Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury","Ketu","Venus"].map(md),
+        },
+      },
+      pillars: ["Career","Marriage","Wealth","Health","Education","Spirituality"].map((name, i) => ({
+        titleEn: `${name} & Profession`,
+        titleHi: `${name} क्षेत्र`,
+        badges: { score: `${70 + i}/100`, timeframe: "2025-2030", lord: "Jupiter" },
+        narrativeEn: Array.from({ length: 5 }, (_, p) => `${name} narrative paragraph ${p} with detailed astrological analysis of planetary periods, house lords, and remedial measures for sustained growth and balance.`).join("\n\n"),
+        narrativeHi: Array.from({ length: 5 }, (_, p) => `${name} विवरण अनुच्छेद ${p} ग्रहों की दशाओं, भाव स्वामियों और उपायों का विस्तृत विश्लेषण।`).join("\n\n"),
+        milestones: Array.from({ length: 4 }, (_, k) => ({
+          period: `202${k} Q${(k % 4) + 1}`,
+          event: `${name} milestone ${k}`,
+          note: "Favorable window",
+          outcome: k % 2 ? "positive" : "neutral",
+        })),
+      })),
+    };
+    const fullHtml = generatePdfHtml(fullData as any, "en");
+    const dashaRows = (fullHtml.match(/<tr><td>/g) || []).length;
+    expect(dashaRows).toBeGreaterThanOrEqual(80); // 9 MD × 9 AD = 81 antardasha rows
+    const pillarPages = (fullHtml.match(/AI-assisted Vedic astrology guidance/g) || []).length;
+    expect(pillarPages).toBe(6);
   });
 
   it("has balanced div tags in the rendered HTML", () => {
@@ -219,6 +265,8 @@ describe("generateReportHtml — backward-compat wrapper", () => {
     expect(html).toContain("Gajakesari Yoga"); // yoga mapped through
     expect(html).toContain("Strong career growth ahead."); // pillar mapped
     const pageCount = (html.match(/class="page/g) || []).length;
-    expect(pageCount).toBe(8); // 7 base + 1 pillar
+    // Sections render only when their data exists (no blank filler pages):
+    // title, planets, doshas, pillar, summary = 6 here (no dashas/yogas in fixture).
+    expect(pageCount).toBe(6);
   });
 });

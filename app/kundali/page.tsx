@@ -1085,18 +1085,24 @@ export default function KundaliPage() {
           )}
           </>
         )}
-        {/* Reset payment button — for debugging stuck isPaid state */}
-        <div className="text-center mt-6">
-          <button
-            onClick={() => {
-              localStorage.clear();
-              window.location.reload();
-            }}
-            className="text-xs text-gray-400 hover:text-red-500 underline mt-2"
-          >
-            Reset Payment
-          </button>
-        </div>
+        {/* Reset payment button — dev-only helper for a stuck isPaid state.
+            Uses the context's resetPayment() (clears the unlock token in
+            localStorage + notifies /api/payment/reset) instead of wiping
+            every localStorage key, and only mounts in development. */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-center mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                resetPayment();
+                window.location.reload();
+              }}
+              className="text-xs text-gray-400 hover:text-red-500 underline mt-2"
+            >
+              Reset Payment (Dev)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
