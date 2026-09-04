@@ -41,8 +41,8 @@ import { verifyUnlockToken } from "@/lib/paymentUnlock";
 
 export const runtime = "nodejs";
 // PDF rendering of a 25-page A4 doc with web fonts typically lands in 5–20 s;
-// 60 s covers the Hobby-plan ceiling while leaving headroom for font fetching.
-export const maxDuration = 60;
+// 120 s covers the Hobby-plan ceiling while leaving headroom for font fetching.
+export const maxDuration = 120;
 export const dynamic = "force-dynamic";
 
 type Lang = "en" | "hi";
@@ -262,10 +262,10 @@ export async function POST(req: NextRequest) {
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--font-render-hinting=none", // crisper Devanagari conjuncts in print
       ],
       executablePath,
       headless: true,
+      timeout: 120000,
       defaultViewport: { width: 794, height: 1123 }, // A4 @ 96dpi
     });
 

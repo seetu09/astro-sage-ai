@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { consumeChatCredit, getUserFromAuthHeader, refundChatCredit } from '@/lib/serverWallet';
+import { geminiWithRetry } from '@/lib/geminiRetry';
 
 // --- System prompt: grounded Vedic Astrologer persona with safety guardrails ---
 const SYSTEM_PROMPT = `You are a grounded, insightful Vedic Astrologer (Jyotish Guru). You offer thoughtful astrological guidance rooted in Vedic tradition — drawing on grahas (planets), rashis (signs), bhavas (houses), nakshatras, dashas (planetary periods), and gochara (transits) where relevant. Stay warm, balanced, and honest about astrology's reflective nature: empower the seeker with insight rather than fostering fear or dependency.
@@ -78,30 +79,42 @@ export async function POST(request: NextRequest) {
     }
 
     // Live Gemini Flash call via native fetch (SSE streaming — alt=sse yields incremental data events)
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?key=${apiKey}&alt=sse`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: `${SYSTEM_PROMPT}\n\nRespond in ${language === 'hi' ? 'Hindi' : 'English'}.` }],
-          },
-          contents: [{ role: 'user', parts: [{ text: message }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-            // Disable hidden "thinking" tokens so the full budget goes to visible text
-            // and streaming starts immediately (supported by gemini-2.5-flash)
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-      }
+    // Retry 3 times with exponential backoff (1s, 2s, 4s) on 503 errors; if all retries fail, refund the credit and return an error.
+    const { response: geminiResponse, attempts: geminiAttempts } = await geminiWithRetry(() =>
+      fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:streamGenerateContent?key=${apiKey}&alt=sse`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: `${SYSTEM_PROMPT}\n\nRespond in ${language === 'hi' ? 'Hindi' : 'English'}.` }],
+            },
+            contents: [{ role: 'user', parts: [{ text: message }] }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1024,
+              // Disable hidden "thinking" tokens so the full budget goes to visible text
+              // and streaming starts immediately (supported by gemini-2.5-flash)
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        }
+      )
     );
 
     if (!geminiResponse.ok || !geminiResponse.body) {
       // The user was already charged a credit — refund it since we can't answer.
       await refundChatCredit(user.id, charge.result);
+
+      // If all retries failed on 503, surface a specific message
+      if (geminiResponse.status === 503) {
+        console.error(`[chat] Gemini 503 after ${geminiAttempts} attempt(s)`);
+        return NextResponse.json(
+          { error: 'The astrologer is temporarily overloaded. Please try again in a moment.' },
+          { status: 503, headers: { 'Retry-After': '5' } }
+        );
+      }
 
       let upstreamDetail = '';
       try {

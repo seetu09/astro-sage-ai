@@ -372,7 +372,7 @@ function buildKundliData(
 export default function KundaliPage() {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { selectedLanguage, isPaid } = useApp();
+  const { selectedLanguage, isPaid, resetPayment } = useApp();
 
   const PLANET_KEYS: Record<string, string> = {
     Sun: 'sun',
@@ -1080,6 +1080,18 @@ export default function KundaliPage() {
           )}
           </>
         )}
+        {/* Reset payment button — for debugging stuck isPaid state */}
+        <div className="text-center mt-6">
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+            className="text-xs text-gray-400 hover:text-red-500 underline mt-2"
+          >
+            Reset Payment
+          </button>
+        </div>
       </div>
     </div>
   );

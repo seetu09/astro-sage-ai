@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { geminiWithRetry } from "@/lib/geminiRetry";
 
 // Serve deterministic mock data in development (and as the automatic fallback
 // whenever the production LLM call fails or returns unparsable output). In
@@ -207,37 +208,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(buildMockHoroscope(sign, period, lang));
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text: `You are an expert Vedic astrologer. Generate a daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}. Respond with STRICT JSON only in this exact format:\n{\n  "sign": "${sign}",\n  "period": "${period}",\n  "date": "${getDateForPeriod(period)}",\n  "prediction": "2-3 sentence prediction",\n  "lucky": { "color": "color name", "number": 7, "time": "time range" },\n  "scores": { "career": 1-5, "love": 1-5, "money": 1-5, "health": 1-5 },\n  "insights": { "career": "one sentence", "love": "one sentence", "money": "one sentence", "health": "one sentence" }\n}`,
-              },
-            ],
-          },
-          contents: [
-            {
-              role: "user",
+    const { response, attempts } = await geminiWithRetry(() =>
+      fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: {
               parts: [
                 {
-                  text: `Provide the daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}.`,
+                  text: `You are an expert Vedic astrologer. Generate a daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}. Respond with STRICT JSON only in this exact format:\n{\n  "sign": "${sign}",\n  "period": "${period}",\n  "date": "${getDateForPeriod(period)}",\n  "prediction": "2-3 sentence prediction",\n  "lucky": { "color": "color name", "number": 7, "time": "time range" },\n  "scores": { "career": 1-5, "love": 1-5, "money": 1-5, "health": 1-5 },\n  "insights": { "career": "one sentence", "love": "one sentence", "money": "one sentence", "health": "one sentence" }\n}`,
                 },
               ],
             },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500,
-            responseMimeType: "application/json",
-          },
-        }),
-      }
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: `Provide the daily horoscope for ${localizedSignName} for ${localizedPeriodLabel}.`,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 500,
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      )
     );
+
+    if (!response.ok) {
+      console.error(`[horoscope] Gemini error after ${attempts} attempt(s): ${response.status}`);
+      return NextResponse.json(buildMockHoroscope(sign, period, lang));
+    }
 
     const data = await response.json();
     const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;

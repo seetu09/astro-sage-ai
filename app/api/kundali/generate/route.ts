@@ -11,6 +11,7 @@ import {
   parseAndValidatePillars,
   type LifePillarConfig,
 } from "@/lib/pillarNarratives";
+import { geminiWithRetry } from "@/lib/geminiRetry";
 import {
   FreeTierData,
   PaidTierData,
@@ -171,8 +172,9 @@ console.log("🔑 API Key exists:", !!process.env.GEMINI_API_KEY);
 console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
 console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, isPaid: false, hasKey: !!process.env.GEMINI_API_KEY });
 
-  const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
+  const { response: res } = await geminiWithRetry(() =>
+    fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -253,7 +255,7 @@ HARD RULES:
           responseMimeType: "application/json",
         },
       }),
-    }
+    )
   );
 
   if (!res.ok) {
@@ -301,8 +303,9 @@ async function generateRichPredictions(
     calculations,
   } as FullKundliReportData);
 
-    const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
+    const { response: res } = await geminiWithRetry(() =>
+    fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -350,7 +353,7 @@ HARD RULES:
           responseMimeType: "application/json",
         },
       }),
-    }
+    )
   );
 
   if (!res.ok) {

@@ -58,8 +58,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // a token, can. Visiting a crafted query string does nothing here.
   useEffect(() => {
     try {
-      // Dev-mode guard: clear stale localStorage so it doesn't poison tests.
-      if (process.env.NODE_ENV === 'development') {
+      // Optional clear-payment flag: clear stale localStorage so it doesn't poison tests.
+      if (process.env.NEXT_PUBLIC_CLEAR_PAYMENT === 'true') {
         localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
         setIsPaid(false);
         setUnlockToken(null);
@@ -67,10 +67,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       // A client-writable sessionStorage/localStorage flag cannot unlock the paid
       // report — only a server-minted unlock token from `/api/payment/verify` can.
-      const savedToken = localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
-      if (savedToken) {
-        setIsPaid(true);
-        setUnlockToken(savedToken);
+      const stored = localStorage.getItem(UNLOCK_TOKEN_STORAGE_KEY);
+      if (stored) {
+        try {
+          const data = JSON.parse(stored);
+          if (data.expiry && new Date(data.expiry) < new Date()) {
+            localStorage.removeItem(UNLOCK_TOKEN_STORAGE_KEY);
+            setIsPaid(false);
+          } else {
+            setIsPaid(true);
+            setUnlockToken(data.token || data);
+          }
+        } catch {
+          setIsPaid(true);
+          setUnlockToken(stored);
+        }
       } else {
         setIsPaid(false);
       }
@@ -83,18 +94,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Require a server-minted unlock token (only `/api/payment/verify` produces
     // one after Razorpay confirms the order is paid). Without it, the paywall stays
     // locked — a caller-only flag can no longer flip isPaid.;
-    if (!details?.unlockToken) {
+    const token = details?.unlockToken;
+    if (!token || token.length < 10) {
       // No server proof of payment — refuse to unlock. This also guards against
       // code paths that previously called markAsPaid() with no token.;
       return;
     }
     try {
-      localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, details.unlockToken);
+      localStorage.setItem(UNLOCK_TOKEN_STORAGE_KEY, JSON.stringify({
+        token: token,
+        expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      }));
     } catch {
       // ignore storage failures — in-memory unlock still works this session
     }
     setIsPaid(true);
-    setUnlockToken(details.unlockToken);
+    setUnlockToken(token);
   }, []);
 
   const resetPayment = useCallback(() => {
