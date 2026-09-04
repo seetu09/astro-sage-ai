@@ -255,7 +255,7 @@ HARD RULES:
           responseMimeType: "application/json",
         },
       }),
-    )
+    })
   );
 
   if (!res.ok) {
@@ -353,7 +353,7 @@ HARD RULES:
           responseMimeType: "application/json",
         },
       }),
-    )
+    })
   );
 
   if (!res.ok) {
