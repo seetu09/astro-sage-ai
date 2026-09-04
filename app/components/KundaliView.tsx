@@ -22,7 +22,7 @@ import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
 import KundliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
-import { ReportData } from '@/lib/pdfHtmlTemplate';
+import { ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
 import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
 import {
   FreeTierData,
@@ -55,6 +55,8 @@ interface KundaliViewProps {
   calculations?: KundliCalculations;
   /** Six AI-generated Life Pillar narratives (single-shot report generation). */
   pillars?: LifePillarConfig[];
+  /** Raw chartData slice from `/api/kundali/generate` for the rich PDF template. */
+  chartData?: any;
   /** Called when the user clicks "Download PDF" after unlocking. */
   onDownload?: () => void | Promise<void>;
 }
@@ -96,8 +98,9 @@ export default function KundaliView({
   planets = [],
   houseCusps = [],
   chartType = 'north-indian',
-  calculations,
+  calculations: calcData,
   pillars,
+  chartData: rawChartData,
   onDownload,
 }: KundaliViewProps) {
   const { language } = useLanguage();
@@ -200,10 +203,10 @@ export default function KundaliView({
           };
         })()
       : undefined,
-    d9Chart: calculations?.divisionalCharts?.D9
+    d9Chart: calcData?.divisionalCharts?.D9
       ? {
-          ascendantSign: calculations.divisionalCharts.D9.ascendantSign,
-          planets: calculations.divisionalCharts.D9.planetCoordinates.map((p) => ({
+          ascendantSign: calcData.divisionalCharts.D9.ascendantSign,
+          planets: calcData.divisionalCharts.D9.planetCoordinates.map((p) => ({
             planet: p.planet === 'ASC' ? 'Lagna' : p.planet,
             sign: p.sign,
             house: p.house,
@@ -211,10 +214,10 @@ export default function KundaliView({
           })),
         }
       : undefined,
-    sarvashtakavarga: calculations?.ashtakavarga
+    sarvashtakavarga: calcData?.ashtakavarga
       ? {
-          bindus: calculations.ashtakavarga.sarvashtakavarga,
-          beneficialHouses: calculations.ashtakavarga.beneficialHouses,
+          bindus: calcData.ashtakavarga.sarvashtakavarga,
+          beneficialHouses: calcData.ashtakavarga.beneficialHouses,
         }
       : undefined,
     narratives: pillars,
@@ -351,7 +354,7 @@ export default function KundaliView({
           /* Strict-A4 modular report renderer — paid users only. */
           <ReportRenderer
             reportData={reportData}
-            calculations={calculations}
+            calculations={calcData}
             pillars={pillars}
             fullBreakdown={paidTier.fullBreakdown}
             language={language}
@@ -450,7 +453,17 @@ export default function KundaliView({
                 hasSarvashtakavarga: !!reportData.sarvashtakavarga,
                 hasNarratives: !!reportData.narratives,
               });
-              return <KundliPdfButton reportData={reportData} userName={userName} />;
+              return (
+              <KundliPdfButton
+                reportData={reportData}
+                userName={userName}
+                chartData={rawChartData}
+                calculations={calcData}
+                freeTier={freeTier}
+                paidTier={paidTier}
+                pillars={(pillars ?? []) as ReportNarrative[]}
+              />
+            );
             })()}
           </div>
         )}

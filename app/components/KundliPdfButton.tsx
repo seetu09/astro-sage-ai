@@ -17,6 +17,11 @@ interface KundliPdfButtonProps {
   reportData?: ReportData | null;
   /** AI Life-Pillar narratives when already fetched — appended as PDF appendix pages. */
   pillars?: ReportNarrative[];
+  /** Rich slices from `/api/kundali/generate` — passed to the PDF template. */
+  chartData?: any;
+  calculations?: any;
+  freeTier?: any;
+  paidTier?: any;
   /**
    * Dashboard mode: rebuild the full report server-side from stored birth
    * details (`POST /api/kundali/generate`) before rendering the PDF. Requires
@@ -32,6 +37,12 @@ interface KundliPdfButtonProps {
 interface ResolvedPayload {
   reportData: ReportData;
   pillars?: ReportNarrative[];
+  /** Rich slices from the full `/api/kundali/generate` response — passed to the
+   *  PDF template for the complete data-driven layout. */
+  chartData?: any;
+  calculations?: any;
+  freeTier?: any;
+  paidTier?: any;
 }
 
 const DEFAULT_LABEL_KEY = 'kundali.sections.downloadFullKundli';
@@ -108,7 +119,14 @@ async function resolvePayload(
     }
   }
 
-  return { reportData: mapGenerateResultToReportData(result, entry, aiPillars, language), pillars: aiPillars };
+  return {
+    reportData: mapGenerateResultToReportData(result, entry, aiPillars, language),
+    pillars: aiPillars,
+    chartData: result?.chartData,
+    calculations: result?.calculations,
+    freeTier: result?.freeTier,
+    paidTier: result?.paidTier,
+  };
 }
 
 /** Map `/api/kundali/generate`'s response onto the A4 template contract. */
@@ -278,7 +296,7 @@ function printReportHtml(html: string): void {
   // over pagination (hard A4 page breaks per .page-container).
   iframe.onload = () => {
     setTimeout(() => {
-      const pageCount = (html.match(/class="page-container"/g) || []).length;
+      const pageCount = (html.match(/class="page"/g) || []).length;
       console.log(`[Print Fallback] Rendering ${pageCount} pages via window.print()`);
       try {
         iframe.contentWindow?.focus();
@@ -294,6 +312,10 @@ function printReportHtml(html: string): void {
 async function downloadServerPdf(payload: {
   reportData: ReportData;
   pillars?: ReportNarrative[];
+  chartData?: any;
+  calculations?: any;
+  freeTier?: any;
+  paidTier?: any;
   language: PdfLanguage;
   /** Server-verified signed payment token (required by /api/kundali/pdf). */
   paymentToken: string;
@@ -306,6 +328,10 @@ async function downloadServerPdf(payload: {
     body: JSON.stringify({
       reportData: payload.reportData,
       pillars: payload.pillars,
+      chartData: payload.chartData,
+      calculations: payload.calculations,
+      freeTier: payload.freeTier,
+      paidTier: payload.paidTier,
       language: payload.language,
       paymentToken: payload.paymentToken,
       fileName: payload.fileName || payload.reportData.clientName,
@@ -343,6 +369,10 @@ export default function KundliPdfButton({
   userName,
   reportData,
   pillars,
+  chartData,
+  calculations,
+  freeTier,
+  paidTier,
   historyEntry,
   label,
   compact = false,
@@ -371,7 +401,7 @@ export default function KundliPdfButton({
         }
 
         let payload: ResolvedPayload | null =
-          reportData ? { reportData, pillars } : null;
+          reportData ? { reportData, pillars, chartData, calculations, freeTier, paidTier } : null;
 
         if (!payload) {
           setPhase('rebuilding');
@@ -380,7 +410,7 @@ export default function KundliPdfButton({
 
 if (mode === 'print') {
           trackEvent('kundali_pdf_print_fallback', { lang: language, source: 'manual' });
-          const pageCount = generateReportHtml(payload.reportData, language).match(/class="page-container"/g)?.length || 0;
+          const pageCount = generateReportHtml(payload.reportData, language).match(/class="page"/g)?.length || 0;
           console.log(`[KundliPdfButton] Print fallback: ${pageCount} pages, ${payload.reportData.domainInsights?.length || 0} domains, ${payload.pillars?.length || 0} narratives.`);
           printReportHtml(generateReportHtml(payload.reportData, language));
           setModalOpen(false);
@@ -434,7 +464,7 @@ if (mode === 'print') {
         inFlight.current = false;
       }
     },
-    [reportData, pillars, historyEntry, unlockToken, toast, t]
+    [reportData, pillars, chartData, calculations, freeTier, paidTier, historyEntry, unlockToken, toast, t]
   );
 
   const displayLabel = label || t(DEFAULT_LABEL_KEY);

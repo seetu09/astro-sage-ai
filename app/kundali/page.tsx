@@ -108,6 +108,8 @@ interface KundliData {
   };
   /** Dedicated rich-prediction AI output (deep ~250/200-word domain narratives). */
   richPredictions?: RichPredictionReport;
+  /** Deterministic KundliCalculations layer from `/api/kundali/generate`. */
+  calculations?: KundliCalculations;
 }
 
 const EMPTY_FREE_TIER: FreeTierData = {
@@ -338,8 +340,9 @@ function buildKundliData(
       ? (result.pillars as LifePillarConfig[])
       : undefined,
      richPredictions: (result.richPredictions as RichPredictionReport | null | undefined) ?? undefined,
-     panchangSnapshot,
-     chartData: {
+    panchangSnapshot,
+    calculations: (result.calculations as KundliCalculations | undefined) ?? undefined,
+    chartData: {
       lagna: chartData?.lagna,
       ascendant: chartData?.ascendant,
       rashi: chartData?.rashi,
@@ -1053,6 +1056,8 @@ export default function KundaliPage() {
             freeTier={kundliData?.freeTier ?? EMPTY_FREE_TIER}
             paidTier={kundliData?.paidTier ?? EMPTY_PAID_TIER}
             pillars={kundliData?.pillars}
+            calculations={kundliData?.calculations}
+            chartData={kundliData?.chartData}
             userEmail={kundliData?.email || email}
             userName={kundliData?.name || name}
             birthDetails={{

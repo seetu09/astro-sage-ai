@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import type { ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
-import { generateReportHtml } from "@/lib/pdfHtmlTemplate";
+import type { PdfData, ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
+import { generatePdfHtml, generateReportHtml } from "@/lib/pdfHtmlTemplate";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
 
 /**
@@ -243,13 +243,80 @@ export async function POST(req: NextRequest) {
     // Fill any missing sections with safe defaults before templating.
     const reportData = normalizeReportData(incoming);
     const narratives = sanitizeNarratives(body.pillars);
-    const html = generateReportHtml(
-      {
-        ...reportData,
-        ...(narratives ? { narratives } : {}),
-      },
-      lang
-    );
+
+    // Build the rich PdfData payload — prefer the full report slice from the
+    // generate endpoint when the client sends it, else fall back to the
+    // flattened ReportData mapping.
+    const isRichPayload = !!body.chartData || !!body.calculations;
+
+    const pdfData: PdfData = isRichPayload
+      ? {
+          name: String(body.clientName ?? incoming.clientName ?? "User"),
+          birthDate: String(body.birthDate ?? reportData.birthDetails?.date ?? ""),
+          birthTime: String(body.birthTime ?? reportData.birthDetails?.time ?? ""),
+          latitude: Number(body.latitude ?? (parseFloat(reportData.birthDetails?.latitude || "") || 0)),
+          longitude: Number(body.longitude ?? (parseFloat(reportData.birthDetails?.longitude || "") || 0)),
+          timezone: String(body.timezone ?? reportData.birthDetails?.timezone ?? ""),
+          chartData: body.chartData ?? (incoming as any),
+          calculations: body.calculations ?? (incoming as any)?.calculations ?? {},
+          pillars: Array.isArray(body.pillars) ? body.pillars : (narratives || []),
+          freeTier: typeof body.freeTier === "object" ? body.freeTier : {},
+          paidTier: typeof body.paidTier === "object" ? body.paidTier : {},
+        }
+      : {
+          name: reportData.clientName || "User",
+          birthDate: reportData.birthDetails?.date || "",
+          birthTime: reportData.birthDetails?.time || "",
+          latitude: parseFloat(reportData.birthDetails?.latitude || "") || 0,
+          longitude: parseFloat(reportData.birthDetails?.longitude || "") || 0,
+          timezone: reportData.birthDetails?.timezone || "",
+          chartData: {
+            lagna: reportData.panchang?.lagna || "",
+            rashi: reportData.panchang?.moonSign || "",
+            moonSign: reportData.panchang?.moonSign || "",
+            sunSign: reportData.panchang?.sunSign || "",
+            planets: (reportData.planetaryPositions || []).map((p) => ({
+              name: p.body,
+              sign: p.sign,
+              degree: p.degree,
+              house: p.house,
+              retrograde: Boolean(p.retro),
+            })),
+            houses: (reportData.houseCusps || []).map((h) => ({
+              house: h.house,
+              sign: h.sign,
+            })),
+          },
+          calculations: {
+            divisionalCharts: reportData.d9Chart ? {
+              D9: {
+                chartType: "D9",
+                ascendantSign: reportData.d9Chart.ascendantSign || 1,
+                ascendantDegree: 0,
+                planetCoordinates: (reportData.d9Chart.planets || []).map((p) => ({
+                  planet: p.planet,
+                  sign: p.sign,
+                  degree: 0,
+                  minute: 0,
+                  house: p.house,
+                  retrograde: p.retrograde,
+                })),
+              },
+            } : {},
+            ashtakavarga: reportData.sarvashtakavarga ? {
+              sarvashtakavarga: reportData.sarvashtakavarga.bindus || [],
+              bhinnashtakvarga: {},
+              beneficialHouses: reportData.sarvashtakavarga.beneficialHouses || [],
+            } : undefined,
+            doshas: undefined,
+            yogas: undefined,
+          },
+          pillars: narratives || [],
+          freeTier: {},
+          paidTier: {},
+        };
+
+    const html = generatePdfHtml(pdfData, lang);
 
     // ── Launch headless Chromium (dynamic imports keep the bundle tiny) ──
     const puppeteer = await import("puppeteer-core");
@@ -298,7 +365,7 @@ export async function POST(req: NextRequest) {
       reportData.clientName ||
       "kundli";
     const safeFileName = `${slugifyFileName(stem) || "kundli"}-kundli-${lang}.pdf`;
-    const pageCount = (html.match(/class="page-container"/g) || []).length;
+    const pageCount = (html.match(/class="page"/g) || []).length;
 
     return new NextResponse(new Uint8Array(pdfBytes), {
       status: 200,

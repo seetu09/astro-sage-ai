@@ -1,11 +1,30 @@
-import {
-  renderKundliChartSvg,
-  ChartPlanetInput,
-  ChartHouseInput,
-} from "@/lib/kundliChart";
-import { getSignIndex, SIGN_LORDS, localizePlanet, localizeSign, localizeRashi, canonicalPlanet } from "@/lib/astrologyDictionary";
-import { getTranslation, translations, type Language } from "@/lib/i18n/translations";
+// lib/pdfHtmlTemplate.ts
+//
+// Rich A4 Kundli PDF template that consumes the full `FullKundliReportData`
+// payload from `/api/kundali/generate` (chartData, calculations, pillars,
+// freeTier, paidTier). The primary entry point is `generatePdfHtml`.
+//
+// Backward-compatible exports (`ReportData`, `ReportNarrative`,
+// `generateReportHtml`) are retained so callers of the older flattened
+// contract still compile; `generateReportHtml` simply maps its flattened
+// input onto the new rich `PdfData` shape and delegates to `generatePdfHtml`.
 
+/** Rich data contract consumed by the new template. */
+export interface PdfData {
+  name: string;
+  birthDate: string;
+  birthTime: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  chartData: any;
+  calculations: any;
+  pillars: any[];
+  freeTier: any;
+  paidTier: any;
+}
+
+/** Legacy flattened contract — kept for backward compatibility. */
 export interface ReportData {
   clientName: string;
   chartType: string;
@@ -46,505 +65,495 @@ export interface ReportNarrative {
   narrativeHi: string;
   milestones?: { period: string; event: string; note?: string; outcome?: "positive" | "neutral" | "caution" }[];
 }
+type Lang = "en" | "hi";
 
-type PdfTemplateKey = keyof typeof translations.en.pdf.template;
+const SIGN_NAMES: string[] = [
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+];
 
-const escapeHTML = (str: string): string =>
-  str
+const SIGN_HI: Record<string, string> = {
+  "Aries": "मेष", "Taurus": "वृष", "Gemini": "मिथुन", "Cancer": "कर्क",
+  "Leo": "सिंह", "Virgo": "कन्या", "Libra": "तुला", "Scorpio": "वृश्चिक",
+  "Sagittarius": "धनु", "Capricorn": "मकर", "Aquarius": "कुंभ", "Pisces": "मीन",
+};
+
+function escapeHTML(str: string): string {
+  if (!str) return "";
+  return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-
-const L = (key: PdfTemplateKey, lang: Language): string => getTranslation(lang, `pdf.template.${String(key)}`);
-
-const localizePlanetName = (name: string, lang: Language): string =>
-  localizePlanet(canonicalPlanet(name), lang);
-
-const localizeSignName = (sign: string | number, lang: Language): string => {
-  const idx = getSignIndex(sign);
-  return idx ? localizeRashi(idx, lang) : localizeSign(String(sign), lang);
-};
-
-
-
-
-const CSS = `
-@page { margin: 0; padding: 0; size: A4; }
-@media print {
-  @page { size: A4 portrait; margin: 0; }
-  html, body { width: 210mm; overflow: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page-container { page-break-after: always; break-after: page; width: 210mm; height: auto; }
-  .page-container:last-child { page-break-after: auto; break-after: auto; }
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Inter', sans-serif; font-size: 10pt; line-height: 1.3; color: #1a1a1a; background: #fff; }
-.page-container { width: 210mm; height: auto; padding: 8mm; margin: 0 auto; page-break-after: always; position: relative; background: #fff; }
-.page-container:last-child { page-break-after: auto; }
-.page-content { width: 100%; }
-.header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.1cm; border-bottom: 2pt solid #999; margin-bottom: 0.15cm; }
-.header h1 { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 13pt; font-weight: 700; }
-.header h1.en { font-family: 'Inter', sans-serif; }
-.header .meta { text-align: right; font-size: 7.5pt; color: #555; }
-.header .meta span { display: block; }
-.footer { position: absolute; bottom: 5mm; width: calc(100% - 16mm); text-align: center; font-size: 7pt; color: #777; border-top: 0.5pt solid #ddd; padding-top: 0.1cm; }
-.h2 { font-size: 10pt; font-weight: 700; margin-bottom: 0.1cm; color: #333; }
-.h1-pillar { font-size: 14pt; font-weight: 700; margin-bottom: 0.15cm; }
-.p { font-size: 8.5pt; margin-bottom: 0.1cm; text-align: justify; }
-.narrative-text { font-size: 8.5pt; text-align: justify; line-height: 1.45; margin-bottom: 0.15cm; }
-.table-0 { width: 100%; border-collapse: collapse; margin-bottom: 0.1cm; }
-.table-0 th, .table-0 td { border: 0.5pt solid #bbb; padding: 2px 3px; text-align: left; font-size: 7.5pt; }
-.tile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-bottom: 0.1cm; }
-.tile { border: 0.5pt solid #bbb; border-radius: 2px; padding: 1.5px 3px; }
-.tile-k { font-size: 6pt; color: #666; text-transform: uppercase; }
-.tile-v { font-size: 8pt; font-weight: 700; }
-.section-block { margin-bottom: 0.15cm; }
-.divider { border-top: 0.5pt dashed #bbb; margin: 0.1cm 0; }
-.note { font-size: 7pt; font-style: italic; color: #666; }
-.badge-row { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 0.1cm; }
-.tag { display: inline-block; padding: 1pt 5px; border-radius: 2px; font-size: 7pt; font-weight: 700; }
-.tag.paid { background: #fbbf24; color: #78350f; }
-.tag.basic { background: #9ca3af; color: #374151; }
-.pillar-badge { display: inline-block; background: #eff6ff; border: 0.5pt solid #2563eb; color: #1d4ed8; padding: 1px 6px; border-radius: 2px; font-size: 7pt; font-weight: 700; margin-right: 3px; }
-.milestones-table { width: 100%; border-collapse: collapse; margin-top: 0.1cm; }
-.milestones-table th, .milestones-table td { border: 0.4pt solid #ccc; padding: 1.5px 3px; font-size: 7pt; }
-.milestones-table th { background: #f0f0f0; }
-.chart-container { margin: 0.1cm 0; text-align: center; }
-.chart-sm svg { max-width: 50mm; max-height: 50mm; }
-.grid-2 { display: flex; gap: 4mm; align-items: flex-start; }
-.av-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; max-width: 140mm; margin: 0 auto 0.1cm; }
-.av-cell { border: 0.5pt solid #bbb; border-radius: 2px; text-align: center; padding: 1.5px 0; }
-.av-cell.av-strong { background: #ecfdf5; border-color: #059669; }
-.av-h { display: block; font-size: 6pt; color: #666; }
-.av-b { display: block; font-size: 9pt; font-weight: 700; }
-.verdict-card { border: 0.5pt solid #cbd5e1; border-left: 2pt solid #3b82f6; border-radius: 2px; padding: 1.5mm 2mm; margin-bottom: 0.1cm; }
-.status-badge { font-size: 7pt; font-weight: 700; padding: 0.5pt 4px; border-radius: 2px; }
-.status-ok { background: #dcfce7; color: #166534; }
-.status-warn { background: #fef3c7; color: #92400e; }
-.dosha-block { margin-bottom: 0.15cm; padding: 2mm; border: 0.5pt solid #e5e7eb; border-radius: 2px; }
-.dosha-name { font-size: 9pt; font-weight: 700; margin-bottom: 0.08cm; }
-.dosha-desc { font-size: 8pt; text-align: justify; line-height: 1.4; }
-.yoga-block { margin-bottom: 0.12cm; padding: 1.5mm; border-left: 2pt solid #8b5cf6; background: #faf5ff; }
-.yoga-name { font-size: 9pt; font-weight: 700; margin-bottom: 0.05cm; }
-.yoga-desc { font-size: 8pt; text-align: justify; line-height: 1.4; }
-.remedy-card { border: 0.5pt solid #bbb; border-radius: 2px; padding: 2mm; margin-bottom: 0.1cm; }
-.remedy-k { font-size: 7pt; color: #666; text-transform: uppercase; }
-.remedy-v { font-size: 8.5pt; font-weight: 700; }
-.score-fill { height: 100%; background: #3b82f6; }
-.score-text { font-size: 8pt; font-weight: 700; }
-`;
 
+/** Translate a sign to Hindi when lang is 'hi'. */
+function getSign(sign: string, lang: Lang): string {
+  if (!sign) return "";
+  return lang === "hi" ? (SIGN_HI[sign] || sign) : sign;
+}
 
-
-const PAGE_CHROME = (title: string, lang: Language, pageNumber: number, data: Pick<ReportData, "clientName" | "isPaidTier">): string => `<div class="page-container">
-<div class="header">
-  <h1 class="${lang === 'en' ? 'en' : ''}">${escapeHTML(title)}</h1>
-  <div class="meta">
-    <span><span class="section-title">${L("clientName", lang)}:</span> ${escapeHTML(data.clientName)}</span>
-    <span class="tag ${data.isPaidTier ? "paid" : "basic"}">${data.isPaidTier ? L("paid", lang) : L("basic", lang)}</span>
-  </div>
-</div>
-<div class="page-content">
-`;
-
-const PAGE_FOOTER = (pageNumber: number, lang: Language): string => `
-</div>
-<div class="footer">
-  <span class="page-number">${L("page", lang)} ${pageNumber}</span>
-</div>
-</div>`;
-
-const tile = (key: PdfTemplateKey, lang: Language, value?: string): string =>
-  value
-    ? `<div class="tile"><div class="tile-k">${escapeHTML(L(key, lang))}</div><div class="tile-v">${escapeHTML(value)}</div></div>`
-    : "";
-
-
-const buildChartInput = (
-  data: ReportData
-): { planets: ChartPlanetInput[]; houses: ChartHouseInput[]; ascendantSign: number } => {
-  const ascendantSign =
-    (data.houseCusps && data.houseCusps.length
-      ? getSignIndex(data.houseCusps[0].sign)
-      : 0) || 1;
-  const planets: ChartPlanetInput[] = (data.planetaryPositions || []).map((p) => ({
-    planet: p.body,
-    sign: getSignIndex(p.sign) || 1,
-    house: parseInt(String(p.house), 10) || 1,
-    retrograde: !!p.retro,
-  }));
-  const houses: ChartHouseInput[] = (data.houseCusps || []).map((h) => ({
-    house: h.house,
-    sign: getSignIndex(h.sign) || 1,
-  }));
-  return { planets, houses, ascendantSign };
-};
-
-const renderChartSvg = (data: ReportData, lang: Language, style: "north" | "south"): string => {
-  if (style === "north" && /^<svg/.test(data.northIndianChartSvg || "")) {
-    return data.northIndianChartSvg;
-  }
-  const { planets, houses, ascendantSign } = buildChartInput(data);
-  return renderKundliChartSvg({
-    style,
-    language: lang,
-    ascendantSign,
-    planets,
-    houses,
-    showTitle: true,
-  });
-};
-
-
-
-const buildNativityPanchangChartPage = (
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const bd = data.birthDetails;
-  const pc = data.panchang;
-  const nativityTable = bd
-    ? `<table class="table-0">
-<tr><th>${L("clientName", lang)}</th><td>${escapeHTML(data.clientName)}</td><th>${L(
-        "chartType",
-        lang
-      )}</th><td>${escapeHTML(data.chartType)}</td></tr>
-<tr><th>${L("birthDetails", lang)}</th><td>${escapeHTML(bd.date)} · ${escapeHTML(
-        bd.time
-      )}</td><th>${L("tz", lang)}</th><td>${escapeHTML(bd.timezone)}</td></tr>
-<tr><th>${L("latLong", lang)}</th><td colspan="3">${escapeHTML(bd.latitude)}${
-        bd.longitude ? `, ${escapeHTML(bd.longitude)}` : ""
-      }</td></tr>
-</table>`
-    : "";
-  const panchangGrid = pc
-    ? `<div class="tile-grid">${[
-        tile("varaWeekday", lang, pc.varaWeekday),
-        tile("nakshatra", lang, pc.nakshatra),
-        tile("nakshatraLord", lang, pc.nakshatraLord ? localizePlanetName(pc.nakshatraLord, lang) : undefined),
-        tile("moonSign", lang, pc.moonSign ? localizeSignName(pc.moonSign, lang) : undefined),
-        tile("sunSign", lang, pc.sunSign ? localizeSignName(pc.sunSign, lang) : undefined),
-        tile("lagna", lang, pc.lagna ? localizeSignName(pc.lagna, lang) : undefined),
-      ].join("")}</div>`
-    : "";
-  const planetRows = (data.planetaryPositions || [])
-    .map(p => `<tr><td>${escapeHTML(localizePlanetName(p.body, lang))}</td><td>${escapeHTML(localizeSignName(p.sign, lang))}</td><td>${escapeHTML(p.degree)}</td><td>${escapeHTML(p.house)}</td><td>${p.retro ? "✓" : "-"}</td></tr>`)
-    .join("");
-  return `
-${PAGE_CHROME(L("title", lang), lang, pageNumber, data)}
-<div class="cover-band"><span class="client-name">${escapeHTML(
-    data.clientName
-  )}</span><span class="tag ${data.isPaidTier ? "paid" : "basic"}">${
-    data.isPaidTier ? L("paid", lang) : L("basic", lang)
-  }</span></div>
-${nativityTable}
-${panchangGrid ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("panchang", lang)}</h2>
-${panchangGrid}
-</div>` : ""}
-<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("lagnaD1Chart", lang)}</h2>
-<div class="chart-container chart-sm">${renderChartSvg(data, lang, "north")}</div>
-</div>
-${planetRows ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("planetaryPositions", lang)}</h2>
-<table class="table-0">
-<tr><th>${L("bodyCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th><th>${L("houseCol", lang)}</th><th>${L("retroCol", lang)}</th></tr>
-${planetRows}
-</table>
-</div>` : ""}
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
-const buildHousesNavamsaAshtakavargaPage = (
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const sav = data.sarvashtakavarga?.bindus?.length ? data.sarvashtakavarga : null;
-  const d9Svg = data.d9Chart
-    ? renderKundliChartSvg({
-        style: "north",
-        language: lang,
-        ascendantSign: data.d9Chart.ascendantSign || 1,
-        planets: data.d9Chart.planets,
-        showTitle: false,
-      })
-    : "";
-  const avCells = sav
-    ? sav.bindus
-        .map((b, i) => `<div class="av-cell${
-          sav.beneficialHouses?.includes(i + 1) ? " av-strong" : ""
-        }"><span class="av-h">${escapeHTML(L("houseShort", lang))}${i + 1}</span><span class="av-b">${Number(b) || 0}</span></div>`)
-        .join("")
-    : "";
-  const houseRows = (data.houseCusps || [])
-    .map(h => `<tr><td>${escapeHTML(String(h.house))}</td><td>${escapeHTML(localizeSignName(h.sign, lang))}</td><td>${escapeHTML(h.degree || "-")}</td></tr>`)
-    .join("");
-  // Split the 12 cusps into two side-by-side tables so the block stays compact.
-  const half = Math.ceil((data.houseCusps || []).length / 2) || 6;
-  const houseCols = data.houseCusps?.length
-    ? `<div class="grid-2">
-<table class="table-0"><tr><th>${L("houseCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th></tr>${houseRows.slice(0, half)}</table>
-<table class="table-0"><tr><th>${L("houseCol", lang)}</th><th>${L("signCol", lang)}</th><th>${L("degreeCol", lang)}</th></tr>${houseRows.slice(half)}</table>
-</div>`
-    : `<p class="note">${L("houseDataUnavailable", lang)}</p>`;
-  return `
-${PAGE_CHROME(L("housesNavamsaAshtakavarga", lang), lang, pageNumber, data)}
-<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("houseCusps", lang)}</h2>
-${houseCols}
-</div>
-<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("navamsaD9Chart", lang)}</h2>
-${d9Svg ? `<div class="chart-container chart-sm">${d9Svg}</div>` : `<p class="note">${L("notAvailable", lang)}</p>`}
-</div>
-${sav ? `<div class="section-block">
-<h2 class="h2 ${lang === "en" ? "en" : ""}">${L("sarvashtakavarga", lang)}</h2>
-<div class="av-grid">${avCells}</div>
-${sav.beneficialHouses?.length ? `<p class="note">${L("strongHouses", lang)}: ${sav.beneficialHouses.join(", ")}</p>` : ""}
-</div>` : ""}
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
+/** Sign index (1-12) -> sign name helper. */
+function signIndexName(idx: number): string {
+  return SIGN_NAMES[(idx - 1 + 12) % 12] || "";
+}
 
 /**
- * PAGE 3 — Vimshottari Dasha with antardashas. Shows the full dasha sequence
- * with all antardasha sub-periods expanded for each mahadasha.
+ * Generate a rich, multi-page HTML document from the full Kundli report
+ * payload returned by `/api/kundali/generate`. Inclusive of:
+ *   - Title page (birth details, lagna/moon/sun)
+ *   - Planetary positions table (from chartData.planets)
+ *   - House lords table (from calculations.divisionalCharts.D1.houseCusps)
+ *   - Dasha periods w/ antardashas (from calculations.vimshottari.mahadashas)
+ *   - Dosha analysis (Mangal, Sade Sati, Kaal Sarp w/ remedies)
+ *   - Yoga analysis (Gajakesari, Dhana yogas)
+ *   - One page per life pillar (both EN + HI narratives + milestones)
+ *   - Remedies & gemstones page
+ *   - Report summary page
  */
-const buildDashaDetailPage = (
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const dashaRows = (data.dashaPeriods || [])
-    .map((d) => {
-      const sub = d.subPeriod ? `<td>${escapeHTML(d.subPeriod)}</td>` : `<td>-</td>`;
-      return `<tr><td>${escapeHTML(localizePlanetName(d.mahaDasha, lang))}</td><td>${escapeHTML(d.startYear)}</td><td>${escapeHTML(d.endYear)}</td>${sub}</tr>`;
-    })
-    .join("");
-
-  return `
-${PAGE_CHROME(L("dashaCycle", lang), lang, pageNumber, data)}
-<div class="section-block">
-<h2 class="h2">${L("dashaCycle", lang)}</h2>
-<table class="table-0">
-<tr><th>${L("mahaDashaCol", lang)}</th><th>${L("fromYear", lang)}</th><th>${L("toYear", lang)}</th><th>${L("antardasha", lang)}</th></tr>
-${dashaRows}
-</table>
-</div>
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
-/**
- * PAGE 4 — Doshas section with detailed descriptions and remedies from the
- * calculations.doshas data (Manglik, Sade Sati, Kaal Sarp, etc.).
- */
-const buildDoshasPage = (
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const doshaBlocks = (data.doshas || [])
-    .map((d) => {
-      const severityClass = d.severity === "high" ? "status-warn" : "status-ok";
-      const neutralized = d.isNeutralized ? ` <span class="status-badge status-ok">${lang === "hi" ? "शांत" : "Neutralized"}</span>` : "";
-      return `<div class="dosha-block">
-<div class="dosha-name">${escapeHTML(d.name)}${neutralized} <span class="status-badge ${severityClass}">${escapeHTML(d.severity)}</span></div>
-<div class="dosha-desc">${escapeHTML(d.description || "-")}</div>
-</div>`;
-    })
-    .join("");
-
-  const content = doshaBlocks || `<p class="note">${lang === "hi" ? "कोई दोष नहीं पाया गया।" : "No significant doshas detected."}</p>`;
-
-  return `
-${PAGE_CHROME(lang === "hi" ? "दोष विश्लेषण" : "Dosha Analysis", lang, pageNumber, data)}
-<div class="section-block">
-<h2 class="h2">${lang === "hi" ? "दोष विश्लेषण" : "Dosha Analysis"}</h2>
-${content}
-</div>
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
-/**
- * PAGE 5 — Yogas section with detailed descriptions from calculations.yogas data.
- */
-const buildYogasPage = (
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const yogaBlocks = (data.yogas || [])
-    .map((y) => `<div class="yoga-block">
-<div class="yoga-name">${escapeHTML(y.name)}</div>
-<div class="yoga-desc">${escapeHTML(y.description || "-")}</div>
-</div>`)
-    .join("");
-
-  const content = yogaBlocks || `<p class="note">${lang === "hi" ? "कोई योग नहीं पाया गया।" : "No significant yogas detected."}</p>`;
-
-  return `
-${PAGE_CHROME(lang === "hi" ? "योग विश्लेषण" : "Yoga Analysis", lang, pageNumber, data)}
-<div class="section-block">
-<h2 class="h2">${lang === "hi" ? "योग विश्लेषण" : "Yoga Analysis"}</h2>
-${content}
-</div>
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
-/**
- * PAGE — Remedies & gemstone recommendations from the remedies data.
- */
-const buildRemediesPage = (
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const remedyCards = (data.remedies || [])
-    .slice(0, 8)
-    .map((r) => `<div class="remedy-card">
-<div class="remedy-k">${escapeHTML(r.category || (lang === "hi" ? "उपाय" : "Remedy"))}</div>
-<div class="remedy-v">${escapeHTML(r.description || "-")}</div>
-</div>`)
-    .join("");
-
-  const content = remedyCards || `<p class="note">${lang === "hi" ? "कोई विशेष उपाय नहीं।" : "No specific remedies recommended."}</p>`;
-
-  return `
-${PAGE_CHROME(lang === "hi" ? "उपाय एवं रत्न" : "Remedies & Gemstones", lang, pageNumber, data)}
-<div class="section-block">
-<h2 class="h2">${lang === "hi" ? "उपाय एवं रत्न सुझाव" : "Remedies & Gemstone Recommendations"}</h2>
-${content}
-</div>
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
-/**
- * PAGE — One page per life pillar (career, wealth, marriage, health, education, family).
- * Shows: Title, Badge (score/timeframe/lord), Narrative (3-5 sentences), Milestones table.
- */
-const buildNarrativePage = (
-  n: ReportNarrative,
-  data: ReportData,
-  lang: Language,
-  pageNumber: number
-): string => {
-  const title = lang === "hi" ? n.titleHi || n.titleEn : n.titleEn || n.titleHi;
-  const narrative = lang === "hi" ? n.narrativeHi || n.narrativeEn : n.narrativeEn || n.narrativeHi;
-  const badges = n.badges || {};
-  const badgeCells = [badges.score, badges.timeframe, badges.lord].filter(Boolean) as string[];
-  const badgeHtml = badgeCells.length
-    ? `<div class="badge-row">${badgeCells.map((b) => `<span class="pillar-badge">${escapeHTML(b)}</span>`).join("")}</div>`
-    : "";
-
-  const milestoneRows = (n.milestones || [])
-    .map((m) => {
-      const outcomeDot = m.outcome
-        ? ` <span style="color:${m.outcome === "positive" ? "#059669" : m.outcome === "caution" ? "#d97706" : "#6b7280"};font-weight:700;">●</span>`
-        : "";
-      return `<tr><td>${escapeHTML(m.period)}</td><td>${escapeHTML(m.event)}${outcomeDot}</td><td>${escapeHTML(m.note || "-")}</td></tr>`;
-    })
-    .join("");
-
-  const milestonesHtml = n.milestones?.length
-    ? `<div class="divider"></div>
-<h2 class="h2">${lang === "hi" ? "मुख्य मोड़" : "Key Milestones"}</h2>
-<table class="milestones-table">
-<tr><th>${lang === "hi" ? "अवधि" : "Period"}</th><th>${lang === "hi" ? "घटना" : "Event"}</th><th>${lang === "hi" ? "टिप्पणी" : "Note"}</th></tr>
-${milestoneRows}
-</table>`
-    : "";
-
-  const footerNote = lang === "hi"
-    ? "यह अध्याय AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन पर आधारित है।"
-    : "This chapter is AI-assisted Vedic astrology guidance.";
-
-  return `
-${PAGE_CHROME(title, lang, pageNumber, data)}
-<h1 class="h1-pillar">${escapeHTML(title)}</h1>
-${badgeHtml}
-<div class="narrative-text">${escapeHTML(narrative)}</div>
-${milestonesHtml}
-<p class="note" style="margin-top:0.2cm;">${escapeHTML(footerNote)}</p>
-${PAGE_FOOTER(pageNumber, lang)}
-`;
-};
-
-
-
-export function generateReportHtml(reportData: ReportData, language: Language): string {
-  const lang = language;
-  let pageNo = 0;
-  const pages: string[] = [];
-  const push = (html: string): void => {
-    if (html && html.trim()) pages.push(html);
-  };
-
-  /* Page 1 — Title page with user name and birth details + Panchang + D1 chart */
-  push(buildNativityPanchangChartPage(reportData, lang, ++pageNo));
-
-  /* Page 2 — Planet positions table + Navamsa + Ashtakavarga */
-  push(buildHousesNavamsaAshtakavargaPage(reportData, lang, ++pageNo));
-
-  /* Page 3 — Dasha table with antardashas */
-  push(buildDashaDetailPage(reportData, lang, ++pageNo));
-
-  /* Page 4 — Doshas section (detailed descriptions + remedies) */
-  push(buildDoshasPage(reportData, lang, ++pageNo));
-
-  /* Page 5 — Yogas section (detailed descriptions) */
-  push(buildYogasPage(reportData, lang, ++pageNo));
-
-  /* Pages 6+ — One page per life pillar (career, wealth, marriage, health, education, family) */
-  (reportData.narratives || []).forEach((n) => {
-    push(buildNarrativePage(n, reportData, lang, ++pageNo));
-  });
-
-  /* Remedies & gemstone recommendations */
-  push(buildRemediesPage(reportData, lang, ++pageNo));
-
-  console.log(`[PDF Template] Total pages generated: ${pages.length}`);
-
-  return `<!DOCTYPE html>
+export function generatePdfHtml(data: PdfData, lang: Lang = "en"): string {
+  const { name, birthDate, birthTime, latitude, longitude, timezone, chartData, calculations, pillars, freeTier, paidTier } = data;
+  const tHi = lang === "hi";
+// ── Page 1: Title page ─────────────────────────────────────────────
+  let html = `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
-<meta charset="UTF-8"/>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>${L("title", lang)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-${CSS}
+  @page { margin: 10mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans', 'Devanagari', Arial, sans-serif;
+    padding: 15px; background: #fff; color: #1a1a2e;
+    font-size: 11px; line-height: 1.5;
+  }
+  .page { page-break-after: always; break-after: page; padding: 10px 5px; min-height: 100vh; }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  .title-page { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 90vh; }
+  .title-page h1 { font-size: 28px; color: #1a1a2e; margin-bottom: 10px; }
+  .title-page .subtitle { font-size: 18px; color: #4a4a6a; margin-bottom: 30px; }
+  .title-page .details { background: #f5f5fa; padding: 20px 30px; border-radius: 8px; font-size: 13px; max-width: 400px; margin: 0 auto; }
+  .title-page .details table { width: 100%; border-collapse: collapse; }
+  .title-page .details td { padding: 4px 8px; border-bottom: 1px solid #e0e0e8; }
+  .title-page .details td:first-child { font-weight: bold; width: 40%; }
+  .section-title { font-size: 20px; color: #1a1a2e; border-bottom: 2px solid #6c63ff; padding-bottom: 6px; margin-bottom: 12px; }
+  .badge { background: #6c63ff; color: white; padding: 4px 12px; border-radius: 12px; display: inline-block; font-size: 11px; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; }
+  th { background: #f0f0f5; text-align: left; padding: 6px 8px; border: 1px solid #d0d0d8; font-weight: bold; }
+  td { padding: 5px 8px; border: 1px solid #d0d0d8; }
+  .narrative { margin: 8px 0; padding: 8px 12px; background: #f8f8fc; border-radius: 4px; font-size: 11px; line-height: 1.6; }
+  .narrative-hi { font-family: 'Noto Sans Devanagari', 'Devanagari', sans-serif; margin: 8px 0; padding: 8px 12px; background: #f8f8fc; border-radius: 4px; font-size: 11px; line-height: 1.6; }
+  .footer { margin-top: 20px; font-size: 9px; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+  .remedy-list { list-style: none; padding: 0; }
+  .remedy-list li { padding: 4px 8px; margin: 3px 0; background: #f0f8f0; border-radius: 4px; font-size: 10px; }
+  .milestone-table td { font-size: 10px; }
+  .milestone-table .outcome-positive { color: #2e7d32; }
+  .milestone-table .outcome-neutral { color: #f57f17; }
 </style>
 </head>
-<body>
-${pages.join("")}
-</body>
-</html>
-`.trim();
+<body>`;
+
+  // ── PAGE 1: TITLE ──────────────────────────────────────
+  html += `
+  <div class="page title-page">
+    <h1>✨ जन्म कुंडली विशद् विश्लेषण</h1>
+    <div class="subtitle">${tHi ? "प्रीमियम रिपोर्ट" : "Premium Birth Chart Report"}</div>
+    <h2 style="font-size: 24px; margin: 10px 0;">${escapeHTML(name)}</h2>
+    <div class="details">
+      <table>
+        <tr><td>${tHi ? "क्लाइंट नाम" : "Client Name"}</td><td>${escapeHTML(name)}</td></tr>
+        <tr><td>${tHi ? "चार्ट प्रकार" : "Chart Type"}</td><td>${tHi ? "उत्तर भारतीय" : "North Indian"}</td></tr>
+        <tr><td>${tHi ? "जन्म विवरण" : "Birth Details"}</td><td>${escapeHTML(birthDate)} · ${escapeHTML(birthTime)}</td></tr>
+        <tr><td>${tHi ? "समय क्षेत्र" : "Timezone"}</td><td>${escapeHTML(timezone)}</td></tr>
+        <tr><td>${tHi ? "अक्षांश / द्वामांश" : "Lat / Long"}</td><td>${escapeHTML(String(latitude))}, ${escapeHTML(String(longitude))}</td></tr>
+      </table>
+    </div>
+    <div style="margin-top: 30px; font-size: 12px; color: #888;">
+      ${tHi ? "लग्न: " : "Ascendant: "} <strong>${getSign(chartData?.lagna || "", lang)}</strong>
+      &nbsp;|&nbsp; ${tHi ? "चंद्र राशि: " : "Moon Sign: "} <strong>${getSign(chartData?.moonSign || chartData?.rashi || "", lang)}</strong>
+      &nbsp;|&nbsp; ${tHi ? "सूर्य राशि: " : "Sun Sign: "} <strong>${getSign(chartData?.sunSign || "", lang)}</strong>
+    </div>
+  </div>`;
+// ── PAGE 2: PLANET POSITIONS + HOUSE CUSPS ─────────────────────
+  const planetRows = (chartData?.planets || []).map((p: any) => {
+    let degree = String(p?.degree ?? "");
+    if (typeof p?.longitude === "number" && !degree) {
+      const d = Math.floor(p.longitude % 30);
+      const m = Math.floor(((p.longitude % 30) - d) * 60);
+      degree = `${d}°${String(m).padStart(2, "0")}'`;
+    }
+    return `
+      <tr>
+        <td>${escapeHTML(String(p?.name ?? ""))}</td>
+        <td>${getSign(String(p?.sign ?? ""), lang)}</td>
+        <td>${escapeHTML(degree)}</td>
+        <td>${p?.house ?? ""}</td>
+        <td>${p?.retrograde ? "✓" : "-"}</td>
+      </tr>`;
+  }).join("");
+
+  // House cusps from D1 divisional chart
+  const d1 = calculations?.divisionalCharts?.D1;
+  const houseRows = (d1?.houseCusps || []).map((c: any) =>
+    `<tr><td>${c?.house ?? ""}</td><td>${getSign(signIndexName(Number(c?.sign) || 1), lang)}</td></tr>`
+  ).join("");
+
+  // Fallback: derive house signs from chartData.houses when calculations missing
+  const fallbackHouseRows = houseRows || (chartData?.houses || []).map((h: any) =>
+    `<tr><td>${h?.house ?? ""}</td><td>${getSign(String(h?.sign ?? ""), lang)}</td></tr>`
+  ).join("");
+
+  html += `
+  <div class="page">
+    <h2 class="section-title">${tHi ? "🌍 ग्रह स्थिति" : "🌍 Planetary Positions"}</h2>
+    <table>
+      <tr>
+        <th>${tHi ? "ग्रह" : "Planet"}</th><th>${tHi ? "राशि" : "Sign"}</th>
+        <th>${tHi ? "डिग्री" : "Degree"}</th><th>${tHi ? "घर" : "House"}</th>
+        <th>${tHi ? "तीनो" : "Retrograde"}</th>
+      </tr>
+      ${planetRows || "<tr><td colspan='5'>No planetary data available</td></tr>"}
+    </table>
+    <h2 class="section-title" style="margin-top: 20px;">${tHi ? "🏠 घर कस्स" : "🏠 House Cusps"}</h2>
+    <table>
+      <tr><th>${tHi ? "घर" : "House"}</th><th>${tHi ? "राशि" : "Sign"}</th></tr>
+      ${fallbackHouseRows || "<tr><td colspan='2'>No house data available</td></tr>"}
+    </table>
+  </div>`;
+// ── PAGE 3: DASHA PERIODS ─────────────────────────────────────
+  const mahadashas = calculations?.vimshottari?.mahadashas || [];
+  const dashaBlocks = mahadashas.map((d: any) => `
+    <div style="margin-bottom: 12px;">
+      <div style="font-weight: bold; background:#6c63ff; color:white; padding:4px 10px; border-radius:4px;">
+        ${escapeHTML(String(d?.lord ?? ""))} Mahadasha (${escapeHTML(String(d?.startDate ?? ""))} - ${escapeHTML(String(d?.endDate ?? ""))})
+      </div>
+      <table style="font-size:9px;">
+        <tr><th>${tHi ? "उप-अवधि" : "Sub-Period"}</th><th>${tHi ? "प्रारंभ" : "Start"}</th><th>${tHi ? "समाप्ति" : "End"}</th></tr>
+        ${(d?.antardashas || []).map((a: any) => `
+          <tr><td>${escapeHTML(String(a?.planet ?? ""))}</td><td>${escapeHTML(String(a?.startDate ?? ""))}</td><td>${escapeHTML(String(a?.endDate ?? ""))}</td></tr>
+        `).join("")}
+      </table>
+    </div>
+  `).join("");
+
+  const currentDasha = calculations?.vimshottari?.currentDasha;
+
+  html += `
+  <div class="page">
+    <h2 class="section-title">${tHi ? "📅 दशा अवधि" : "📅 Dasha Periods"}</h2>
+    ${dashaBlocks || `<p class="narrative">${tHi ? "कोई दशा डेटा उपलब्ध नहीं है।" : "No dasha data available."}</p>`}
+    ${currentDasha ? `
+      <div style="background:#e8f5e9; padding:10px; border-radius:4px; margin-top:10px;">
+        <strong>${tHi ? "वतमान अंतदशा:" : "Current Dasha:"}</strong>
+        ${escapeHTML(String(currentDasha?.mahadasha ?? ""))} - ${escapeHTML(String(currentDasha?.antardasha ?? ""))}
+        (${escapeHTML(String(currentDasha?.startDate ?? ""))} - ${escapeHTML(String(currentDasha?.endDate ?? ""))})
+      </div>
+    ` : ""}
+  </div>`;
+// ── PAGE 4: DOSHA ANALYSIS ─────────────────────────────────────
+  const doshas = calculations?.doshas || {};
+  const mangal = doshas?.mangal;
+  const sadeSati = doshas?.sadeSati;
+  const kaalSarp = doshas?.kaalSarp;
+
+  html += `
+  <div class="page">
+    <h2 class="section-title">${tHi ? "⚠️ दोष विश्लेषण" : "⚠️ Dosha Analysis"}</h2>
+
+    ${mangal && mangal?.isPresent ? `
+      <h3 style="font-size:14px; margin:8px 0;">${tHi ? "मांगलिक दोष" : "Manglik Dosha"}</h3>
+      <div class="narrative">${escapeHTML(String(mangal?.description ?? ""))}</div>
+      <div style="margin:6px 0;">
+        <strong>${tHi ? "गंभीरता:" : "Severity:"}</strong> ${escapeHTML(String(mangal?.severity ?? "unknown"))}
+        ${mangal?.isNeutralized ? `(${tHi ? "न्यूट्रलाइज़्ड" : "Neutralized"})` : ""}
+      </div>
+      ${mangal?.remedies?.length ? `
+        <strong>${tHi ? "उपाय:" : "Remedies:"}</strong>
+        <ul class="remedy-list">
+          ${mangal.remedies.map((r: string) => `<li>✅ ${escapeHTML(r)}</li>`).join("")}
+        </ul>
+      ` : ""}
+    ` : ""}
+
+    ${sadeSati && sadeSati?.isActive ? `
+      <h3 style="font-size:14px; margin:12px 0 4px;">${tHi ? "साढे साती" : "Sade Sati"}</h3>
+      <div class="narrative">${escapeHTML(String(sadeSati?.description ?? ""))}</div>
+      <div style="margin:4px 0;">
+        <strong>${tHi ? "चरण:" : "Phase:"}</strong> ${escapeHTML(String(sadeSati?.phase ?? "active"))}
+        <br>
+        <strong>${tHi ? "अवधि:" : "Period:"}</strong>
+        ${escapeHTML(String(sadeSati?.activePeriod?.startDate ?? ""))} - ${escapeHTML(String(sadeSati?.activePeriod?.endDate ?? ""))}
+      </div>
+      ${sadeSati?.remedies?.length ? `
+        <strong>${tHi ? "उपाय:" : "Remedies:"}</strong>
+        <ul class="remedy-list">
+          ${sadeSati.remedies.map((r: string) => `<li>✅ ${escapeHTML(r)}</li>`).join("")}
+        </ul>
+      ` : ""}
+    ` : ""}
+
+    ${kaalSarp && kaalSarp?.isPresent ? `
+      <h3 style="font-size:14px; margin:12px 0 4px;">${tHi ? "काल सर्प दोष" : "Kaal Sarp Dosha"}</h3>
+      <div class="narrative">${escapeHTML(String(kaalSarp?.description ?? ""))}</div>
+      ${kaalSarp?.remedies?.length ? `
+        <strong>${tHi ? "उपाय:" : "Remedies:"}</strong>
+        <ul class="remedy-list">
+          ${kaalSarp.remedies.map((r: string) => `<li>✅ ${escapeHTML(r)}</li>`).join("")}
+        </ul>
+      ` : ""}
+    ` : ""}
+
+    ${!mangal?.isPresent && !sadeSati?.isActive && !kaalSarp?.isPresent ? `
+      <p class="narrative">${tHi ? "कोई महत्वपूर्ण दोष नहीं पाया गया।" : "No significant doshas detected."}</p>
+    ` : ""}
+  </div>`;
+// ── PAGE 5: YOGA ANALYSIS ─────────────────────────────────────
+  const yogas = calculations?.yogas || {};
+  const gajakesari = yogas?.gajakesari;
+  const dhanaYogas = Array.isArray(yogas?.dhanaYogas) ? yogas.dhanaYogas : [];
+
+  html += `
+  <div class="page">
+    <h2 class="section-title">${tHi ? "✨ योग विश्लेषण" : "✨ Yoga Analysis"}</h2>
+
+    ${gajakesari && gajakesari?.isPresent ? `
+      <h3 style="font-size:14px; margin:8px 0;">${escapeHTML(String(gajakesari?.name ?? ""))}</h3>
+      <div class="narrative">${escapeHTML(String(gajakesari?.description ?? ""))}</div>
+      <div style="margin:4px 0;">
+        <strong>${tHi ? "शक्ति:" : "Strength:"}</strong> ${escapeHTML(String(gajakesari?.strength ?? "present"))}
+      </div>
+    ` : ""}
+
+    ${dhanaYogas.filter((y: any) => y?.isPresent !== false).map((y: any) => `
+      <h3 style="font-size:14px; margin:12px 0 4px;">${escapeHTML(String(y?.name ?? ""))}</h3>
+      <div class="narrative">${escapeHTML(String(y?.description ?? ""))}</div>
+      <div style="font-size:10px; color:#555;">
+        ${tHi ? "ग्रह:" : "Planets:"} ${Array.isArray(y?.planets) ? y.planets.join(", ") : ""}
+      </div>
+    `).join("")}
+
+    ${!gajakesari?.isPresent && !dhanaYogas.length ? `
+      <p class="narrative">${tHi ? "कोई महत्वपूर्ण योग नहीं पाया गया।" : "No significant yogas detected."}</p>
+    ` : ""}
+  </div>`;
+// ── PAGES 6+: LIFE DOMAINS (PILLARS) ─────────────────────────
+  (pillars || []).forEach((pillar: any) => {
+    html += `
+  <div class="page">
+    <h2 class="section-title">${escapeHTML(String(pillar?.titleEn ?? ""))} (${escapeHTML(String(pillar?.titleHi ?? ""))})</h2>
+    <div class="badge">
+      ${escapeHTML(String(pillar?.badges?.score ?? ""))} ·
+      ${escapeHTML(String(pillar?.badges?.timeframe ?? ""))} ·
+      ${escapeHTML(String(pillar?.badges?.lord ?? ""))}
+    </div>
+    <div class="narrative">${escapeHTML(String(pillar?.narrativeEn ?? ""))}</div>
+    <div class="narrative-hi">${escapeHTML(String(pillar?.narrativeHi ?? ""))}</div>
+    ${Array.isArray(pillar?.milestones) && pillar.milestones.length ? `
+      <h3 style="font-size:13px; margin:10px 0 4px;">${tHi ? "📌 प्रमुख मील के पत्थर" : "📌 Key Milestones"}</h3>
+      <table class="milestone-table">
+        <tr><th>${tHi ? "अवधि" : "Period"}</th><th>${tHi ? "घटना" : "Event"}</th><th>${tHi ? "टिप्पणी" : "Note"}</th></tr>
+        ${pillar.milestones.map((m: any) => `
+          <tr>
+            <td>${escapeHTML(String(m?.period ?? ""))}</td>
+            <td>${escapeHTML(String(m?.event ?? ""))}</td>
+            <td>${escapeHTML(String(m?.note ?? ""))}</td>
+          </tr>
+        `).join("")}
+      </table>
+    ` : ""}
+    <div class="footer">${tHi
+      ? "यह अध्याय AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन पर आधारित है।"
+      : "This chapter is AI-assisted Vedic astrology guidance."}</div>
+  </div>`;
+  });
+// ── NEXT-TO-LAST PAGE: REMEDIES & GEMSTONES ─────────────────
+  const mangalRemedies = mangal?.remedies || [];
+  const sadeSatiRemedies = sadeSati?.remedies || [];
+
+  html += `
+  <div class="page">
+    <h2 class="section-title">${tHi ? "💎 रत्न एवं उपाय" : "💎 Gemstones & Remedies"}</h2>
+
+    ${mangalRemedies.length ? `
+      <h3 style="font-size:14px; margin:8px 0;">${tHi ? "मांगलिक दोष उपाय" : "Manglik Dosha Remedies"}</h3>
+      <ul class="remedy-list">
+        ${mangalRemedies.map((r: string) => `<li>✅ ${escapeHTML(r)}</li>`).join("")}
+      </ul>
+    ` : ""}
+
+    ${sadeSatiRemedies.length ? `
+      <h3 style="font-size:14px; margin:12px 0 4px;">${tHi ? "साढे साती उपाय" : "Sade Sati Remedies"}</h3>
+      <ul class="remedy-list">
+        ${sadeSatiRemedies.map((r: string) => `<li>✅ ${escapeHTML(r)}</li>`).join("")}
+      </ul>
+    ` : ""}
+
+    ${kaalSarp?.remedies?.length ? `
+      <h3 style="font-size:14px; margin:12px 0 4px;">${tHi ? "काल सर्प दोष उपाय" : "Kaal Sarp Remedies"}</h3>
+      <ul class="remedy-list">
+        ${kaalSarp.remedies.map((r: string) => `<li>✅ ${escapeHTML(r)}</li>`).join("")}
+      </ul>
+    ` : ""}
+
+    <div style="margin-top:20px; padding:15px; background:#f0f4ff; border-radius:8px;">
+      <h3 style="font-size:14px;">${tHi ? "🕉️ सामान्य उपाय" : "🕉️ General Remedies"}</h3>
+      <ul class="remedy-list">
+        <li>${tHi ? "प्रतिदिन गायत्री मंत्र का जाप करें।" : "Chant the Gayatri mantra daily."}</li>
+        <li>${tHi ? "बुजुर्गों का सम्मान करें और अनुशासित दिनचर्या बनाए रखें।" : "Respect elders and maintain a disciplined daily routine."}</li>
+      </ul>
+    </div>
+  </div>`;
+// ── LAST PAGE: REPORT SUMMARY ────────────────────────────────
+  html += `
+  <div class="page">
+    <h2 class="section-title">${tHi ? "📋 रिपोर्ट सारांश" : "📋 Report Summary"}</h2>
+    <p>${tHi
+      ? "यह रिपोर्ट लाहिरी अयनांश वैदिक गणना पर आधारित है। व्यक्तिगत मार्गदर्शन के लिए, एक प्रमाणित ज्योतिषी से परामर्श लें।"
+      : "This report is based on Lahiri Ayanamsa Vedic calculations. For personalized guidance, consult a certified Jyotish practitioner."
+    }</p>
+    <p style="margin-top:10px; color:#888; font-size:10px;">
+      ${tHi ? "जनरेट किया गया:" : "Generated on:"} ${new Date().toLocaleDateString()}
+    </p>
+    <p style="margin-top:20px; font-size:10px; color:#aaa; text-align:center;">
+      ${tHi ? "धन्यवाद। शुभ भविष्य की कामना।" : "Thank you. Wishing you a bright future."}
+    </p>
+  </div>`;
+
+  html += `
+  </body>
+  </html>`;
+
+  return html;
 }
 
-export const PDF_HTML_TEMPLATE_VERSION = "4.0.0";
+export const PDF_HTML_TEMPLATE_VERSION = "5.0.0";
 export const MIN_PROMISED_PAGES = 14;
+
+// ─── Backward-compatible wrapper for callers of the old flattened ─────────
+// `generateReportHtml(reportData, language)` contract. It maps the flattened
+// ReportData onto the new rich PdfData shape that `generatePdfHtml` consumes.
+export function generateReportHtml(
+  reportData: ReportData,
+  language: "en" | "hi" = "en"
+): string {
+  const bd = reportData.birthDetails || {
+    date: "", time: "", latitude: "", longitude: "", timezone: "",
+  };
+
+  // Build chartData in the flat expected shape from the flattened ReportData
+  const chartData = {
+    lagna: bd.latitude && reportData.panchang?.lagna ? reportData.panchang.lagna : (reportData.domainInsights?.[0]?.domain || ""),
+    rashi: reportData.panchang?.moonSign || "",
+    moonSign: reportData.panchang?.moonSign || "",
+    sunSign: reportData.panchang?.sunSign || "",
+    planets: (reportData.planetaryPositions || []).map((p) => ({
+      name: p.body,
+      sign: p.sign,
+      degree: p.degree,
+      house: p.house,
+      retrograde: Boolean(p.retro),
+    })),
+    houses: (reportData.houseCusps || []).map((h) => ({
+      house: h.house,
+      sign: h.sign,
+    })),
+  };
+
+  // Build calculations in the expected shape from flattened data
+  const calc: any = {};
+  if (reportData.d9Chart) {
+    calc.divisionalCharts = calc.divisionalCharts || {};
+    calc.divisionalCharts.D9 = {
+      chartType: "D9",
+      ascendantSign: reportData.d9Chart.ascendantSign || 1,
+      ascendantDegree: 0,
+      planetCoordinates: (reportData.d9Chart.planets || []).map((p) => ({
+        planet: p.planet,
+        sign: p.sign,
+        degree: 0,
+        minute: 0,
+        house: p.house,
+        retrograde: p.retrograde,
+      })),
+    };
+  }
+  if (reportData.sarvashtakavarga) {
+    calc.ashtakavarga = {
+      sarvashtakavarga: reportData.sarvashtakavarga.bindus || [],
+      bhinnashtakvarga: {},
+      beneficialHouses: reportData.sarvashtakavarga.beneficialHouses || [],
+    };
+  }
+  // Build doshas from flattened list
+  if (reportData.doshas?.length) {
+    calc.doshas = {};
+    for (const d of reportData.doshas) {
+      const lower = String(d.name || "").toLowerCase();
+      if (lower.includes("mangal") || lower.includes("kuja") || lower.includes("मांगलिक")) {
+        calc.doshas.mangal = {
+          isPresent: true,
+          severity: d.severity || "moderate",
+          isNeutralized: Boolean(d.isNeutralized),
+          description: d.description || "",
+          remedies: [],
+          bases: { lagna: {}, moon: {}, venus: {} },
+          cancellations: [],
+        };
+      } else if (lower.includes("sade") || lower.includes("साढे") || lower.includes("शनि")) {
+        calc.doshas.sadeSati = {
+          isActive: true,
+          phase: "active",
+          activePeriod: null,
+          description: d.description || "",
+          remedies: [],
+          moonSign: 0,
+          saturnSignNow: 0,
+          phaseRanges: {},
+          dhaiya: { isActive: false, phase: "inactive", period: null },
+        };
+      } else if (lower.includes("kaal") || lower.includes("kal") || lower.includes("काल")) {
+        calc.doshas.kaalSarp = {
+          isPresent: true,
+          description: d.description || "",
+          remedies: [],
+          RahuSign: 0,
+          KetuSign: 0,
+        };
+      }
+    }
+  }
+  // Build yogas from flattened list
+  if (reportData.yogas?.length) {
+    calc.yogas = {};
+    for (const y of reportData.yogas) {
+      if (calc.yogas.gajakesari?.isPresent) continue;
+      if (String(y.name || "").toLowerCase().includes("gaja")) {
+        calc.yogas.gajakesari = { name: y.name, isPresent: true, strength: "moderate", description: y.description };
+      }
+      if (!calc.yogas.dhanaYogas) calc.yogas.dhanaYogas = [];
+      calc.yogas.dhanaYogas.push({ name: y.name, isPresent: true, description: y.description, planets: [], houses: [] });
+    }
+    if (!calc.yogas.dhanaYogas) calc.yogas.dhanaYogas = [];
+  }
+
+  const pdfData: PdfData = {
+    name: reportData.clientName || "User",
+    birthDate: bd.date || "",
+    birthTime: bd.time || "",
+    latitude: parseFloat(bd.latitude) || 0,
+    longitude: parseFloat(bd.longitude) || 0,
+    timezone: bd.timezone || "",
+    chartData,
+    calculations: calc,
+    pillars: reportData.narratives || [],
+    freeTier: {},
+    paidTier: {},
+  };
+
+  return generatePdfHtml(pdfData, language);
+}
