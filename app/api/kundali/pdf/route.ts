@@ -185,9 +185,68 @@ export async function POST(req: NextRequest) {
     const narratives = sanitizeNarratives(body.pillars);
 
     // Build the rich PdfData payload — prefer the full report slice from the
-    // generate endpoint when the client sends it, else fall back to the
-    // flattened ReportData mapping.
+    // generate endpoint when the client sends it.
     const isRichPayload = !!body.chartData || !!body.calculations;
+
+    // Helper to build full calculations from flattened ReportData when needed
+    const doshasFromReport = (rd: ReportData): any => {
+      const d: any = {};
+      for (const dosha of (rd.doshas || [])) {
+        const key = (dosha.name || "").toLowerCase().replace(/\s+/g, "");
+        if (key.includes("mangal") || key.includes("kuja")) d.mangal = { ...dosha, name: dosha.name || "Manglik Dosha" };
+        else if (key.includes("sade") || key.includes("शनि")) d.sadeSati = { ...dosha, name: dosha.name || "Sade Sati" };
+        else if (key.includes("kaal") || key.includes("kal") || key.includes("काल")) d.kaalSarp = { ...dosha, name: dosha.name || "Kaal Sarp Dosha" };
+        else {
+          const lowerName = dosha.name?.toLowerCase() || "";
+          if (lowerName.includes("mangal")) d.mangal = { ...dosha, name: dosha.name || "Manglik Dosha" };
+          else if (lowerName.includes("sade")) d.sadeSati = { ...dosha, name: dosha.name || "Sade Sati" };
+          else if (lowerName.includes("kaal")) d.kaalSarp = { ...dosha, name: dosha.name || "Kaal Sarp Dosha" };
+          else if (dosha.name) d[dosha.name.toLowerCase().replace(/\s+/g, "")] = { ...dosha, name: dosha.name };
+        }
+      }
+      return d;
+    };
+
+    const yogasFromReport = (rd: ReportData): any => {
+      const y: any = {};
+      for (const yoga of (rd.yogas || [])) {
+        const key = (yoga.name || "").toLowerCase().replace(/\s+/g, "");
+        y[key] = { ...yoga, name: yoga.name, isPresent: true };
+      }
+      return Object.keys(y).length > 0 ? y : undefined;
+    };
+
+    const buildCalculationsFromReport = (): any => {
+      const c: any = {};
+      if ((reportData.dashaPeriods || []).length > 0 || Object.keys(doshasFromReport(reportData)).length > 0) {
+        c.vimshottari = {
+          mahadashas: (reportData.dashaPeriods || []).map((d, i) => ({
+            lord: d.mahaDasha,
+            startDate: d.startYear ? `${String(d.startYear).slice(0, 4)}-01-01` : "",
+            endDate: d.endYear ? `${String(d.endYear).slice(0, 4)}-01-01` : "",
+          })),
+        };
+      }
+      c.doshas = doshasFromReport(reportData);
+      c.yogas = yogasFromReport(reportData);
+      c.divisionalCharts = {};
+      if (reportData.d9Chart) {
+        c.divisionalCharts.D1 = {
+          houseCusps: (reportData.houseCusps || []).map((h) => ({
+            house: h.house,
+            sign: h.sign,
+          })),
+        };
+      }
+      if (reportData.sarvashtakavarga) {
+        c.ashtakavarga = {
+          sarvashtakavarga: reportData.sarvashtakavarga.bindus || [],
+          bhinnashtakvarga: {},
+          beneficialHouses: reportData.sarvashtakavarga.beneficialHouses || [],
+        };
+      }
+      return c;
+    };
 
     const pdfData: PdfData = isRichPayload
       ? {
@@ -198,7 +257,7 @@ export async function POST(req: NextRequest) {
           longitude: Number(body.longitude ?? (parseFloat(reportData.birthDetails?.longitude || "") || 0)),
           timezone: String(body.timezone ?? reportData.birthDetails?.timezone ?? ""),
           chartData: body.chartData ?? (incoming as any),
-          calculations: body.calculations ?? (incoming as any)?.calculations ?? {},
+          calculations: body.calculations ?? (incoming as any)?.calculations ?? buildCalculationsFromReport(),
           pillars: Array.isArray(body.pillars) ? body.pillars : (narratives || []),
           freeTier: typeof body.freeTier === "object" ? body.freeTier : {},
           paidTier: typeof body.paidTier === "object" ? body.paidTier : {},
@@ -227,30 +286,7 @@ export async function POST(req: NextRequest) {
               sign: h.sign,
             })),
           },
-          calculations: {
-            divisionalCharts: reportData.d9Chart ? {
-              D9: {
-                chartType: "D9",
-                ascendantSign: reportData.d9Chart.ascendantSign || 1,
-                ascendantDegree: 0,
-                planetCoordinates: (reportData.d9Chart.planets || []).map((p) => ({
-                  planet: p.planet,
-                  sign: p.sign,
-                  degree: 0,
-                  minute: 0,
-                  house: p.house,
-                  retrograde: p.retrograde,
-                })),
-              },
-            } : {},
-            ashtakavarga: reportData.sarvashtakavarga ? {
-              sarvashtakavarga: reportData.sarvashtakavarga.bindus || [],
-              bhinnashtakvarga: {},
-              beneficialHouses: reportData.sarvashtakavarga.beneficialHouses || [],
-            } : undefined,
-            doshas: undefined,
-            yogas: undefined,
-          },
+          calculations: buildCalculationsFromReport(),
           pillars: narratives || [],
           freeTier: {},
           paidTier: {},

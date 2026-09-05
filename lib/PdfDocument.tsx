@@ -15,7 +15,6 @@ import {
 } from "@react-pdf/renderer";
 import type { PdfData } from "./pdfHtmlTemplate";
 
-// Font registration
 Font.register({
   family: "Mukta",
   fonts: [
@@ -24,7 +23,6 @@ Font.register({
   ],
 });
 
-// Styles
 const styles = StyleSheet.create({
   page: {
     fontFamily: "Mukta",
@@ -148,6 +146,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   dashaDesc: { fontSize: 9.5, marginVertical: 3 },
+  dashaTable: { marginVertical: 6 },
   currentDasha: {
     backgroundColor: "#e8f5e9",
     paddingVertical: 7,
@@ -177,68 +176,166 @@ const styles = StyleSheet.create({
   kv: { fontSize: 9.5, marginVertical: 2 },
   kvLabel: { fontWeight: 700, color: "#3f3d8f" },
   bulletItem: { fontSize: 9.5, marginVertical: 1, paddingLeft: 4 },
+  descBlock: { marginVertical: 4, fontSize: 9.5, lineHeight: 1.4 },
 });
 
-// Translation helper
 interface Translations {
-  premiumReport: string; client: string; birth: string; timezone: string;
-  location: string; asc: string; moon: string; sun: string; nakshatra: string;
-  planetsTitle: string; cuspsTitle: string; planet: string; sign: string;
-  degree: string; house: string; retro: string; dashaTitle: string;
-  subPeriod: string; start: string; end: string; currentDasha: string;
-  doshaTitle: string; severity: string; remedies: string; yogasTitle: string;
-  strength: string; planetsInvolved: string; milestones: string; period: string;
-  event: string; note: string; remediesTitle: string; generalRemedies: string;
-  gemstones: string; mantras: string; summaryTitle: string; generatedOn: string;
-  lord: string; years: string; phase: string; neutralized: string;
-  cancellations: string; doshaPresent: string; doshaAbsent: string;
-  houses: string; impact: string; benefit: string; lahiriNote: string;
-  aiNote: string; summaryText: string; closingEn: string;
+  premiumReport: string;
+  client: string;
+  birth: string;
+  timezone: string;
+  location: string;
+  asc: string;
+  moon: string;
+  sun: string;
+  nakshatra: string;
+  planetsTitle: string;
+  cuspsTitle: string;
+  planet: string;
+  sign: string;
+  degree: string;
+  house: string;
+  retro: string;
+  dashaTitle: string;
+  subPeriod: string;
+  start: string;
+  end: string;
+  currentDasha: string;
+  doshaTitle: string;
+  severity: string;
+  remedies: string;
+  yogasTitle: string;
+  strength: string;
+  planetsInvolved: string;
+  milestones: string;
+  period: string;
+  event: string;
+  note: string;
+  remediesTitle: string;
+  generalRemedies: string;
+  gemstones: string;
+  mantras: string;
+  summaryTitle: string;
+  generatedOn: string;
+  lord: string;
+  years: string;
+  phase: string;
+  neutralized: string;
+  cancellations: string;
+  doshaPresent: string;
+  doshaAbsent: string;
+  houses: string;
+  impact: string;
+  benefit: string;
+  lahiriNote: string;
+  aiNote: string;
+  summaryText: string;
+  closingEn: string;
   notAvailableEn: string;
 }
 
 function getTranslations(isHi: boolean): Translations {
   return isHi ? {
-    premiumReport: "प्रीमियम रिपोर्ट", client: "क्लाइंट नाम", birth: "जन्म",
-    timezone: "समय क्षेत्र", location: "स्थान", asc: "लग्न", moon: "चंद्र",
-    sun: "सूर्य", nakshatra: "नक्षत्र", planetsTitle: "ग्रह स्थिति",
-    cuspsTitle: "घर कस्प", planet: "ग्रह", sign: "राशि", degree: "डिग्री",
-    house: "घर", retro: "वक्री", dashaTitle: "दशा अवधि",
-    subPeriod: "उप-अवधि", start: "प्रारंभ", end: "समाप्ति",
-    currentDasha: "वर्तमान दशा", doshaTitle: "दोष विश्लेषण",
-    severity: "गंभीरता", remedies: "उपाय", yogasTitle: "योग विश्लेषण",
-    strength: "शक्ति", planetsInvolved: "संबंधित ग्रह",
-    milestones: "प्रमुख मील के पत्थर", period: "अवधि", event: "घटना",
-    note: "टिप्पणी", remediesTitle: "रत्न एवं उपाय",
-    generalRemedies: "सामान्य उपाय", gemstones: "रत्न सुझाव",
-    mantras: "दैनिक मंत्र", summaryTitle: "रिपोर्ट सारांश",
-    generatedOn: "जनरेट किया गया", lord: "स्वामी", years: "वर्ष",
-    phase: "चरण", neutralized: "निरस्त", cancellations: "निरस्तीकरण",
-    doshaPresent: "उपस्थित", doshaAbsent: "अनुपस्थित", houses: "भाव",
-    impact: "प्रभाव", benefit: "लाभ",
+    premiumReport: "प्रीमियम रिपोर्ट",
+    client: "क्लाइंट नाम",
+    birth: "जन्म",
+    timezone: "समय क्षेत्र",
+    location: "स्थान",
+    asc: "लग्न",
+    moon: "चंद्र",
+    sun: "सूर्य",
+    nakshatra: "नक्षत्र",
+    planetsTitle: "ग्रह स्थिति",
+    cuspsTitle: "घर कस्प",
+    planet: "ग्रह",
+    sign: "राशि",
+    degree: "डिग्री",
+    house: "घर",
+    retro: "वक्री",
+    dashaTitle: "दशा अवधि",
+    subPeriod: "उप-अवधि",
+    start: "प्रारंभ",
+    end: "समाप्ति",
+    currentDasha: "वर्तमान दशा",
+    doshaTitle: "दोष विश्लेषण",
+    severity: "गंभीरता",
+    remedies: "उपाय",
+    yogasTitle: "योग विश्लेषण",
+    strength: "शक्ति",
+    planetsInvolved: "संबंधित ग्रह",
+    milestones: "प्रमुख मील के पत्थर",
+    period: "अवधि",
+    event: "घटना",
+    note: "टिप्पणी",
+    remediesTitle: "रत्न एवं उपाय",
+    generalRemedies: "सामान्य उपाय",
+    gemstones: "रत्न सुझाव",
+    mantras: "दैनिक मंत्र",
+    summaryTitle: "रिपोर्ट सारांश",
+    generatedOn: "जनरेट किया गया",
+    lord: "स्वामी",
+    years: "वर्ष",
+    phase: "चरण",
+    neutralized: "निरस्त",
+    cancellations: "निरस्तीकरण",
+    doshaPresent: "उपस्थित",
+    doshaAbsent: "अनुपस्थित",
+    houses: "भाव",
+    impact: "प्रभाव",
+    benefit: "लाभ",
     lahiriNote: "लाहिरी अयनांश वैदिक गणना पर आधारित",
     aiNote: "AI-सहायता प्राप्त वैदिक ज्योतिष मार्गदर्शन",
     summaryText: "यह रिपोर्ट लाहिरी अयनांश वैदिक गणना और AI-सहायता प्राप्त विश्लेषण पर आधारित है। इसमें ग्रह स्थिति, दशा चक्र, दोष, योग और छह जीवन क्षेत्रों का विस्तृत विवरण शामिल है। व्यक्तिगत मार्गदर्शन के लिए प्रमाणित ज्योतिषी से परामर्श करें।",
     closingEn: "धन्यवाद। शुभ भविष्य की कामना।",
     notAvailableEn: "ग्रह विवरण उपलब्ध नहीं है।",
   } : {
-    premiumReport: "Premium Report", client: "Client", birth: "Birth",
-    timezone: "Timezone", location: "Location", asc: "Asc", moon: "Moon",
-    sun: "Sun", nakshatra: "Nakshatra", planetsTitle: "Planet Positions",
-    cuspsTitle: "House Cusps", planet: "Planet", sign: "Sign",
-    degree: "Degree", house: "House", retro: "Retro",
-    dashaTitle: "Dasha Periods", subPeriod: "Sub-Period", start: "Start",
-    end: "End", currentDasha: "Current Dasha", doshaTitle: "Dosha Analysis",
-    severity: "Severity", remedies: "Remedies", yogasTitle: "Yoga Analysis",
-    strength: "Strength", planetsInvolved: "Planets involved",
-    milestones: "Key Milestones", period: "Period", event: "Event",
-    note: "Note", remediesTitle: "Gemstones & Remedies",
-    generalRemedies: "General Remedies", gemstones: "Gemstone Suggestions",
-    mantras: "Daily Mantras", summaryTitle: "Report Summary",
-    generatedOn: "Generated on", lord: "Lord", years: "years", phase: "Phase",
-    neutralized: "Neutralized", cancellations: "Cancellations",
-    doshaPresent: "Present", doshaAbsent: "Absent", houses: "Houses",
-    impact: "Impact", benefit: "Benefit",
+    premiumReport: "Premium Report",
+    client: "Client",
+    birth: "Birth",
+    timezone: "Timezone",
+    location: "Location",
+    asc: "Asc",
+    moon: "Moon",
+    sun: "Sun",
+    nakshatra: "Nakshatra",
+    planetsTitle: "Planet Positions",
+    cuspsTitle: "House Cusps",
+    planet: "Planet",
+    sign: "Sign",
+    degree: "Degree",
+    house: "House",
+    retro: "Retro",
+    dashaTitle: "Dasha Periods",
+    subPeriod: "Sub-Period",
+    start: "Start",
+    end: "End",
+    currentDasha: "Current Dasha",
+    doshaTitle: "Dosha Analysis",
+    severity: "Severity",
+    remedies: "Remedies",
+    yogasTitle: "Yoga Analysis",
+    strength: "Strength",
+    planetsInvolved: "Planets involved",
+    milestones: "Key Milestones",
+    period: "Period",
+    event: "Event",
+    note: "Note",
+    remediesTitle: "Gemstones & Remedies",
+    generalRemedies: "General Remedies",
+    gemstones: "Gemstone Suggestions",
+    mantras: "Daily Mantras",
+    summaryTitle: "Report Summary",
+    generatedOn: "Generated on",
+    lord: "Lord",
+    years: "years",
+    phase: "Phase",
+    neutralized: "Neutralized",
+    cancellations: "Cancellations",
+    doshaPresent: "Present",
+    doshaAbsent: "Absent",
+    houses: "Houses",
+    impact: "Impact",
+    benefit: "Benefit",
     lahiriNote: "Based on Lahiri Ayanamsa Vedic calculations",
     aiNote: "AI-assisted Vedic astrology guidance",
     summaryText: "This report is based on Lahiri Ayanamsa Vedic calculations and AI-assisted analysis. It covers planetary positions, the full dasha cycle, doshas, yogas, and six detailed life-domain narratives. For personalized guidance, consult a certified Jyotish practitioner.",
@@ -247,15 +344,14 @@ function getTranslations(isHi: boolean): Translations {
   };
 }
 
-// Sign translation
 const SIGN_NAMES: Record<string, string> = {
   Aries: "मेष", Taurus: "वृष", Gemini: "मिथुन", Cancer: "कर्क",
   Leo: "सिंह", Virgo: "कन्या", Libra: "तुला", Scorpio: "वृश्चिक",
   Sagittarius: "धनु", Capricorn: "मकर", Aquarius: "कुंभ", Pisces: "मीन",
 };
 const SIGN_LIST = [
-  "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
-  "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces",
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ];
 
 function getSign(sign: string, isHi: boolean): string {
@@ -297,9 +393,10 @@ function renderYogaCard(
   y: any, key: string, idx: number, isHi: boolean, t: Translations,
 ): React.ReactElement | null {
   if (!y || typeof y !== "object") return null;
-  const present = y.isPresent === true || y.presence === true;
+  const present = y.isPresent === true || y.presence === true || y.isActive === true;
   if (!present) return null;
   const planetsList = Array.isArray(y.planets) ? y.planets.join(", ") : "";
+  const housesList = Array.isArray(y.houses) ? y.houses.join(", ") : "";
   const strength = y.strength || "";
 
   return (
@@ -309,11 +406,16 @@ function renderYogaCard(
         {strength && (
           <Text style={[styles.pill, styles.pillStrong]}>{t.strength}: {txt(strength)}</Text>
         )}
-        {Array.isArray(y.houses) && y.houses.length > 0 && (
-          <Text style={styles.pill}>{t.houses}: {y.houses.join(", ")}</Text>
+        {planetsList && (
+          <Text style={styles.pill}>{t.planetsInvolved}: {planetsList}</Text>
+        )}
+        {housesList && (
+          <Text style={styles.pill}>{t.houses}: {housesList}</Text>
         )}
       </View>
-      {y.description && <Text style={{ marginTop: 3 }}>{txt(y.description)}</Text>}
+      {y.description && (
+        <Text style={styles.descBlock}>{txt(y.description)}</Text>
+      )}
       {y.impact && (
         <View style={styles.kv}>
           <Text><Text style={styles.kvLabel}>{t.impact}:</Text> {txt(y.impact)}</Text>
@@ -324,16 +426,85 @@ function renderYogaCard(
           <Text><Text style={styles.kvLabel}>{t.benefit}:</Text> {txt(y.benefit)}</Text>
         </View>
       )}
-      {planetsList && (
+    </View>
+  );
+}
+
+function renderDoshaCard(
+  key: string, d: any, idx: number, isHi: boolean, t: Translations,
+): React.ReactElement | null {
+  if (!d || typeof d !== "object") return null;
+  
+  const doshaName = d.name || (isHi
+    ? { mangal: "मांगलिक दोष", sadeSati: "साढ़े साती", kaalSarp: "काल सर्प दोष" }[key] || key
+    : { mangal: "Manglik Dosha", sadeSati: "Sade Sati", kaalSarp: "Kaal Sarp Dosha" }[key] || key);
+  
+  const present = d.isPresent === true || d.isActive === true || d.phase !== undefined;
+  const severity = d.severity || d.phase || (present ? "moderate" : "none");
+  const activePeriod = d.activePeriod;
+  const cancellations = Array.isArray(d.cancellations) ? d.cancellations : [];
+  const remedies = Array.isArray(d.remedies) ? d.remedies : [];
+  const isNeutralized = d.isNeutralized === true || d.neutralized === true;
+
+  return (
+    <View key={idx} style={styles.card} wrap={false}>
+      <View style={styles.cardTitle}>
+        <Text>{txt(doshaName)}</Text>
+        <Text style={[styles.pill, present ? styles.pillDanger : styles.pillOk]}>
+          {present ? t.doshaPresent : t.doshaAbsent}
+        </Text>
+        {isNeutralized && <Text style={[styles.pill, styles.pillOk]}>{t.neutralized}</Text>}
+      </View>
+      {d.description && (
+        <Text style={styles.descBlock}>{txt(d.description)}</Text>
+      )}
+      <View style={styles.kv}>
+        <Text><Text style={styles.kvLabel}>{t.severity}:</Text> {txt(severity)}</Text>
+      </View>
+      {activePeriod?.startDate && (
         <View style={styles.kv}>
-          <Text><Text style={styles.kvLabel}>{t.planetsInvolved}:</Text> {planetsList}</Text>
+          <Text><Text style={styles.kvLabel}>{t.period}:</Text> {txt(activePeriod.startDate)} - {txt(activePeriod.endDate)}</Text>
         </View>
+      )}
+      {d.phase && !activePeriod && (
+        <View style={styles.kv}>
+          <Text><Text style={styles.kvLabel}>{t.phase}:</Text> {txt(d.phase)}</Text>
+        </View>
+      )}
+      {cancellations.length > 0 && (
+        <View style={styles.kv}>
+          <Text><Text style={styles.kvLabel}>{t.cancellations}:</Text> {cancellations.join("; ")}</Text>
+        </View>
+      )}
+      {remedies.length > 0 && (
+        <>
+          <Text style={{ marginTop: 3, fontWeight: 700 }}>{t.remedies}:</Text>
+          <View style={styles.remedyList}>
+            {remedies.map((r: any, ri: number) => (
+              <Text key={ri} style={styles.remedyItem}>
+                {"• "}
+                {txt(typeof r === "string" ? r : r?.description || r?.text || "")}
+              </Text>
+            ))}
+          </View>
+        </>
       )}
     </View>
   );
 }
 
-// PDF Document Component
+function renderParagraphs(text: string | undefined | null): React.ReactElement[] {
+  if (!text) return [];
+  return String(text)
+    .split(/\r?\n\s*\r?\n|\r?\n/)
+    .map((para, pi) => {
+      const trimmed = para.trim();
+      if (!trimmed) return null;
+      return <Text key={pi} style={styles.narrPara}>{trimmed}</Text>;
+    })
+    .filter(Boolean) as React.ReactElement[];
+}
+
 export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
   const { name, birthDate, birthTime, latitude, longitude, timezone, chartData, calculations, pillars, paidTier, language } = data;
   const isHi = language === "hi";
@@ -342,8 +513,12 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
   const dashas = Array.isArray(calculations?.vimshottari?.mahadashas)
     ? calculations.vimshottari.mahadashas : [];
   const currentDasha = calculations?.vimshottari?.currentDasha || null;
-  const doshas = calculations?.doshas || {};
-  const yogas = calculations?.yogas || {};
+  
+  const doshasRaw = calculations?.doshas || {};
+  const doshasEntries = Object.entries(doshasRaw) as [string, any][];
+  
+  const yogasRaw = calculations?.yogas || {};
+  
   const planets = Array.isArray(chartData?.planets) ? chartData.planets : [];
   const houseCusps = calculations?.divisionalCharts?.D1?.houseCusps
     || (Array.isArray(chartData?.houses) ? chartData.houses : []);
@@ -352,9 +527,11 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
   const gemstones = paidTier?.remedyKit?.gemstones || [];
   const mantras = paidTier?.remedyKit?.dailyMantras || [];
 
+  const hasRemedies = doshasEntries.some(([, d]) => Array.isArray(d?.remedies) && d.remedies.length > 0);
+  const hasOtherRemedies = remedyItems.length > 0 || gemstones.length > 0 || mantras.length > 0;
+
   return (
     <Document>
-      {/* PAGE 1: Cover */}
       <Page size="A4" style={[styles.page, styles.coverPage]}>
         <View style={styles.coverPill}><Text>{t.premiumReport}</Text></View>
         <Text style={styles.coverTitle}>
@@ -391,7 +568,6 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
         </View>
       </Page>
 
-      {/* PAGE 2: Planet Positions + House Cusps */}
       <Page size="A4" style={styles.page}>
         <Text style={styles.sectionTitle}>{t.planetsTitle}</Text>
 
@@ -421,7 +597,6 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
         <Text style={styles.footer}>{t.lahiriNote}</Text>
       </Page>
 
-      {/* PAGE 3: Vimshottari Mahadashas with Antardashas */}
       {dashas.length > 0 && (
         <Page size="A4" style={styles.page}>
           <Text style={styles.sectionTitle}>{t.dashaTitle}</Text>
@@ -429,11 +604,17 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
           {dashas.map((d: any, i: number) => (
             <View key={i} style={styles.dashaBlock} wrap={false}>
               <View style={styles.dashaTitle}>
-                <Text>{txt(d.lord)} {isHi ? "महादशा" : "Mahadasha"} ({txt(d.startDate)} - {txt(d.endDate)}){d.years ? ` - ${txt(d.years)} ${t.years}` : ""}</Text>
+                <Text>
+                  {txt(d.lord)} {isHi ? "महादशा" : "Mahadasha"} 
+                  ({txt(d.startDate)} - {txt(d.endDate)})
+                  {d.years ? ` - ${txt(d.years)} ${t.years}` : ""}
+                </Text>
               </View>
-              {d.description && <Text style={styles.dashaDesc}>{txt(d.description)}</Text>}
+              {d.description && (
+                <Text style={styles.dashaDesc}>{txt(d.description)}</Text>
+              )}
               {Array.isArray(d.antardashas) && d.antardashas.length > 0 && (
-                <View style={styles.table}>
+                <View style={styles.dashaTable}>
                   <TableHeader cols={[t.subPeriod, t.start, t.end]} />
                   {d.antardashas.map((a: any, j: number) => (
                     <TableRow key={j} cells={[txt(a.planet), txt(a.startDate), txt(a.endDate)]} />
@@ -455,95 +636,42 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
         </Page>
       )}
 
-      {/* PAGE: Doshas Analysis */}
-      {Object.keys(doshas).length > 0 && (
+      {doshasEntries.length > 0 && (
         <Page size="A4" style={styles.page}>
           <Text style={styles.sectionTitle}>{t.doshaTitle}</Text>
 
-          {Object.entries(doshas).map(([key, d], idx) => {
-            if (!d || typeof d !== "object") return null;
-            const dosha = d as any;
-            const doshaName = dosha.name || (isHi
-              ? { mangal: "मांगलिक दोष", sadeSati: "साढ़े साती", kaalSarp: "काल सर्प दोष" }[key] || key
-              : { mangal: "Manglik Dosha", sadeSati: "Sade Sati", kaalSarp: "Kaal Sarp Dosha" }[key] || key);
-            const present = dosha.isPresent === true || dosha.isActive === true;
-            const severity = dosha.severity || (present ? dosha.phase || "moderate" : "none");
-            const activePeriod = dosha.activePeriod;
-            const cancellations = Array.isArray(dosha.cancellations) ? dosha.cancellations : [];
-
-            return (
-              <View key={idx} style={styles.card} wrap={false}>
-                <View style={styles.cardTitle}>
-                  <Text>{txt(doshaName)}</Text>
-                  <Text style={[styles.pill, present ? styles.pillDanger : styles.pillOk]}>
-                    {present ? t.doshaPresent : t.doshaAbsent}
-                  </Text>
-                  {dosha.isNeutralized && <Text style={[styles.pill, styles.pillOk]}>{t.neutralized}</Text>}
-                </View>
-                {dosha.description && <Text style={{ marginTop: 3 }}>{txt(dosha.description)}</Text>}
-                <View style={styles.kv}>
-                  <Text><Text style={styles.kvLabel}>{t.severity}:</Text> {txt(severity)}</Text>
-                </View>
-                {activePeriod?.startDate && (
-                  <View style={styles.kv}>
-                    <Text><Text style={styles.kvLabel}>{t.period}:</Text> {txt(activePeriod.startDate)} - {txt(activePeriod.endDate)}</Text>
-                  </View>
-                )}
-                {dosha.phase && (
-                  <View style={styles.kv}>
-                    <Text><Text style={styles.kvLabel}>{t.phase}:</Text> {txt(dosha.phase)}</Text>
-                  </View>
-                )}
-                {cancellations.length > 0 && (
-                  <View style={styles.kv}>
-                    <Text><Text style={styles.kvLabel}>{t.cancellations}:</Text> {cancellations.join("; ")}</Text>
-                  </View>
-                )}
-                {Array.isArray(dosha.remedies) && dosha.remedies.length > 0 && (
-                  <>
-                    <Text style={{ marginTop: 3, fontWeight: 700 }}>{t.remedies}:</Text>
-                    <View style={styles.remedyList}>
-                      {dosha.remedies.map((r: any, ri: number) => (
-                        <Text key={ri} style={styles.remedyItem}>{"• "}{txt(typeof r === "string" ? r : r?.description || r?.text || "")}</Text>
-                      ))}
-                    </View>
-                  </>
-                )}
-              </View>
-            );
-          })}
+          {doshasEntries.map(([key, d], idx) => (
+            renderDoshaCard(key, d, idx, isHi, t)
+          ))}
         </Page>
       )}
 
-      {/* PAGE: Yoga Analysis */}
-      {Object.keys(yogas).length > 0 && (() => {
-        const yogaCards: React.ReactElement[] = [];
-        Object.entries(yogas).forEach(([key, y]) => {
+      {(() => {
+        const yogaElements: React.ReactElement[] = [];
+        Object.entries(yogasRaw).forEach(([key, y]) => {
           if (!y || typeof y !== "object") return;
           if (Array.isArray(y)) {
             y.forEach((item: any, idx: number) => {
               const card = renderYogaCard(item, key, idx, isHi, t);
-              if (card) yogaCards.push(card);
+              if (card) yogaElements.push(card);
             });
           } else {
             const card = renderYogaCard(y, key, 0, isHi, t);
-            if (card) yogaCards.push(card);
+            if (card) yogaElements.push(card);
           }
         });
-        if (yogaCards.length === 0) return null;
-        return (
+        return yogaElements.length > 0 ? (
           <Page size="A4" style={styles.page}>
             <Text style={styles.sectionTitle}>{t.yogasTitle}</Text>
-            {yogaCards}
+            {yogaElements}
           </Page>
-        );
+        ) : null;
       })()}
 
-      {/* PAGES: AI Life-Pillar Narratives */}
       {(Array.isArray(pillars) ? pillars : []).map((pillar: any, i: number) => {
         if (!pillar || typeof pillar !== "object") return null;
-        const narrative = isHi ? pillar.narrativeHi : pillar.narrativeEn;
-        const title = isHi ? pillar.titleHi || pillar.titleEn : pillar.titleEn || pillar.titleHi;
+        const narrative = pillar.narrativeEn || pillar.narrativeHi || "";
+        const title = pillar.titleEn || pillar.titleHi || "";
         const badges = pillar.badges || {};
         const milestones = Array.isArray(pillar.milestones) ? pillar.milestones : [];
 
@@ -560,11 +688,7 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
               </View>
             )}
             <View style={styles.narrAlt}>
-{String(narrative ?? "").split(/\r?\n\s*\r?\n|\r?\n/).map((para, pi) => {
-                const trimmed = para.trim();
-                if (!trimmed) return null;
-                return <Text key={pi} style={styles.narrPara}>{trimmed}</Text>;
-              })}
+              {renderParagraphs(narrative)}
             </View>
             {milestones.length > 0 && (
               <>
@@ -591,21 +715,21 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
         );
       })}
 
-      {/* PAGE: Remedies */}
-      {(gemstones.length > 0 || mantras.length > 0 || remedyItems.length > 0 ||
-        Object.entries(doshas).some(([, d]) => { const dosha = d as any; return dosha && Array.isArray(dosha.remedies) && dosha.remedies.length > 0; })) && (
+      {(hasRemedies || hasOtherRemedies) && (
         <Page size="A4" style={styles.page}>
           <Text style={styles.sectionTitle}>{t.remediesTitle}</Text>
 
-          {Object.entries(doshas).map(([key, d], idx) => {
-            const dosha = d as any;
-            if (!dosha || typeof dosha !== "object" || !Array.isArray(dosha.remedies) || dosha.remedies.length === 0) return null;
+          {doshasEntries.map(([key, d], idx) => {
+            if (!d || typeof d !== "object" || !Array.isArray(d.remedies) || d.remedies.length === 0) return null;
             return (
               <View key={idx} wrap={false}>
-                <Text style={styles.subTitle}>{txt(dosha.name || key)}</Text>
+                <Text style={styles.subTitle}>{txt(d.name || key)}</Text>
                 <View style={styles.remedyList}>
-                  {dosha.remedies.map((r: any, ri: number) => (
-                    <Text key={ri} style={styles.remedyItem}>{"• "}{txt(typeof r === "string" ? r : r?.description || r?.text || "")}</Text>
+                  {d.remedies.map((r: any, ri: number) => (
+                    <Text key={ri} style={styles.remedyItem}>
+                      {"• "}
+                      {txt(typeof r === "string" ? r : r?.description || r?.text || "")}
+                    </Text>
                   ))}
                 </View>
               </View>
@@ -617,7 +741,10 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
               <Text style={styles.subTitle}>{t.generalRemedies}</Text>
               <View style={styles.remedyList}>
                 {remedyItems.map((r: any, i: number) => (
-                  <Text key={i} style={styles.bulletItem}>{"• "}{txt(typeof r === "string" ? r : r?.description || r?.text || "")}</Text>
+                  <Text key={i} style={styles.bulletItem}>
+                    {"• "}
+                    {txt(typeof r === "string" ? r : r?.description || r?.text || "")}
+                  </Text>
                 ))}
               </View>
             </View>
@@ -628,7 +755,10 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
               <Text style={styles.subTitle}>{t.gemstones}</Text>
               <View style={styles.remedyList}>
                 {gemstones.map((g: any, i: number) => (
-                  <Text key={i} style={styles.bulletItem}>{"• "}{txt(typeof g === "string" ? g : g?.name || g?.description || "")}</Text>
+                  <Text key={i} style={styles.bulletItem}>
+                    {"• "}
+                    {txt(typeof g === "string" ? g : g?.name || g?.description || "")}
+                  </Text>
                 ))}
               </View>
             </View>
@@ -639,7 +769,10 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
               <Text style={styles.subTitle}>{t.mantras}</Text>
               <View style={styles.remedyList}>
                 {mantras.map((m: any, i: number) => (
-                  <Text key={i} style={styles.bulletItem}>{"• "}{txt(typeof m === "string" ? m : m?.name || m?.description || "")}</Text>
+                  <Text key={i} style={styles.bulletItem}>
+                    {"• "}
+                    {txt(typeof m === "string" ? m : m?.name || m?.description || "")}
+                  </Text>
                 ))}
               </View>
             </View>
@@ -647,7 +780,6 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
         </Page>
       )}
 
-      {/* FINAL PAGE: Report Summary */}
       <Page size="A4" style={styles.page}>
         <Text style={styles.sectionTitle}>{t.summaryTitle}</Text>
         <View style={styles.summaryBox}>
@@ -657,21 +789,18 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
           {t.generatedOn}: {new Date().toLocaleDateString()}
         </Text>
         <Text style={{ fontSize: 9, color: "#aaaaaa", marginTop: 20 }}>
-          {isHi ? t.closingEn : t.closingEn}
+          {t.closingEn}
         </Text>
       </Page>
     </Document>
   );
 }
 
-// Render to Buffer (server-side only)
 export async function renderPdfToBuffer(data: PdfData): Promise<Buffer> {
   const { pdf } = await import("@react-pdf/renderer");
   const doc = <PdfDocument data={data} />;
   const result = await pdf(doc).toBuffer();
-  // Handle both ReadableStream and Buffer return types
   if (result instanceof Buffer) return result;
-  // If it's a ReadableStream, convert to Buffer
   const reader = (result as any).getReader();
   const chunks: Uint8Array[] = [];
   while (true) {
