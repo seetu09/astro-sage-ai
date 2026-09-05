@@ -375,7 +375,7 @@ function buildKundliData(
 export default function KundaliPage() {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { selectedLanguage, isPaid, resetPayment } = useApp();
+  const { selectedLanguage, isPaid, resetPayment, setKundliData: persistKundliData } = useApp();
 
   const PLANET_KEYS: Record<string, string> = {
     Sun: 'sun',
@@ -523,6 +523,7 @@ export default function KundaliPage() {
 
 
       setKundliData(data);
+      persistKundliData(result);
       setShowResult(true);
       toast.success(t('kundali.errors.success'));
 
@@ -623,6 +624,7 @@ export default function KundaliPage() {
         };
         const data = buildKundliData(result, details, selectedLanguage);
         setKundliData(data);
+        persistKundliData(result);
       } catch (err) {
         console.error('Kundali re-fetch error:', err);
         const isNetworkError = err instanceof TypeError;

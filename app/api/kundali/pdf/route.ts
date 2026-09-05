@@ -149,6 +149,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "A JSON body is required" }, { status: 400 });
     }
 
+    console.log("PDF Route - Received data:", {
+      hasChartData: !!body.chartData,
+      hasCalculations: !!body.calculations,
+      hasPillars: Array.isArray(body.pillars) && (body.pillars as unknown[]).length > 0,
+      pillarsCount: Array.isArray(body.pillars) ? (body.pillars as unknown[]).length : 0,
+      doshasKeys: Object.keys(
+        (body.calculations as { doshas?: Record<string, unknown> } | undefined)?.doshas ?? {}
+      ),
+      yogasKeys: Object.keys(
+        (body.calculations as { yogas?: Record<string, unknown> } | undefined)?.yogas ?? {}
+      ),
+      dashaCount:
+        (body.calculations as {
+          vimshottari?: { mahadashas?: unknown[] };
+        } | undefined)?.vimshottari?.mahadashas?.length ?? 0,
+    });
+
     const rawLang = typeof body.language === "string" ? body.language.trim().toLowerCase() : "en";
     const lang: Lang = rawLang === "hi" ? "hi" : "en";
     const incoming = body.reportData as ReportData | undefined;

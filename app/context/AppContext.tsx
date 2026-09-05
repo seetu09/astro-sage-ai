@@ -24,6 +24,10 @@ interface AppContextType {
   selectedLanguage: LocaleCode;
   /** Change the app language; propagates instantly to every consumer without a page refresh. */
   setSelectedLanguage: (lang: LocaleCode) => void;
+  /** Full API response of the most recently generated kundli (chartData, calculations, pillars…). */
+  kundliData: any | null;
+  /** Store the full API response so the PDF route never needs a second fetch. */
+  setKundliData: (data: any | null) => void;
 }
 
 const defaultValue: AppContextType = {
@@ -33,6 +37,8 @@ const defaultValue: AppContextType = {
   resetPayment: () => {},
   selectedLanguage: 'en',
   setSelectedLanguage: () => {},
+  kundliData: null,
+  setKundliData: () => {},
 };
 
 const AppContext = createContext<AppContextType>(defaultValue);
@@ -56,6 +62,7 @@ interface StoredUnlock {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isPaid, setIsPaid] = useState(false);
   const [unlockToken, setUnlockToken] = useState<string | null>(null);
+  const [kundliData, setKundliData] = useState<any | null>(null);
   const { language, setLanguage } = useLanguage();
 
   // --- Restore persisted payment state (hydration-safe) ---------------------
@@ -206,6 +213,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resetPayment,
         selectedLanguage: isLocale(language) ? language : 'en',
         setSelectedLanguage,
+        kundliData,
+        setKundliData,
       }}
     >
       {children}
