@@ -20,7 +20,7 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
-import KundliPdfButton from '@/app/components/KundliPdfButton';
+import KundaliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
 import { ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
 import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
@@ -105,7 +105,7 @@ export default function KundaliView({
 }: KundaliViewProps) {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { isPaid, markAsPaid, selectedLanguage } = useApp();
+  const { isPaid, markAsPaid, selectedLanguage, unlockToken } = useApp();
   const [activeTab, setActiveTab] = useState<TabKey>('career');
   // 'tabs' = existing tabbed preview (default); 'report' = strict-A4 modular report.
   const [viewMode, setViewMode] = useState<'tabs' | 'report'>('tabs');
@@ -446,25 +446,15 @@ export default function KundaliView({
                     client-side quick print. */}
         {isPaid && (
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            {(() => {
-              console.log('[KundaliView] reportData payload check:', {
-                hasPanchang: !!reportData.panchang,
-                hasD9Chart: !!reportData.d9Chart,
-                hasSarvashtakavarga: !!reportData.sarvashtakavarga,
-                hasNarratives: !!reportData.narratives,
-              });
-              return (
-              <KundliPdfButton
-                reportData={reportData}
-                userName={userName}
-                chartData={rawChartData}
-                calculations={calcData}
-                freeTier={freeTier}
-                paidTier={paidTier}
-                pillars={(pillars ?? []) as ReportNarrative[]}
-              />
-            );
-            })()}
+            <KundaliPdfButton
+              userName={userName}
+              chartData={rawChartData}
+              calculations={calcData}
+              freeTier={freeTier}
+              paidTier={paidTier}
+              pillars={(pillars ?? []) as ReportNarrative[]}
+              paymentToken={unlockToken}
+            />
           </div>
         )}
         </>

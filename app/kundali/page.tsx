@@ -375,7 +375,7 @@ function buildKundliData(
 export default function KundaliPage() {
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const { selectedLanguage, isPaid, resetPayment, setKundliData: persistKundliData } = useApp();
+  const { selectedLanguage, isPaid, resetPayment, setKundliData: persistKundliData, kundliData: globalKundliData, unlockToken } = useApp();
 
   const PLANET_KEYS: Record<string, string> = {
     Sun: 'sun',

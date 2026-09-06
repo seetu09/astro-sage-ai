@@ -195,6 +195,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     setIsPaid(false);
     setUnlockToken(null);
+    setKundliData(null);
   }, []);
 
   const setSelectedLanguage = useCallback(

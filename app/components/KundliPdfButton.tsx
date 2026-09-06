@@ -5,44 +5,26 @@ import { Download, Loader2 } from 'lucide-react';
 import LanguageSelectModal, { type PdfLanguage } from './LanguageSelectModal';
 import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
 import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
-import type { KundaliHistoryEntry } from '@/types/user';
 import { useApp } from '@/app/context/AppContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { useToast } from '@/app/components/ToastProvider';
 import { trackEvent } from '@/lib/analytics';
 
-interface KundliPdfButtonProps {
+interface KundaliPdfButtonProps {
   userName?: string;
-  /** Ready-made report payload (kundali result page path). */
-  reportData?: ReportData | null;
-  /** AI Life-Pillar narratives when already fetched — appended as PDF appendix pages. */
-  pillars?: ReportNarrative[];
-  /** Rich slices from `/api/kundali/generate` — passed to the PDF template. */
+  /** Full API response data already available from context / generation. */
   chartData?: any;
   calculations?: any;
   freeTier?: any;
   paidTier?: any;
-  /**
-   * Dashboard mode: rebuild the full report server-side from stored birth
-   * details (`POST /api/kundali/generate`) before rendering the PDF. Requires
-   * latitude/longitude on the entry (present for all newly saved charts).
-   */
-  historyEntry?: KundaliHistoryEntry;
+  /** AI Life-Pillar narratives when already fetched — appended as PDF appendix pages. */
+  pillars?: ReportNarrative[];
+  /** Server-minted signed payment token from /api/payment/verify. */
+  paymentToken?: string | null;
   /** Override the CTA copy; defaults to "Download Full 25-Page Kundli". */
   label?: string;
   /** Compact styling for dashboard history cards. */
   compact?: boolean;
-}
-
-interface ResolvedPayload {
-  reportData: ReportData;
-  pillars?: ReportNarrative[];
-  /** Rich slices from the full `/api/kundali/generate` response — passed to the
-   *  PDF template for the complete data-driven layout. */
-  chartData?: any;
-  calculations?: any;
-  freeTier?: any;
-  paidTier?: any;
 }
 
 const DEFAULT_LABEL_KEY = 'kundali.sections.downloadFullKundli';
@@ -65,90 +47,31 @@ function weekdayLabel(dateStr: string | undefined, locale: string): string {
 }
 
 /**
- * Rebuild the complete localized report from a dashboard history entry:
- * 1. POST /api/kundali/generate   → deterministic chart + tiers (+ AI reading)
- * 2. POST /api/kundali/narratives → six AI Life-Pillar narratives (best-effort)
- * then map both onto the shared `ReportData` template contract.
+ * Build a minimal ReportData shell from the raw data props so the PDF server
+ * route receives the same `{ chartData, calculations, pillars, freeTier,
+ * paidTier }` structure it already expects — no extra API round-trips.
  */
-async function resolvePayload(
-  reportData: ReportData | null | undefined,
+function buildReportData(
+  chartData: any,
+  calculations: any,
+  freeTier: any,
+  paidTier: any,
   pillars: ReportNarrative[] | undefined,
-  entry: KundaliHistoryEntry | undefined,
-  language: PdfLanguage
-): Promise<ResolvedPayload> {
-  if (reportData) return { reportData, pillars };
-  if (!entry) throw new Error('NO_SOURCE');
-
-  const generateRes = await fetch('/api/kundali/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      birthDate: entry.dateOfBirth,
-      birthTime: entry.timeOfBirth,
-      birthPlace: entry.placeOfBirth,
-      latitude: entry.latitude ?? null,
-      longitude: entry.longitude ?? null,
-      timezoneOffset: entry.timezoneOffset || '+05:30',
-      language,
-    }),
-  });
-  if (!generateRes.ok) throw new Error('GENERATE_FAILED');
-  const result = await generateRes.json();
-
-  // The single-shot generation endpoint already returns the six AI Life-Pillar
-  // narratives — reuse them and skip the extra /api/kundali/narratives round
-  // trip entirely. (The separate narratives endpoint stays for legacy callers.)
-  let aiPillars = pillars;
-  if (Array.isArray(result?.pillars) && result.pillars.length === 6) {
-    aiPillars = result.pillars as ReportNarrative[];
-  } else {
-    try {
-      const narrativeRes = await fetch('/api/kundali/narratives', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ report: result, language }),
-      });
-      if (narrativeRes.ok) {
-        const narrativeJson = await narrativeRes.json();
-        if (Array.isArray(narrativeJson?.pillars) && narrativeJson.pillars.length === 6) {
-          aiPillars = narrativeJson.pillars as ReportNarrative[];
-        }
-      }
-    } catch {
-      // Narratives are optional garnish — never block the download.
-    }
-  }
-
-  return {
-    reportData: mapGenerateResultToReportData(result, entry, aiPillars, language),
-    pillars: aiPillars,
-    chartData: result?.chartData,
-    calculations: result?.calculations,
-    freeTier: result?.freeTier,
-    paidTier: result?.paidTier,
-  };
-}
-
-/** Map `/api/kundali/generate`'s response onto the A4 template contract. */
-function mapGenerateResultToReportData(
-  result: Record<string, any>,
-  entry: KundaliHistoryEntry,
-  aiPillars?: ReportNarrative[],
-  language: string = 'en'
+  userName: string
 ): ReportData {
-  const chart = result?.chartData ?? {};
-  const paid = result?.paidTier ?? {};
+  const chart = chartData ?? {};
+  const paid = paidTier ?? {};
   const lifeDomains = paid.lifeDomains ?? {};
 
   return {
-    clientName: entry.name || 'User',
+    clientName: userName || 'User',
     chartType: 'North Indian',
     birthDetails: {
-      date: entry.dateOfBirth || '',
-      time: entry.timeOfBirth || '',
-      latitude: entry.latitude != null ? Number(entry.latitude).toFixed(2) : '',
-      longitude: entry.longitude != null ? Number(entry.longitude).toFixed(2) : '',
-      timezone: entry.timezoneOffset || '+05:30',
+      date: chartData?.birthDate || '',
+      time: chartData?.birthTime || '',
+      latitude: String(chartData?.latitude ?? ''),
+      longitude: String(chartData?.longitude ?? ''),
+      timezone: chartData?.timezone || '+05:30',
     },
     planetaryPositions: (Array.isArray(chart.planets) ? chart.planets : []).map((p: Record<string, unknown>) => ({
       body: String(p?.name ?? ''),
@@ -169,7 +92,7 @@ function mapGenerateResultToReportData(
       mahaDasha: String(d.lord ?? ''),
       startYear: String(d.startDate ?? '').split('-')[0] || '',
       endYear: String(d.endDate ?? '').split('-')[0] || '',
-      subPeriod: d.theme || '',
+            subPeriod: d.theme || '',
     })),
     yogas: (Array.isArray(paid.yogas) ? paid.yogas : [])
       .filter((y: Record<string, unknown>) => y?.presence !== false)
@@ -182,16 +105,15 @@ function mapGenerateResultToReportData(
         category: String(r.type ?? ''),
         description: String(r.description ?? ''),
       })),
-      // Rich AI remedy kit — exactly four daily mantras, then a gemstone digest.
       ...(Array.isArray(paid.remedyKit?.dailyMantras)
         ? (paid.remedyKit.dailyMantras as unknown[]).map((m) => ({
-            category: language === 'hi' ? 'दैनिक मंत्र' : 'Daily Mantra',
+            category: 'Daily Mantra',
             description: String(m ?? ''),
           }))
         : []),
       ...(Array.isArray(paid.remedyKit?.gemstones) && paid.remedyKit.gemstones.length
         ? [{
-            category: language === 'hi' ? 'रत्न सुझाव' : 'Gemstone Suggestion',
+            category: 'Gemstone Suggestion',
             description: (paid.remedyKit.gemstones as unknown[]).map(String).join(' · '),
           }]
         : []),
@@ -203,22 +125,19 @@ function mapGenerateResultToReportData(
         const milestones = Array.isArray(insight.milestones) ? insight.milestones : [];
         return {
           domain: key,
-          // Rich ~250/200-word AI paragraph when present, else the short overview.
           prediction: insight.narrative || insight.overview || '',
           analysis:
             milestones
               .map((m: Record<string, unknown>) => `${m.period}: ${m.event}`)
               .join(' • ') || (insight.recommendations ?? []).join('. '),
-          timeframe: milestones[0]?.period,
+                    timeframe: milestones[0]?.period,
         };
       }),
     northIndianChartSvg: '',
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
-    // Dense-layout extras — Panchang strip, D9 matrix and Ashtakavarga grid
-    // (all optional; the template skips missing blocks gracefully).
     panchang: {
-      varaWeekday: weekdayLabel(entry.dateOfBirth, language),
+      varaWeekday: weekdayLabel(chartData?.birthDate, 'en'),
       nakshatra: cleanAstroValue(chart.nakshatra),
       nakshatraLord: (() => {
         const idx = NAKSHATRA_NAMES.en.indexOf(cleanAstroValue(chart.nakshatra));
@@ -233,7 +152,7 @@ function mapGenerateResultToReportData(
       ),
     },
     d9Chart: (() => {
-      const d9 = result?.calculations?.divisionalCharts?.D9;
+      const d9 = calculations?.divisionalCharts?.D9;
       if (!d9) return undefined;
       return {
         ascendantSign: Number(d9.ascendantSign) || 1,
@@ -248,7 +167,7 @@ function mapGenerateResultToReportData(
       };
     })(),
     sarvashtakavarga: (() => {
-      const sav = result?.calculations?.ashtakavarga;
+      const sav = calculations?.ashtakavarga;
       if (!Array.isArray(sav?.sarvashtakavarga) || !sav.sarvashtakavarga.length) return undefined;
       return {
         bindus: sav.sarvashtakavarga.map(Number),
@@ -256,12 +175,12 @@ function mapGenerateResultToReportData(
       };
     })(),
     isPaidTier: true,
-    ...(aiPillars ? { narratives: aiPillars } : {}),
+    ...(pillars ? { narratives: pillars } : {}),
     doshas: (Array.isArray(paid.doshas) ? paid.doshas : []).map((d: Record<string, unknown>) => ({
       name: String(d.name ?? ''),
       description: String(d.description ?? ''),
       severity: (['low', 'moderate', 'high'].includes(String(d.severity)) ? String(d.severity) : 'moderate') as 'low' | 'moderate' | 'high',
-      isNeutralized: Boolean(d.isNeutralized),
+            isNeutralized: Boolean(d.isNeutralized),
     })),
   };
 }
@@ -291,9 +210,6 @@ function printReportHtml(html: string): void {
   doc.write(html);
   doc.close();
 
-  // Give the hidden document a beat to lay out + fetch web fonts, then hand
-  // off to the browser print dialog. The template's `@media print` CSS takes
-  // over pagination (hard A4 page breaks per .page-container).
   iframe.onload = () => {
     setTimeout(() => {
       const pageCount = (html.match(/class="page"/g) || []).length;
@@ -301,7 +217,7 @@ function printReportHtml(html: string): void {
       try {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
-      } finally {
+            } finally {
         setTimeout(() => iframe.parentNode?.removeChild(iframe), 1000);
       }
     }, 800);
@@ -317,9 +233,7 @@ async function downloadServerPdf(payload: {
   freeTier?: any;
   paidTier?: any;
   language: PdfLanguage;
-  /** Server-verified signed payment token (required by /api/kundali/pdf). */
   paymentToken: string;
-  /** Optional filename stem override (falls back to the client name). */
   fileName?: string;
 }): Promise<void> {
   const res = await fetch('/api/kundali/pdf', {
@@ -350,43 +264,39 @@ async function downloadServerPdf(payload: {
     .replace(/^-+|-+$/g, '')}-kundli-${payload.language}.pdf`;
   document.body.appendChild(anchor);
   anchor.click();
-  anchor.remove();
+    anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
 /**
- * KundliPdfButton — "Download Full 25-Page Kundli" CTA.
+ * KundaliPdfButton — "Download Full 25-Page Kundli" CTA.
  *
- * Flow:
- *   click → LanguageSelectModal (English / हिंदी)
- *         → [dashboard mode] rebuild report from stored birth details
- *         → POST /api/kundali/pdf (serverless Chromium render, streamed back)
- *         → on ANY server failure → automatic client-side iframe window.print()
- *           fallback driven by the same A4 template's `@media print` CSS.
- *   …or the user picks "Print instantly" for the zero-server path up front.
+ * Reads all report data (chartData, calculations, pillars, freeTier, paidTier)
+ * and the payment token from props — no extra API round-trips. Constructs the
+ * ReportData shell client-side and sends the raw + mapped payload to the PDF
+ * server route in a single POST.
  */
-export default function KundliPdfButton({
+export default function KundaliPdfButton({
   userName,
-  reportData,
-  pillars,
   chartData,
   calculations,
   freeTier,
   paidTier,
-  historyEntry,
+  pillars,
+  paymentToken,
   label,
   compact = false,
-}: KundliPdfButtonProps) {
-  const { unlockToken } = useApp();
+}: KundaliPdfButtonProps) {
+  const { unlockToken: fallbackToken } = useApp();
   const toast = useToast();
   const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
-  const [phase, setPhase] = useState<'idle' | 'rebuilding' | 'rendering'>('idle');
+  const [phase, setPhase] = useState<'idle' | 'rendering'>('idle');
   const [error, setError] = useState('');
-  // Guard against double-clicks racing two downloads for the same entry.
   const inFlight = useRef(false);
 
   const busy = phase !== 'idle';
+  const resolvedToken = paymentToken ?? fallbackToken ?? null;
 
   const runFlow = useCallback(
     async (language: PdfLanguage, mode: 'download' | 'print') => {
@@ -395,83 +305,78 @@ export default function KundliPdfButton({
       setError('');
 
       try {
-        if (!unlockToken) {
+        if (!resolvedToken) {
           setError(t('kundali.sections.pdfDownloadLocked'));
           return;
         }
 
-        let payload: ResolvedPayload | null =
-          reportData ? { reportData, pillars, chartData, calculations, freeTier, paidTier } : null;
+        const reportData = buildReportData(
+          chartData,
+          calculations,
+          freeTier,
+          paidTier,
+          pillars,
+          userName || 'User'
+        );
 
-        if (!payload) {
-          setPhase('rebuilding');
-          payload = await resolvePayload(null, pillars, historyEntry, language);
-        }
-
-if (mode === 'print') {
+        if (mode === 'print') {
           trackEvent('kundali_pdf_print_fallback', { lang: language, source: 'manual' });
-          const pageCount = generateReportHtml(payload.reportData, language).match(/class="page"/g)?.length || 0;
-          console.log(`[KundliPdfButton] Print fallback: ${pageCount} pages, ${payload.reportData.domainInsights?.length || 0} domains, ${payload.pillars?.length || 0} narratives.`);
-          printReportHtml(generateReportHtml(payload.reportData, language));
+          const html = generateReportHtml(reportData, language);
+          const pageCount = (html.match(/class="page"/g) || []).length;
+          console.log(`[KundaliPdfButton] Print fallback: ${pageCount} pages, ${reportData.domainInsights?.length || 0} domains, ${pillars?.length || 0} narratives.`);
+          printReportHtml(html);
           setModalOpen(false);
           return;
         }
 
         setPhase('rendering');
-        trackEvent('kundli_pdf_server_started', {
+        trackEvent('kundali_pdf_server_started', {
           lang: language,
-          has_pillars: !!payload.pillars?.length,
-          source: reportData ? 'page' : 'history',
+          has_pillars: !!pillars?.length,
+          has_chart_data: !!chartData,
+          has_calculations: !!calculations,
         });
         try {
           await downloadServerPdf({
-            ...payload,
+            reportData,
+            pillars: pillars as ReportNarrative[] | undefined,
+            chartData,
+            calculations,
+            freeTier,
+            paidTier,
             language,
-            paymentToken: unlockToken,
-            fileName: userName || payload.reportData.clientName,
+            paymentToken: resolvedToken,
+            fileName: userName || reportData.clientName,
           });
-          trackEvent('kundli_pdf_server_success', { lang: language });
+          trackEvent('kundali_pdf_server_success', { lang: language });
           setModalOpen(false);
           toast.success(t('kundali.sections.pdfDownloadSuccess'));
         } catch (err) {
           const code = err instanceof Error ? err.message : 'UNKNOWN';
           if (code === 'PDF_SERVICE_402' || code === 'PDF_SERVICE_401' || code === 'PDF_SERVICE_403') {
-            // Server refused the payment — never fall back to the client-side
-            // print leak; surface the lock and ask for payment instead.
-            trackEvent('kundli_pdf_paywall_blocked', { lang: language });
+            trackEvent('kundali_pdf_paywall_blocked', { lang: language });
             const paywallMsg = t('kundali.sections.pdfReportLocked');
             setError(paywallMsg);
             toast.error(paywallMsg);
           } else {
-            // Any other server failure → zero-cost client fallback.
-            trackEvent('kundli_pdf_server_failed', { lang: language });
-            printReportHtml(generateReportHtml(payload.reportData, language));
+            trackEvent('kundali_pdf_server_failed', { lang: language });
+            printReportHtml(generateReportHtml(reportData, language));
             setModalOpen(false);
             toast.error(t('kundali.sections.pdfServerFailed'));
           }
         }
       } catch (err) {
-        const code = err instanceof Error ? err.message : 'UNKNOWN';
-        if (code === 'NO_SOURCE') {
-          setError(t('kundali.sections.pdfNothingToExport'));
-        } else if (code === 'GENERATE_FAILED') {
-          setError(t('kundali.sections.pdfRebuildFailed'));
-        } else {
-          setError(t('kundali.sections.pdfExportFailed'));
-        }
+        setError(t('kundali.sections.pdfExportFailed'));
       } finally {
         setPhase('idle');
         inFlight.current = false;
       }
     },
-    [reportData, pillars, chartData, calculations, freeTier, paidTier, historyEntry, unlockToken, toast, t, userName]
+    [chartData, calculations, freeTier, paidTier, pillars, paymentToken, resolvedToken, toast, t, userName]
   );
 
   const displayLabel = label || t(DEFAULT_LABEL_KEY);
-  const busyMessage =
-    phase === 'rebuilding'
-      ? t('kundali.sections.pdfRebuilding')
-      : t('kundali.sections.pdfRendering');
+  const busyMessage = t('kundali.sections.pdfRendering');
 
   return (
     <>
@@ -514,5 +419,3 @@ if (mode === 'print') {
     </>
   );
 }
-
-
