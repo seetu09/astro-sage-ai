@@ -338,6 +338,8 @@ export async function POST(req: NextRequest) {
     const timezone = normalizeTimezone(body.timezone);
     const language = body.language === "hi" ? "hi" : "en";
 
+    console.log("[kundli-tool] step 1 — parsed body:", { name, birthDate, birthTime, latitude, longitude, timezone, language });
+
     if (!name) return NextResponse.json({ error: "Name is required." }, { status: 400 });
     const dateParts = parseDate(birthDate);
     if (!dateParts) return NextResponse.json({ error: "Invalid birthDate (expected YYYY-MM-DD)." }, { status: 400 });
@@ -345,6 +347,15 @@ export async function POST(req: NextRequest) {
     if (!timeParts) return NextResponse.json({ error: "Invalid birthTime (expected HH:MM)." }, { status: 400 });
     if (isNaN(latitude) || latitude < -90 || latitude > 90) return NextResponse.json({ error: "Invalid latitude." }, { status: 400 });
     if (isNaN(longitude) || longitude < -180 || longitude > 180) return NextResponse.json({ error: "Invalid longitude." }, { status: 400 });
+
+    // Check for missing environment variables
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("[kundli-tool] GEMINI_API_KEY is not set");
+      return NextResponse.json(
+        { error: "Server configuration error", details: "GEMINI_API_KEY environment variable is missing" },
+        { status: 500 },
+      );
+    }
 
     // 1. Compute chart (deterministic, no AI)
     const birthDetails: BirthDetails = {
@@ -357,16 +368,19 @@ export async function POST(req: NextRequest) {
     };
     const chartData: ChartData = computeChart(birthDetails);
     const kundliCalcs: KundliCalculations = computeKundliCalculations(chartData, birthDate, new Date(), language);
+    console.log("[kundli-tool] step 2 — chart computed, lagna:", chartData.lagna, "planets:", chartData.planets.length);
 
     // 2. Shape the chart for Gemini prompt
     const apiChart: ApiChart = chartToApiShape(chartData);
 
     // 3. Shape calculations for Gemini prompt
     const apiCalcs: ApiCalculations = calculationsToApiShape(kundliCalcs);
+    console.log("[kundli-tool] step 3 — calculations shaped, doshas:", apiCalcs.doshas.length, "yogas:", apiCalcs.yogas.length);
 
     // 4. Call Gemini for pillar narratives
     const apiKey = process.env.GEMINI_API_KEY;
     let raw = "";
+    console.log("[kundli-tool] step 4 — calling Gemini...");
     if (apiKey) {
       const prompt = buildPillarPrompt({ name, chartData: apiChart, calculations: apiCalcs });
       const { response: res } = await geminiWithRetry(() =>
@@ -386,13 +400,20 @@ export async function POST(req: NextRequest) {
           },
         ),
       );
+      console.log("[kundli-tool] step 4 — Gemini response status:", res.ok, res.status);
       if (res.ok) {
         const json = await res.json();
         raw = json?.candidates?.[0]?.content?.parts
           ?.map((p: any) => p.text ?? "")
           .join("")
           .trim() || "";
+        console.log("[kundli-tool] step 4 — raw response keys:", Object.keys(json), "raw length:", raw.length);
+      } else {
+        const errorText = await res.text().catch(() => "");
+        console.error("[kundli-tool] step 4 — Gemini error response:", errorText);
       }
+    } else {
+      console.warn("[kundli-tool] step 4 — skipping Gemini, no API key");
     }
 
     // 5. Parse Gemini response
@@ -581,9 +602,12 @@ export async function POST(req: NextRequest) {
       pillars: pillars.map(toLifePillar),
       language,
     };
+    console.log("[kundli-tool] step 5 — PDF data built, pillars:", pdfData.pillars.length);
 
     // 7. Render PDF
+    console.log("[kundli-tool] step 6 — rendering PDF...");
     const buffer = await renderKundliPdfToBuffer(pdfData);
+    console.log("[kundli-tool] step 7 — PDF rendered, buffer size:", buffer.length, "bytes");
 
     // 8. Return as download
     return new NextResponse(new Uint8Array(buffer), {
@@ -596,9 +620,14 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
-    console.error("[kundli-tool] error:", err?.message || err);
+    console.error("[kundli-tool] FATAL ERROR:", err?.message || err);
+    console.error("[kundli-tool] stack:", err?.stack);
     return NextResponse.json(
-      { error: "Failed to generate Kundli PDF. Please try again." },
+      { 
+        error: "PDF generation failed", 
+        details: err?.message || "Unknown error",
+        stack: err?.stack,
+      },
       { status: 500 },
     );
   }

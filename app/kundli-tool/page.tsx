@@ -60,8 +60,13 @@ export default function KundliToolPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || `Server error (${res.status})`);
+        const data = await res.json().catch(() => null);
+        const errorText = await res.text().catch(() => "");
+        console.error("[kundli-tool] API error response:", data, errorText);
+        const message = data?.details 
+          ? `${data.error}: ${data.details}` 
+          : data?.error || errorText || `Server error (${res.status})`;
+        throw new Error(message);
       }
 
       const blob = await res.blob();
@@ -74,6 +79,7 @@ export default function KundliToolPage() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err: any) {
+      console.error("[kundli-tool] frontend error:", err);
       setError(err?.message || "Failed to generate PDF. Please try again.");
     } finally {
       setLoading(false);
