@@ -16,18 +16,11 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    // Keep @react-pdf/renderer and pdfkit out of the serverless bundle. These
-    // packages ship internal font files that must be loaded from disk at
-    // runtime — bundling them breaks the font paths and causes
-    // "Cannot find module '.../Helvetica.cjs'" errors on Vercel.
-    serverComponentsExternalPackages: ['@react-pdf/renderer', 'pdfkit'],
-    // The PDF renderer (`@react-pdf/renderer`) loads the bundled Mukta TTFs
-    // from disk at runtime. outputFileTracing keeps those files inside the
-    // Vercel lambda — without this the fonts would be missing in production and
-    // Devanagari text would render as blank/missing glyphs.
-    outputFileTracingIncludes: {
-      '/api/kundali/pdf': ['./public/fonts/**/*'],
-    },
+    // Keep @react-pdf/renderer and html-pdf-lite out of the serverless bundle.
+    // These packages ship internal font files / native binaries that must be
+    // loaded from disk at runtime — bundling them breaks the font paths and
+    // causes "Cannot find module '.../Helvetica.cjs'" errors on Vercel.
+    serverComponentsExternalPackages: ['@react-pdf/renderer', 'html-pdf-lite', '@resvg/resvg-js'],
   },
 }
 

@@ -5,7 +5,7 @@
 // No payment, no authentication. Takes birth details, computes the Vedic
 // birth chart + deterministic calculations (doshas, yogas, Vimshottari Dasha),
 // calls Gemini (gemini-3.1-flash-lite) for the six Life-Pillar full narratives,
-// then renders a PDF with @react-pdf/renderer (pure JS, no Chromium) and returns
+// then renders a PDF with html-pdf-lite (pure JS, no Chromium) and returns
 // it as a download.
 //
 // Request body (JSON):
@@ -32,8 +32,9 @@ import {
   type LifePillarConfig,
   type PillarMilestone,
 } from "@/lib/pillarNarratives";
-import { renderKundliPdfToBuffer } from "@/lib/KundliPdfDocument";
-import type { KundliPdfData, PlanetPosition } from "@/lib/KundliPdfDocument";
+import { renderPdfFromHtml } from "html-pdf-lite";
+import { generateKundliHtml } from "@/lib/KundliPdfTemplate";
+import type { KundliPdfData, PlanetPosition } from "@/lib/KundliPdfTemplate";
 import type { KundliCalculations } from "@/types/kundali";
 
 // Gemini model — matches the existing chat/horoscope/kundali routes.
@@ -604,9 +605,12 @@ export async function POST(req: NextRequest) {
     };
     console.log("[kundli-tool] step 5 — PDF data built, pillars:", pdfData.pillars.length);
 
-    // 7. Render PDF
+    // 7. Render PDF using html-pdf-lite (no Chromium, no native deps)
     console.log("[kundli-tool] step 6 — rendering PDF...");
-    const buffer = await renderKundliPdfToBuffer(pdfData);
+    const htmlContent = generateKundliHtml(pdfData, language);
+    console.log("[kundli-tool] step 6 — HTML generated, length:", htmlContent.length, "chars");
+    const pdfBuffer = await renderPdfFromHtml(htmlContent);
+    const buffer = Buffer.from(pdfBuffer);
     console.log("[kundli-tool] step 7 — PDF rendered, buffer size:", buffer.length, "bytes");
 
     // 8. Return as download
