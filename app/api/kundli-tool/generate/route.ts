@@ -609,8 +609,19 @@ export async function POST(req: NextRequest) {
     console.log("[kundli-tool] step 6 — rendering PDF...");
     const htmlContent = generateKundliHtml(pdfData, language);
     console.log("[kundli-tool] step 6 — HTML generated, length:", htmlContent.length, "chars");
-    const pdfBuffer = await renderPdfFromHtml(htmlContent);
-    const buffer = Buffer.from(pdfBuffer);
+    console.log("[kundli-tool] step 6 — HTML preview:", htmlContent.substring(0, 2000));
+    let buffer: Buffer;
+    try {
+      const pdfBuffer = await renderPdfFromHtml(htmlContent);
+      buffer = Buffer.from(pdfBuffer);
+    } catch (pdfErr: any) {
+      console.error("[kundli-tool] step 6 — PDF render error:", pdfErr?.message || pdfErr);
+      console.error("[kundli-tool] step 6 — PDF render stack:", pdfErr?.stack);
+      return NextResponse.json(
+        { error: "PDF render failed", details: pdfErr?.message || "Unknown error", htmlPreview: htmlContent.substring(0, 500) },
+        { status: 500 },
+      );
+    }
     console.log("[kundli-tool] step 7 — PDF rendered, buffer size:", buffer.length, "bytes");
 
     // 8. Return as download
