@@ -42,7 +42,7 @@ export async function geminiWithRetry(
   fetcher: () => Promise<Response>
 ): Promise<GeminiRetryResult> {
   let isRetry = false;
-  let response: Response = new Response(null as any, { status: 0 });
+  let response: Response = new Response(null as any, { status: 503 });
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
