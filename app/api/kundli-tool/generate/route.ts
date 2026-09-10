@@ -160,7 +160,7 @@ function chartToApiShape(chart: ChartData): ApiChart {
       retrograde: p.retrograde,
       nakshatra: p.nakshatra,
     })),
-    houses: chart.houses.map((h) => ({ house: h.house, sign: h.sign, planets: h.planets })),
+    houses: (chart.houses || []).map((h) => ({ house: h.house, sign: h.sign, planets: h.planets })),
   };
 }
 
@@ -604,6 +604,7 @@ export async function POST(req: NextRequest) {
       language,
     };
     console.log("[kundli-tool] step 5 — PDF data built, pillars:", pdfData.pillars.length);
+    console.log("[kundli-tool] PDF Data - houses:", JSON.stringify(pdfData.chartData.houses, null, 2));
 
     // 7. Render PDF using html-pdf-lite (no Chromium, no native deps)
     console.log("[kundli-tool] step 6 — rendering PDF...");

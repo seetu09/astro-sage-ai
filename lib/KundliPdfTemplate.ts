@@ -170,13 +170,18 @@ export function generateKundliHtml(data: KundliPdfData, lang: "en" | "hi" = "en"
 `;
 
   // Houses
+  const houses = chart.houses || [];
   html += `<div class="page-break">
   <h2>${isHi ? "भाव (12 घर)" : "Houses (12 Cusps)"}</h2>
   <table>
     <tr><th>${isHi ? "भाव" : "House"}</th><th>${isHi ? "राशि" : "Sign"}</th></tr>
 `;
-  for (const h of chart.houses) {
-    html += `<tr><td>${txt(h.house)}</td><td>${txt(h.sign)}</td></tr>`;
+  if (houses.length === 0) {
+    html += `<tr><td colspan="2">${isHi ? "भाव डेटा उपलब्ध नहीं" : "House data not available"}</td></tr>`;
+  } else {
+    for (const h of houses) {
+      html += `<tr><td>${txt(h.house)}</td><td>${txt(h.sign)}</td></tr>`;
+    }
   }
   html += `</table></div>
 `;
