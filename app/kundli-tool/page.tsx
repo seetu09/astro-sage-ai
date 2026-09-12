@@ -2,6 +2,7 @@
 
 import React, { useState, FormEvent, useCallback } from "react";
 import KundliReport from "@/app/components/KundliReport";
+import PdfNativeDownloadButton from "@/components/PdfNativeDownloadButton";
 import type { LifePillarConfig } from "@/lib/pillarNarratives";
 import type { KundliCalculations } from "@/types/kundali";
 
@@ -169,6 +170,23 @@ export default function KundliToolPage() {
                 <p className="no-print text-xs text-gray-500 mt-2">
                   Tip: Enable &quot;Background graphics&quot; in the print dialog for full color output.
                 </p>
+                <PdfNativeDownloadButton
+                  kundliData={{
+                    name: form.name,
+                    birthDetails: {
+                      birthDate: form.birthDate,
+                      birthTime: form.birthTime,
+                      latitude: parseFloat(form.latitude),
+                      longitude: parseFloat(form.longitude),
+                      timezone: form.timezone,
+                    },
+                    chartData: report.chartData,
+                    calculations: report.calculations,
+                    pillars: report.pillars,
+                    richPredictions: report.richPredictions,
+                  }}
+                  lang={form.language}
+                />
               </div>
             </div>
           </div>
