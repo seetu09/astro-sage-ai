@@ -751,13 +751,13 @@ h1, h2, h3, h4, h5, h6 {
     display: none !important;
   }
 
-  /* Each .print-page section starts a new printed page */
-  .print-page {
+  /* Each .report-page section starts a new printed page */
+  .report-page {
     page-break-after: always;
     break-after: page;
   }
 
-  .print-page:last-child {
+  .report-page:last-child {
     page-break-after: auto;
     break-after: auto;
   }

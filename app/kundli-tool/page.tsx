@@ -122,8 +122,21 @@ export default function KundliToolPage() {
     }
   }
 
-  const handlePrint = useCallback(() => {
-    window.print();
+    const handlePrint = useCallback(() => {
+    const reportEl = document.getElementById('kundli-report');
+    if (!reportEl) {
+      alert('Please generate a report first.');
+      return;
+    }
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Please allow pop-ups for this site to print the report.');
+      return;
+    }
+    printWindow.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Kundli Report</title><style>@page{size:A4;margin:15mm}body{font-family:"Noto Sans Devanagari","Mukta","Hind","Noto Sans",system-ui,sans-serif;background:#fff;color:#1e293b;margin:0;padding:0}#kundli-report{max-width:100%;padding:0}.report-page{page-break-after:always;break-after:page;margin-bottom:1rem}.report-page:last-child{page-break-after:auto;break-after:auto}h1,h2,h3,h4{color:#d97706}.astro-card{background:#fff;border:1px solid #e2e8f0;box-shadow:none;break-inside:avoid;padding:1rem;border-radius:.5rem}table{break-inside:avoid;width:100%;border-collapse:collapse;font-size:.75rem}thead{display:table-header-group}tr{break-inside:avoid}th,td{padding:.5rem;text-align:left;border-bottom:1px solid #e2e8f0}th{font-weight:700;background:#f1f5f9}</style></head><body>' + reportEl.innerHTML + '</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 500);
   }, []);
 
   const handleReset = useCallback(() => {
