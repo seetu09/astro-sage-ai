@@ -302,7 +302,7 @@ const PILLAR_GUIDANCE: Record<LifePillarKey, string> = {
 
 const LANGUAGE_RULE = {
   en: `OUTPUT LANGUAGE — Write 100% modern, simple English for a layperson. Explain any Vedic term in plain words (e.g. "10th house (career and public standing)", "Saturn (the planet of discipline)"). Strictly no Hindi, Devanagari or Hinglish.`,
-  hi: `OUTPUT LANGUAGE — Write in 100% PURE Hindi, in Devanagari script ONLY, with ZERO mixed English jargon, no Hinglish, no Roman letters, no English words embedded. Use natural, warm Hindi that a layperson easily understands. Keep standard Vedic terms in pure Hindi (e.g. 'दशम भाव', 'सूर्य', 'गुरु', 'विवाह').`,
+  hi: `OUTPUT LANGUAGE — Write in 100% PURE Hindi, in Devanagari script ONLY, with ZERO mixed English jargon, no Hinglish, no Roman letters, no English words embedded. Use natural, warm Hindi that a layperson easily understands. Keep standard Vedic terms in pure Hindi (e.g. 'दशम भाव', 'सूर्य', 'गुरु', 'विवाह'). Use correct Hindi spelling: 'वैदिक कुंडली रिपोर्ट', 'शनि', 'साढ़े साती', 'मंगल दोष', 'अष्टम भाव', 'वक्री स्थिति'. Do NOT write 'वेदक कुठलो', 'शिन', 'साढे साती', 'मंगली दोष', 'अहम भाव', 'बकी स्थिति', or any Marathi/corrupted Devanagari. Always include the nuqta (़) where Hindi requires it (साढ़े, साढ़ी).`,
 };
 
 export function buildPillarSystemPrompt(lang: "en" | "hi"): string {
@@ -403,8 +403,12 @@ function normalizePillar(
     lord: truncate(badgesRaw.lord, l.badgeLord) || fallback.badges.lord,
   };
 
-  let narrativeEn = truncate(raw.narrativeEn, l.narrativeEn) || fallback.narrativeEn;
-  let narrativeHi = truncate(enforceDevanagari(raw.narrativeHi), l.narrativeHi) || fallback.narrativeHi;
+  // Narratives are rendered in FULL — no hard char cap. Truncating them is what
+  // collapsed the AI's multi-paragraph pillar prose down to 1-2 sentences in the
+  // printed PDF. We keep `clean` (whitespace collapse) and Devanagari purity,
+  // but never cut the string. The A4 card grows to fit via .rpt-narrative.
+  let narrativeEn = clean(raw.narrativeEn) || fallback.narrativeEn;
+  let narrativeHi = clean(enforceDevanagari(raw.narrativeHi)) || fallback.narrativeHi;
 
   let milestones = Array.isArray(raw.milestones) ? raw.milestones : [];
   const normalized = milestones
@@ -533,8 +537,8 @@ export function buildFallbackPillars(report: FullKundliReportData, lang: "en" | 
     titleEn: TITLES[key].en,
     titleHi: TITLES[key].hi,
     badges: { ...DEFAULT_BADGES[key] },
-    narrativeEn: truncate(narrative[key].en, PILLAR_LIMITS.narrativeEn),
-    narrativeHi: truncate(narrative[key].hi, PILLAR_LIMITS.narrativeHi),
+    narrativeEn: clean(narrative[key].en),
+    narrativeHi: clean(narrative[key].hi),
     milestones: DEFAULT_MILESTONES[key].map((m) => ({ ...m })),
   }));
 }

@@ -146,12 +146,17 @@ export default function KundliToolPage() {
               >
                 ← New Report
               </button>
-              <button
-                onClick={handlePrint}
-                className="px-6 py-2.5 text-sm font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25 print-pdf-btn"
-              >
-                🖨️ Print / Save as PDF
-              </button>
+              <div className="flex flex-col items-end gap-0.5">
+                <button
+                  onClick={handlePrint}
+                  className="px-6 py-2.5 text-sm font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25 print-pdf-btn"
+                >
+                  🖨️ Print / Save as PDF
+                </button>
+                <p className="no-print text-xs text-gray-500 mt-2">
+                  Tip: Enable "Background graphics" in the print dialog for full color output.
+                </p>
+              </div>
             </div>
           </div>
         </div>

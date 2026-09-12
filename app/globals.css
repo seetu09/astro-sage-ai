@@ -406,8 +406,25 @@ h1, h2, h3, h4, h5, h6 {
 @media print {
   * {
     -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+  /* Backgrounds / colored pills & badges must keep their brand colours in print */
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .bg-amber-50, .bg-amber-100, .bg-amber-500, .bg-amber-600,
+  [class*="bg-amber"], [class*="bg-orange"], [class*="bg-indigo"],
+  .badge, .pill, [class*="badge"], [class*="pill"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* Ensure report tables reproduce their header row and never split mid-row */
+  thead { display: table-header-group; }
+  tbody { display: table-row-group; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
 }
 
 .page {
@@ -755,8 +772,18 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   /* Brand-amber headings in print — overrides any violet/indigo accent */
-  h1, h2, h3 {
+  h1, h2, h3, h4 {
     color: #d97706 !important; /* amber-600 */
+  }
+
+  /* Force the Devanagari-capable font stack on the report so conjuncts,
+     matras and ligatures (क्ष, त्र, आ, ई) never fall back to a font without
+     Indic shaping — this is what fixes "आिथक" / "वर्तमान" style corruption. */
+  .report-root,
+  .report-root * {
+    font-family: "Noto Sans Devanagari", var(--font-noto-devanagari),
+      "Mukta", "Hind", "Noto Sans", var(--font-noto-sans),
+      system-ui, sans-serif !important;
   }
 
   /* Astro-card styling for print */

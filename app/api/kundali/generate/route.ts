@@ -61,7 +61,8 @@ ${safetyBoundaryEn}`;
 /** Shared language-purity rule injected into every AI prompt. */
 function getLanguageRule(lang: "en" | "hi"): string {
   return lang === "hi"
-    ? `ABSOLUTE RULE: Every string in this response MUST be written in 100% pure Hindi using Devanagari script only. NO English, NO Hinglish, NO Roman characters anywhere — including inside the "interpretation", "narrative", "overview", "summary", "note", "recommendations", "event", "milestones" and every other text field. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति', 'विवाह'। Milestone "period" fields may keep year ranges like '2026–2028' (digits are allowed).`
+    ? `ABSOLUTE RULE: Every string in this response MUST be written in 100% pure Hindi using Devanagari script only. NO English, NO Hinglish, NO Roman characters anywhere — including inside the "interpretation", "narrative", "overview", "summary", "note", "recommendations", "event", "milestones" and every other text field. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति', 'विवाह'। Milestone "period" fields may keep year ranges like '2026–2028' (digits are allowed).
+Use correct Hindi spelling: 'वैदिक कुंडली रिपोर्ट', 'शनि', 'साढ़े साती', 'मंगल दोष', 'अष्टम भाव', 'वक्री स्थिति'. Do NOT write 'वेदक कुठलो', 'शिन', 'साढे साती', 'मंगली दोष', 'अहम भाव', 'बकी स्थिति', or any Marathi/corrupted Devanagari. Always use the nuqta (़) where Hindi requires it (साढ़े, साढ़ी).`
     : `ABSOLUTE RULE: Every string in this response MUST be written in 100% modern English for a layperson. Explain every Vedic term in plain language (e.g., '10th house (career and public standing)', 'Saturn (the planet of discipline)'). NO Hindi, NO Devanagari, NO Hinglish anywhere.`;
 }
 

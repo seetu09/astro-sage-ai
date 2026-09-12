@@ -56,7 +56,7 @@ function localizePhase(phase: string | undefined | null, lang: 'en' | 'hi'): str
     rising: 'उदय',
     peak: 'चरम',
     descending: 'अवरोही',
-    setting: 'स्थापना',
+    setting: 'स्थापना चरण',
     'setting phase': 'स्थापना चरण',
     inactive: 'निष्क्रिय',
     active: 'सक्रिय',
@@ -64,12 +64,30 @@ function localizePhase(phase: string | undefined | null, lang: 'en' | 'hi'): str
     rising: 'Rising',
     peak: 'Peak',
     descending: 'Descending',
-    setting: 'Setting',
+    setting: 'Setting Phase',
     'setting phase': 'Setting Phase',
     inactive: 'Inactive',
     active: 'Active',
   };
   return map[phase] ?? phase;
+}
+
+/**
+ * Post-processing spell-corrections applied to every Hindi/Devanagari narrative
+ * and description rendered in the report. Fixes known model/data typos so the
+ * PDF never ships corrupted or Marathi-influenced Devanagari.
+ */
+function fixTypos<T extends string | null | undefined>(s: T): T {
+  if (!s) return s;
+  const str: string = s
+    ?.replace(/शिन/g, 'शनि')
+    ?.replace(/साढे/g, 'साढ़े')
+    ?.replace(/कुठलो/g, 'कुंडली')
+    ?.replace(/वेदक/g, 'वैदिक')
+    ?.replace(/वतर्मान/g, 'वर्तमान')
+    ?.replace(/मंगली दोष/g, 'मंगल दोष')
+    ?.replace(/अहम भाव/g, 'अष्टम भाव');
+  return str as T;
 }
 
 function Td({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -88,10 +106,12 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
   const hasPillars = pillars && pillars.length > 0;
   // Rich deep-dive narratives (same data the on-screen report uses).
   const rpNarr = (key: 'health' | 'wealth' | 'marriage' | 'career'): string =>
-    key === 'health' ? (richPredictions?.health?.narrative ?? '')
-      : key === 'wealth' ? (richPredictions?.wealth?.narrative ?? '')
-      : key === 'marriage' ? (richPredictions?.marriage?.narrative ?? '')
-      : (richPredictions?.career?.narrative ?? '');
+    fixTypos(
+      key === 'health' ? (richPredictions?.health?.narrative ?? '')
+        : key === 'wealth' ? (richPredictions?.wealth?.narrative ?? '')
+        : key === 'marriage' ? (richPredictions?.marriage?.narrative ?? '')
+        : (richPredictions?.career?.narrative ?? '')
+    );
   const rpMilestones = (key: 'wealth' | 'marriage' | 'career'): { period?: string; year?: string; event: string; note?: string }[] =>
     richPredictions?.[key]?.milestones ?? [];
   const rpGemstones = richPredictions?.remedies?.gemstones ?? [];
@@ -213,14 +233,14 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           <SectionHeading title={pillars[0].titleHi || pillars[0].titleEn} subtitle={_t('Life Pillar 1 of 6', 'जीवन स्तंभ 1 / 6')} />
           <div className="astro-card p-6">
             <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-amber-400 dark:border-amber-500">
-              <p className="whitespace-pre-line">{lang === 'hi' ? (pillars[0].narrativeHi || pillars[0].narrativeEn) : (pillars[0].narrativeEn || pillars[0].narrativeHi)}</p>
+              <p className="whitespace-pre-line">{fixTypos(lang === 'hi' ? (pillars[0].narrativeHi || pillars[0].narrativeEn) : (pillars[0].narrativeEn || pillars[0].narrativeHi))}</p>
             </div>
             {pillars[0].milestones && pillars[0].milestones.length > 0 && (
               <table className="w-full text-xs border-collapse">
                 <thead><tr className="bg-slate-100 dark:bg-slate-800"><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Period', 'अवधि')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Event', 'घटना')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Note', 'टिप्पणी')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Outcome', 'परिणाम')}</th></tr></thead>
                 <tbody>{pillars[0].milestones.map((m, mi) => (
                   <tr key={mi} className="border-b border-slate-200 dark:border-slate-700">
-                    <Td className="font-medium whitespace-nowrap">{m.period}</Td><Td>{m.event}</Td><Td className="text-slate-600 dark:text-slate-400">{m.note || '—'}</Td>
+                    <Td className="font-medium whitespace-nowrap">{m.period}</Td><Td>{fixTypos(m.event)}</Td><Td className="text-slate-600 dark:text-slate-400">{fixTypos(m.note) || '—'}</Td>
                     <Td>{m.outcome === 'positive' ? (<span className="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">{_t('Positive', 'शुभ')}</span>) : m.outcome === 'caution' ? (<span className="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">{_t('Caution', 'सावधानी')}</span>) : m.outcome === 'neutral' ? (<span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">{_t('Neutral', 'तटस्थ')}</span>) : '—'}</Td>
                   </tr>
                 ))}</tbody>
@@ -236,14 +256,14 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           <SectionHeading title={pillars[1].titleHi || pillars[1].titleEn} subtitle={_t('Life Pillar 2 of 6', 'जीवन स्तंभ 2 / 6')} />
           <div className="astro-card p-6">
             <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-amber-400 dark:border-amber-500">
-              <p className="whitespace-pre-line">{lang === 'hi' ? (pillars[1].narrativeHi || pillars[1].narrativeEn) : (pillars[1].narrativeEn || pillars[1].narrativeHi)}</p>
+              <p className="whitespace-pre-line">{fixTypos(lang === 'hi' ? (pillars[1].narrativeHi || pillars[1].narrativeEn) : (pillars[1].narrativeEn || pillars[1].narrativeHi))}</p>
             </div>
             {pillars[1].milestones && pillars[1].milestones.length > 0 && (
               <table className="w-full text-xs border-collapse">
                 <thead><tr className="bg-slate-100 dark:bg-slate-800"><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Period', 'अवधि')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Event', 'घटना')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Note', 'टिप्पणी')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Outcome', 'परिणाम')}</th></tr></thead>
                 <tbody>{pillars[1].milestones.map((m, mi) => (
                   <tr key={mi} className="border-b border-slate-200 dark:border-slate-700">
-                    <Td className="font-medium whitespace-nowrap">{m.period}</Td><Td>{m.event}</Td><Td className="text-slate-600 dark:text-slate-400">{m.note || '—'}</Td>
+                    <Td className="font-medium whitespace-nowrap">{m.period}</Td><Td>{fixTypos(m.event)}</Td><Td className="text-slate-600 dark:text-slate-400">{fixTypos(m.note) || '—'}</Td>
                     <Td>{m.outcome === 'positive' ? (<span className="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">{_t('Positive', 'शुभ')}</span>) : m.outcome === 'caution' ? (<span className="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">{_t('Caution', 'सावधानी')}</span>) : m.outcome === 'neutral' ? (<span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">{_t('Neutral', 'तटस्थ')}</span>) : '—'}</Td>
                   </tr>
                 ))}</tbody>
@@ -258,7 +278,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           <SectionHeading title={pillars[2].titleHi || pillars[2].titleEn} subtitle={_t('Life Pillar 3 of 6', 'जीवन स्तंभ 3 / 6')} />
           <div className="astro-card p-6">
             <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-amber-400 dark:border-amber-500">
-              <p className="whitespace-pre-line">{lang === 'hi' ? (pillars[2].narrativeHi || pillars[2].narrativeEn) : (pillars[2].narrativeEn || pillars[2].narrativeHi)}</p>
+              <p className="whitespace-pre-line">{fixTypos(lang === 'hi' ? (pillars[2].narrativeHi || pillars[2].narrativeEn) : (pillars[2].narrativeEn || pillars[2].narrativeHi))}</p>
             </div>
           </div>
         </section>
@@ -270,7 +290,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           <SectionHeading title={pillars[3].titleHi || pillars[3].titleEn} subtitle={_t('Life Pillar 4 of 6', 'जीवन स्तंभ 4 / 6')} />
           <div className="astro-card p-6">
             <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-amber-400 dark:border-amber-500">
-              <p className="whitespace-pre-line">{lang === 'hi' ? (pillars[3].narrativeHi || pillars[3].narrativeEn) : (pillars[3].narrativeEn || pillars[3].narrativeHi)}</p>
+              <p className="whitespace-pre-line">{fixTypos(lang === 'hi' ? (pillars[3].narrativeHi || pillars[3].narrativeEn) : (pillars[3].narrativeEn || pillars[3].narrativeHi))}</p>
             </div>
           </div>
         </section>
@@ -282,7 +302,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           <SectionHeading title={pillars[4].titleHi || pillars[4].titleEn} subtitle={_t('Life Pillar 5 of 6', 'जीवन स्तंभ 5 / 6')} />
           <div className="astro-card p-6">
             <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-amber-400 dark:border-amber-500">
-              <p className="whitespace-pre-line">{lang === 'hi' ? (pillars[4].narrativeHi || pillars[4].narrativeEn) : (pillars[4].narrativeEn || pillars[4].narrativeHi)}</p>
+              <p className="whitespace-pre-line">{fixTypos(lang === 'hi' ? (pillars[4].narrativeHi || pillars[4].narrativeEn) : (pillars[4].narrativeEn || pillars[4].narrativeHi))}</p>
             </div>
           </div>
         </section>
@@ -294,7 +314,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           <SectionHeading title={pillars[5].titleHi || pillars[5].titleEn} subtitle={_t('Life Pillar 6 of 6', 'जीवन स्तंभ 6 / 6')} />
           <div className="astro-card p-6">
             <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-amber-400 dark:border-amber-500">
-              <p className="whitespace-pre-line">{lang === 'hi' ? (pillars[5].narrativeHi || pillars[5].narrativeEn) : (pillars[5].narrativeEn || pillars[5].narrativeHi)}</p>
+              <p className="whitespace-pre-line">{fixTypos(lang === 'hi' ? (pillars[5].narrativeHi || pillars[5].narrativeEn) : (pillars[5].narrativeEn || pillars[5].narrativeHi))}</p>
             </div>
           </div>
         </section>
@@ -312,8 +332,8 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
               // Clean localized description — never render raw English/garbled text.
               const desc = lang === 'hi'
                 ? (sade?.isActive
-                    ? `शनि साढ़े साती वर्तमान में ${phaseLabel} में है। यह चुनौतियों के माध्यम से अनुशासन और दीर्घकालिक संरचनाओं की परिपक्वता पर ज़ोर देता है।`
-                    : 'कोई सक्रिय साढ़े साती अवधि नहीं है।')
+                    ? fixTypos(`शनि साढ़े साती वर्तमान में ${phaseLabel} में है। यह चुनौतियों के माध्यम से अनुशासन और दीर्घकालिक संरचनाओं की परिपक्वता पर ज़ोर देता है।`)
+                    : fixTypos('कोई सक्रिय साढ़े साती अवधि नहीं है।'))
                 : (sade?.isActive
                     ? `Saturn is currently transiting the ${phaseLabel} phase of the Sade Sati arc. This period emphasises discipline through challenge and the maturation of long-term structures.`
                     : 'No active Sade Sati period.');
@@ -353,7 +373,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
                         <Td className="font-semibold">{name}</Td>
                         <Td className="font-semibold text-amber-700 dark:text-amber-300">{nameHi || name}</Td>
                         <Td><span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded ${strength === 'strong' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' : strength === 'moderate' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>{sLabel}</span></Td>
-                        <Td className="text-slate-600 dark:text-slate-400">{desc || '—'}</Td>
+                        <Td className="text-slate-600 dark:text-slate-400">{fixTypos(desc) || '—'}</Td>
                       </tr>
                     );
                   };
@@ -437,7 +457,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
                 <table className="w-full text-sm border-collapse">
                   <thead><tr className="bg-slate-100 dark:bg-slate-800"><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Period', 'अवधि')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Event / Guidance', 'घटना / मार्गदर्शन')}</th></tr></thead>
                   <tbody>{rows.map((m, i) => (
-                    <tr key={i} className="border-b border-slate-200 dark:border-slate-700"><Td className="font-medium whitespace-nowrap">{m.period || m.year || '—'}</Td><Td className="text-slate-600 dark:text-slate-400">{m.event}{m.note ? ` — ${m.note}` : ''}</Td></tr>
+                    <tr key={i} className="border-b border-slate-200 dark:border-slate-700"><Td className="font-medium whitespace-nowrap">{m.period || m.year || '—'}</Td><Td className="text-slate-600 dark:text-slate-400">{fixTypos(m.event)}{m.note ? ` — ${fixTypos(m.note)}` : ''}</Td></tr>
                   ))}</tbody>
                 </table>
               </div>)})()}
@@ -463,7 +483,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
                 <table className="w-full text-sm border-collapse">
                   <thead><tr className="bg-slate-100 dark:bg-slate-800"><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Period', 'अवधि')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Event / Advice', 'घटना / सलाह')}</th></tr></thead>
                   <tbody>{rows.map((m, i) => (
-                    <tr key={i} className="border-b border-slate-200 dark:border-slate-700"><Td className="font-medium whitespace-nowrap">{m.period || m.year || '—'}</Td><Td className="text-slate-600 dark:text-slate-400">{m.event}{m.note ? ` — ${m.note}` : ''}</Td></tr>
+                    <tr key={i} className="border-b border-slate-200 dark:border-slate-700"><Td className="font-medium whitespace-nowrap">{m.period || m.year || '—'}</Td><Td className="text-slate-600 dark:text-slate-400">{fixTypos(m.event)}{m.note ? ` — ${fixTypos(m.note)}` : ''}</Td></tr>
                   ))}</tbody>
                 </table>
               </div>)})()}
@@ -490,7 +510,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
                 <table className="w-full text-sm border-collapse">
                   <thead><tr className="bg-slate-100 dark:bg-slate-800"><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Period', 'अवधि')}</th><th className="px-3 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-300 dark:border-slate-600">{_t('Key Event / Guidance', 'मुख्य घटना / मार्गदर्शन')}</th></tr></thead>
                   <tbody>{rows.map((m, i) => (
-                    <tr key={i} className="border-b border-slate-200 dark:border-slate-700"><Td className="font-medium whitespace-nowrap">{m.year || m.period || '—'}</Td><Td className="text-slate-600 dark:text-slate-400">{m.event}{m.note ? ` — ${m.note}` : ''}</Td></tr>
+                    <tr key={i} className="border-b border-slate-200 dark:border-slate-700"><Td className="font-medium whitespace-nowrap">{m.year || m.period || '—'}</Td><Td className="text-slate-600 dark:text-slate-400">{fixTypos(m.event)}{m.note ? ` — ${fixTypos(m.note)}` : ''}</Td></tr>
                   ))}</tbody>
                 </table>
               </div>)})()}
@@ -505,13 +525,13 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
           {rpGemstones.length > 0 && (
             <div className="astro-card p-6">
               <h3 className="text-lg font-bold font-serif text-amber-600 dark:text-amber-300 mb-3">{_t('Recommended Gemstones', 'अनुशंसित रत्न')}</h3>
-              <ul className="space-y-2">{rpGemstones.map((g, i) => (<li key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{g}</span></li>))}</ul>
+              <ul className="space-y-2">{rpGemstones.map((g, i) => (<li key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{fixTypos(g)}</span></li>))}</ul>
             </div>
           )}
           {rpMantras.length > 0 && (
             <div className="astro-card p-6">
               <h3 className="text-lg font-bold font-serif text-amber-600 dark:text-amber-300 mb-3">{_t('Daily Mantras', 'दैनिक मंत्र')}</h3>
-              <ul className="space-y-2">{rpMantras.map((m, i) => (<li key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{m}</span></li>))}</ul>
+              <ul className="space-y-2">{rpMantras.map((m, i) => (<li key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{fixTypos(m)}</span></li>))}</ul>
             </div>
           )}
         </section>
@@ -565,11 +585,11 @@ function DoshaCard({ lang, title, present, severity, isNeutralized, description,
           </span>
         )}
       </div>
-      {description && (<p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-rose-300 dark:border-rose-500">{description}</p>)}
+      {description && (<p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4 pl-4 border-l-4 border-rose-300 dark:border-rose-500">{fixTypos(description)}</p>)}
       {remedies.length > 0 && (
         <>
           <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-200 mb-2">{tr(lang, 'Remedies', 'उपाय')}</h4>
-          <ul className="space-y-1.5">{remedies.map((r, i) => (<li key={i} className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{r}</span></li>))}</ul>
+          <ul className="space-y-1.5">{remedies.map((r, i) => (<li key={i} className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{fixTypos(r)}</span></li>))}</ul>
         </>
       )}
     </div>
