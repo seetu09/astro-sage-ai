@@ -154,7 +154,7 @@ export default function KundliToolPage() {
                   🖨️ Print / Save as PDF
                 </button>
                 <p className="no-print text-xs text-gray-500 mt-2">
-                  Tip: Enable "Background graphics" in the print dialog for full color output.
+                  Tip: Enable &quot;Background graphics&quot; in the print dialog for full color output.
                 </p>
               </div>
             </div>
