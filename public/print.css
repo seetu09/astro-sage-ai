@@ -1,0 +1,73 @@
+/* AstroVeda Kundli — Print-Only Stylesheet */
+
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    font-family: "Noto Sans Devanagari", "Mukta", "Hind",
+                 "Noto Sans", system-ui, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.6;
+    color: #111827;
+    background: #ffffff;
+  }
+
+  h1, h2, h3, h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .report-page {
+    break-after: page;
+    page-break-after: always;
+    border: 1px solid #e2e8f0;
+    padding: 12mm;
+    box-sizing: border-box;
+    min-height: calc(297mm - 30mm);
+  }
+  .report-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .section-start {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Devanagari shaping safety — prevents broken matras like आिथŊक */
+  [lang="hi"],
+  .hindi,
+  .devanagari,
+  .deep-dive,
+  .deep-dive * {
+    font-family: "Noto Sans Devanagari", "Mukta", "Hind", sans-serif !important;
+    font-synthesis: none !important;
+    -webkit-font-smoothing: antialiased;
+    font-weight: 400 !important;
+    font-style: normal !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+  }
+}
+}

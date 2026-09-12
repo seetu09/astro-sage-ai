@@ -70,6 +70,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={16 + i}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <div className="report-section-content">
         <div dangerouslySetInnerHTML={{ __html: page.content }} />
@@ -85,6 +86,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={1}
       totalPages={TOTAL_PAGES}
+      className="report-page"
     >
       <NativitySummarySection model={model} />
       <PanchangSection model={model} />
@@ -98,6 +100,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={2}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <GrahaSthitiSection model={model} />
       <AshtakavargaSection model={model} />
@@ -110,6 +113,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={3}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <LagnaMoonSection model={model} />
       <NakshatraGunaSection model={model} />
@@ -122,6 +126,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={4}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <HouseGridSection model={model} />
       <D9ChartSection model={model} />
@@ -136,6 +141,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={11}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <LifeBalanceSection model={model} pillars={pillarList} />
       <MilestoneTrackerSection model={model} pillars={pillarList} />
@@ -148,6 +154,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={12}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start avoid-break"
     >
       <SpecialYogasSection model={model} />
       <MangalDoshaSection model={model} />
@@ -160,6 +167,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={13}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start avoid-break"
     >
       <SadeSatiSection model={model} />
       <DashaOverviewSection model={model} />
@@ -172,6 +180,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={14}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <MahadashaDetailSection model={model} />
       <DashaForecastSection model={model} />
@@ -184,6 +193,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={15}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <RemediesSection model={model} />
       <DailyGuidanceSection model={model} />
@@ -198,6 +208,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={21}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start deep-dive"
     >
       <DashaDetailSection model={model} />
     </PageShell>,
@@ -209,6 +220,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={22}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start"
     >
       <TransitSection model={model} />
     </PageShell>,
@@ -220,6 +232,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={23}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start deep-dive"
     >
       <CareerRoadmapSection model={model} />
     </PageShell>,
@@ -231,6 +244,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={24}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start deep-dive"
     >
       <WealthAnalysisSection model={model} />
     </PageShell>,
@@ -242,6 +256,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       subject={model.clientName}
       page={25}
       totalPages={TOTAL_PAGES}
+      className="report-page section-start deep-dive"
     >
       <HealthAnalysisSection model={model} />
     </PageShell>,

@@ -31,6 +31,8 @@ interface PageShellProps {
   /** Mark this page as the cover (no page number footer). */
   cover?: boolean;
   children: React.ReactNode;
+  /** Optional extra class names merged onto the root `.page` element. */
+  className?: string;
 }
 
 export default function PageShell({
@@ -42,10 +44,11 @@ export default function PageShell({
   totalPages,
   cover = false,
   children,
+  className,
 }: PageShellProps) {
   const { t } = useLanguage();
   return (
-    <div className="page" data-report-page={page}>
+    <div className={`page ${className ?? ""}`.trim()} data-report-page={page}>
       <div className="page-inner">
         <header className="page-header">
           <div className="page-header-left">
