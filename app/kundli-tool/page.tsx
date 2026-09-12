@@ -167,6 +167,7 @@ export default function KundliToolPage() {
           chartData={report.chartData}
           calculations={report.calculations}
           pillars={report.pillars}
+          richPredictions={report.richPredictions}
           lang={form.language}
         />
       </main>

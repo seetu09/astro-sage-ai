@@ -754,6 +754,11 @@ h1, h2, h3, h4, h5, h6 {
     background: white !important;
   }
 
+  /* Brand-amber headings in print — overrides any violet/indigo accent */
+  h1, h2, h3 {
+    color: #d97706 !important; /* amber-600 */
+  }
+
   /* Astro-card styling for print */
   .astro-card {
     background: white !important;
