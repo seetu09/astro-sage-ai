@@ -17,8 +17,8 @@ import NorthIndianChart from '@/app/components/NorthIndianChart';
 import KundaliPaywallBanner from '@/app/components/KundaliPaywallBanner';
 import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import ReportContainer from '@/app/components/ReportContainer';
-import KundaliView from '@/app/components/KundaliView';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
+import KundliReport, { type KundliReportProps } from '@/app/components/KundliReport';
 import Preview from './components/Preview';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
@@ -371,6 +371,45 @@ function buildKundliData(
   };
 }
 
+/**
+ * Convert the stored (loosely-typed, all-optional) `chartData` slice into the
+ * exact non-optional shape KundliReport requires for its rich A4 layout.
+ * Defensive fallbacks keep the report renderable even if a field is missing.
+ */
+function buildReportChartData(src: KundliData['chartData'], timezone: string): KundliReportProps['chartData'] {
+  const chart = src ?? {};
+  const toPlanet = (p: {
+    name?: string; sign?: string; house?: number; degree?: string | number;
+    nakshatra?: string; retrograde?: boolean; longitude?: number;
+  } | undefined): {
+    name: string; sign: string; house: number; degree: string; nakshatra: string; retrograde: boolean; longitude: number;
+  } => ({
+    name: p?.name || '',
+    sign: p?.sign || '',
+    house: Number(p?.house ?? 0),
+    degree: p?.degree != null ? String(p.degree) : '',
+    nakshatra: p?.nakshatra || '',
+    retrograde: Boolean(p?.retrograde),
+    longitude: typeof p?.longitude === 'number' ? p.longitude : 0,
+  });
+  const toHouse = (h: { house?: number; sign?: string; planets?: string[] } | undefined): {
+    house: number; sign: string; planets: string[];
+  } => ({
+    house: Number(h?.house ?? 0),
+    sign: h?.sign || '',
+    planets: Array.isArray(h?.planets) ? h.planets.map(String) : [],
+  });
+  return {
+    lagna: chart?.lagna || chart?.ascendant || '',
+    ascendant: chart?.ascendant || chart?.lagna || '',
+    moonSign: chart?.moonSign || chart?.rashi || '',
+    sunSign: chart?.sunSign || '',
+    nakshatra: chart?.nakshatra || '',
+    timezone: chart?.timezone || timezone || '+05:30',
+    planets: Array.isArray(chart?.planets) ? chart.planets.map(toPlanet) : [],
+    houses: Array.isArray(chart?.houses) ? chart.houses.map(toHouse) : [],
+  };
+}
 
 export default function KundaliPage() {
   const { language } = useLanguage();
@@ -659,6 +698,15 @@ export default function KundaliPage() {
     : null;
   const runningDashaEntry: DashaRoadmapEntry | null =
     kundliData?.paidTier?.dashaRoadmap?.find((d) => d.lord) ?? null;
+
+  // Return to the input form — clears the generated report and error state so
+  // the user can build a fresh kundli. Mirrors the reset button on the old
+  // kundli-tool page while leaving the persisted global kundli history intact.
+  const handleNewReport = useCallback(() => {
+    setKundliData(null);
+    setShowResult(false);
+    setError('');
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-[#F8F7FC] dark:bg-[#080811]">
@@ -1053,35 +1101,48 @@ export default function KundaliPage() {
               userEmail={kundliData?.email || email}
               userName={kundliData?.name || name}
             >
-          {/* ── Tabbed full premium dashboard (Career / Marriage / Wealth / Dasha + A4 report) ── */}
-          <KundaliView
-            freeTier={kundliData?.freeTier ?? EMPTY_FREE_TIER}
-            paidTier={kundliData?.paidTier ?? EMPTY_PAID_TIER}
-            pillars={kundliData?.pillars}
-            calculations={kundliData?.calculations}
-            chartData={kundliData?.chartData}
-            userEmail={kundliData?.email || email}
-            userName={kundliData?.name || name}
-            birthDetails={{
-              date: kundliData?.dateOfBirth || '',
-              time: kundliData?.timeOfBirth || '',
-              latitude: kundliData?.latitude != null ? kundliData.latitude.toFixed(2) : '',
-              longitude: kundliData?.longitude != null ? kundliData.longitude.toFixed(2) : '',
-              timezone: kundliData?.chartData?.timezone || t('kundali.istTimezone'),
-            }}
-            planets={kundliData?.planets?.map((p) => ({
-              body: p.name || '',
-              sign: p.sign || '',
-              degree: typeof p.degree === 'number' ? p.degree.toFixed(2) : String(p.degree || ''),
-              house: String(p.house || ''),
-              retro: p.status === 'Retrograde',
-            })) || []}
-            houseCusps={kundliData?.houses?.map((h) => ({
-              house: h.house || 0,
-              sign: String(h.sign || ''),
-              degree: '',
-            })) || []}
-          />
+          {/* ── Full rich A4 report (planets, dashas, yogas, doshas, pillars, remedies) ── */}
+          {(kundliData?.calculations || kundliData?.pillars || kundliData?.richPredictions) && (
+            <div className="no-print sticky top-14 sm:top-16 z-40 -mx-4 sm:-mx-4 lg:-mx-6 px-4 sm:px-4 lg:px-6 py-2 mb-2 bg-[#F8F7FC]/85 dark:bg-[#080811]/85 backdrop-blur-md border-b border-slate-200/60 dark:border-white/10">
+              <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+                <h2 className="text-sm sm:text-base font-serif font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-violet-600 dark:text-[#FFD166] shrink-0" />
+                  {t('kundali.sections.kundliReport')}
+                </h2>
+                <button
+                  type="button"
+                  onClick={handleNewReport}
+                  className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300/70 dark:border-white/15 text-indigo-950 dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  {t('kundali.newReport')}
+                </button>
+              </div>
+            </div>
+          )}
+          {kundliData ? (
+            <KundliReport
+              name={kundliData?.name || name}
+              birthDetails={{
+                birthDate: kundliData?.dateOfBirth || '',
+                birthTime: kundliData?.timeOfBirth || '',
+                latitude: kundliData?.latitude ?? null,
+                longitude: kundliData?.longitude ?? null,
+                timezone: kundliData?.chartData?.timezone || kundliData?.timezone || '+05:30',
+              }}
+              chartData={buildReportChartData(
+                kundliData?.chartData,
+                kundliData?.timezone || '+05:30',
+              )}
+              calculations={kundliData?.calculations}
+              pillars={kundliData?.pillars}
+              richPredictions={kundliData?.richPredictions}
+              lang={selectedLanguage}
+            />
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-[#9CA3AF] text-center py-8">
+              {t('kundali.errors.generic')}
+            </p>
+          )}
           </ReportContainer>
           </>
           )}

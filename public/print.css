@@ -1,23 +1,24 @@
 /* AstroVeda Kundli — Print-Only Stylesheet */
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&display=swap');
+
 @page {
   size: A4;
   margin: 15mm;
 }
 
 @media print {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box;
   }
 
   html, body {
     font-family: "Noto Sans Devanagari", "Mukta", "Hind",
                  "Noto Sans", system-ui, sans-serif;
     font-size: 10.5pt;
-    line-height: 1.6;
+    line-height: 1.55;
     color: #111827;
     background: #ffffff;
   }
@@ -36,10 +37,7 @@
   .report-page {
     break-after: page;
     page-break-after: always;
-    border: 1px solid #e2e8f0;
-    padding: 12mm;
-    box-sizing: border-box;
-    /* The 'min-height' rule has been removed to eliminate blank space. */
+    padding: 4mm 0;
   }
   .report-page:last-child {
     break-after: auto;
@@ -56,7 +54,115 @@
     page-break-inside: avoid;
   }
 
-  /* --- Devanagari shaping safety --- */
+  /* --- Section header (amber underline) --- */
+  .report-page > div:first-child {
+    border-bottom: 2px solid #f59e0b !important;
+    padding-bottom: 2mm !important;
+    margin-bottom: 4mm !important;
+  }
+
+  /* --- Cards --- */
+  .astro-card {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0 !important;
+    padding: 4mm !important;
+    margin-bottom: 4mm !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ============================================================
+     TABLE STYLING — this is the big fix
+     ============================================================ */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9.5pt !important;
+    margin: 3mm 0 !important;
+    table-layout: auto !important;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  th, td {
+    padding: 2mm 3mm !important;
+    border: 1px solid #cbd5e1 !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    word-wrap: break-word;
+  }
+  th {
+    background: #0f766e !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 9pt !important;
+  }
+  tbody tr:nth-child(even) td {
+    background: #f8fafc !important;
+  }
+  /* Existing badge spans inside table cells stay as inline chips */
+  td > span {
+    display: inline-block !important;
+    padding: 1mm 2mm !important;
+    border-radius: 2mm !important;
+    font-size: 8pt !important;
+  }
+
+  /* ============================================================
+     TAILWIND GRID → TABLE (for Birth Details and Bhavas)
+     ============================================================ */
+  /* Birth Details — 2-column grid of label/value pairs */
+  .grid.grid-cols-2 {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+  }
+  .grid.grid-cols-2 > span:nth-child(odd) {
+    display: table-cell !important;
+    width: 38% !important;
+    padding: 2mm 3mm !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #f1f5f9 !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    vertical-align: top !important;
+  }
+  .grid.grid-cols-2 > span:nth-child(even) {
+    display: table-cell !important;
+    width: 62% !important;
+    padding: 2mm 3mm !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    vertical-align: top !important;
+  }
+
+  /* Twelve Bhavas — 3-column card grid */
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3,
+  .grid.grid-cols-3 {
+    display: block !important;
+  }
+  /* Each card stays intact; allow 2 per row in print */
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > .astro-card,
+  .grid.grid-cols-3 > .astro-card {
+    display: inline-block !important;
+    width: 48% !important;
+    margin: 1% !important;
+    vertical-align: top !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ============================================================
+     Devanagari shaping safety — forces correct matras
+     ============================================================ */
   [lang="hi"],
   .hindi,
   .devanagari,
@@ -69,6 +175,11 @@
   .report-page p,
   .report-page div,
   .report-page span,
+  .report-page h1,
+  .report-page h2,
+  .report-page h3,
+  .report-page h4,
+  .report-page li,
   .report-page strong,
   .report-page b,
   .report-page em {
@@ -80,8 +191,26 @@
     letter-spacing: normal !important;
     text-transform: none !important;
   }
+  /* Keep headings and table th semibold, but not bold-synthesized */
+  .report-page h1,
+  .report-page h2,
+  .report-page h3,
+  .report-page h4,
+  .report-page th,
+  .report-page strong,
+  .report-page b {
+    font-weight: 600 !important;
+  }
 
-  /* --- Kill phantom numbered lists --- */
+  /* ============================================================
+     Utility
+     ============================================================ */
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  /* Kill phantom numbered lists */
   ol, ul {
     list-style-type: none !important;
     padding-left: 0 !important;
@@ -93,7 +222,14 @@
     content: none !important;
   }
 
-  /* --- Twelve Houses grid → print-safe table layout --- */
+  /* Preserve bullet appearance for actual bullet lists */
+  ul > li > span:first-child {
+    display: inline !important;
+  }
+
+  /* ============================================================
+     TWELVE HOUSES grid → print-safe table layout
+     ============================================================ */
   .rpt-house-grid {
     display: table !important;
     width: 100% !important;

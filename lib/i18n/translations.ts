@@ -542,6 +542,7 @@ export interface Translations {
       paywallFootnote: string;
       paywallAria: string;
       kundliReport: string;
+      newReport: string;
       language: string;
       selectLanguage: string;
       preview: string;
@@ -1408,6 +1409,7 @@ export const translations: Record<Language, Translations> = {
         paywallFootnote: 'One-time payment • Instant unlock • PDF download included',
         paywallAria: 'Unlock premium kundli report',
         kundliReport: 'Kundli Report',
+        newReport: '← New Report',
         language: 'Language',
         selectLanguage: 'Select Language',
         preview: 'Preview',
@@ -2433,6 +2435,7 @@ export const translations: Record<Language, Translations> = {
         paywallFootnote: 'एक बार भुगतान • तुरंत अनलॉक • PDF डाउनलोड शामिल',
         paywallAria: 'प्रीमियम कुंडली रिपोर्ट अनलॉक',
         kundliReport: 'कुंडली रिपोर्ट',
+        newReport: '← नई रिपोर्ट',
         language: 'भाषा',
         selectLanguage: 'भाषा चुनें',
         preview: 'पूर्वावलोकन',
