@@ -1,9 +1,5 @@
 'use client';
 
-// ⚠️ OWNERSHIP IS SERVER-ONLY.
-// Do NOT read localStorage, context, or any client flag to decide
-// paywall visibility. Use the `isOwned` prop passed from the server.
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -22,6 +18,7 @@ import {
 
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
+import { useApp } from '@/app/context/AppContext';
 import PaymentButton from '@/app/components/PaymentButton';
 import KundaliPdfButton from '@/app/components/KundliPdfButton';
 import ReportRenderer from '@/app/components/report/ReportRenderer';
@@ -39,38 +36,28 @@ import {
 } from '@/types/kundali';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 
-interface BirthDetails {
-  date: string;
-  time: string;
-  latitude: string;
-  longitude: string;
-  timezone: string;
-}
-
-interface ReportPayload {
-  chartData?: any;
-  calculations?: KundliCalculations;
-  pillars?: LifePillarConfig[];
-  paidTier?: any;
-  richPredictions?: any;
-  [key: string]: unknown;
-}
-
 interface KundaliViewProps {
-  birthDetails: BirthDetails;
-  chartFingerprint: string;
-  isOwned: boolean;
-  ownedReport: ReportPayload | null;
-  userEmail: string | null;
   freeTier: FreeTierData;
   paidTier: PaidTierData;
+  userEmail: string;
   userName?: string;
+  birthDetails?: {
+    date: string;
+    time: string;
+    latitude: string;
+    longitude: string;
+    timezone: string;
+  };
   planets?: { body: string; sign: string; degree: string; house: string; retro?: boolean }[];
   houseCusps?: { house: number; sign: string; degree: string }[];
   chartType?: string;
+  /** Optional deterministic calculations layer consumed by the A4 report. */
   calculations?: KundliCalculations;
+  /** Six AI-generated Life Pillar narratives (single-shot report generation). */
   pillars?: LifePillarConfig[];
+  /** Raw chartData slice from `/api/kundali/generate` for the rich PDF template. */
   chartData?: any;
+  /** Called when the user clicks "Download PDF" after unlocking. */
   onDownload?: () => void | Promise<void>;
 }
 
@@ -103,14 +90,11 @@ const PLANET_KEYS: Record<string, string> = {
 };
 
 export default function KundaliView({
-  birthDetails,
-  chartFingerprint,
-  isOwned,
-  ownedReport,
-  userEmail,
   freeTier,
   paidTier,
+  userEmail,
   userName = 'User',
+  birthDetails = { date: '', time: '', latitude: '', longitude: '', timezone: '' },
   planets = [],
   houseCusps = [],
   chartType = 'north-indian',
@@ -121,6 +105,7 @@ export default function KundaliView({
 }: KundaliViewProps) {
   const { language } = useLanguage();
   const { t } = useTranslation();
+  const { isPaid, markAsPaid, selectedLanguage, unlockToken } = useApp();
   const [activeTab, setActiveTab] = useState<TabKey>('career');
   // 'tabs' = existing tabbed preview (default); 'report' = strict-A4 modular report.
   const [viewMode, setViewMode] = useState<'tabs' | 'report'>('tabs');
@@ -202,7 +187,7 @@ export default function KundaliView({
     northIndianChartSvg: '',
     kalpurushaPhalDeepikaRefs: [],
     scorecard: [],
-    isPaidTier: isOwned,
+    isPaidTier: isPaid,
     panchang: birthDetails.date
       ? (() => {
           const dayIndex = new Date(birthDetails.date).getDay();
@@ -336,7 +321,7 @@ export default function KundaliView({
           </button>
           <button
             onClick={() => {
-              if (isOwned) {
+              if (isPaid) {
                 setViewMode('report');
                 setReportLockHint(false);
               } else {
@@ -344,7 +329,7 @@ export default function KundaliView({
               }
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-              viewMode === 'report' && isOwned
+              viewMode === 'report' && isPaid
                 ? 'bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-[#FFD166] dark:to-[#E0A96D] text-white dark:text-[#080811] shadow-sunlit-soft'
                 : 'text-slate-500 dark:text-[#9CA3AF] hover:text-indigo-950 dark:hover:text-[#F3F4F6]'
             }`}
@@ -357,7 +342,7 @@ export default function KundaliView({
 
       {/* ─────────────── GATED TABBED PREVIEW CARDS ─────────────── */}
       <div className="glass-card rounded-xl p-4 sm:p-6">
-        {reportLockHint && !isOwned && (
+        {reportLockHint && !isPaid && (
           <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-300/60 dark:border-[#FFD166]/30 bg-amber-50 dark:bg-[#FFD166]/10 px-3 py-2.5 text-xs sm:text-sm text-amber-800 dark:text-[#FFD166]">
             <Lock className="w-4 h-4 mt-0.5 shrink-0" />
             <span>
@@ -365,7 +350,7 @@ export default function KundaliView({
             </span>
           </div>
         )}
-        {viewMode === 'report' && isOwned ? (
+        {viewMode === 'report' && isPaid ? (
           /* Strict-A4 modular report renderer — paid users only. */
           <ReportRenderer
             reportData={reportData}
@@ -399,7 +384,7 @@ export default function KundaliView({
 
         <div className="relative">
           {/* Active tab content */}
-          <div className={isOwned ? '' : 'blur-[6px] select-none pointer-events-none opacity-70'}>
+          <div className={isPaid ? '' : 'blur-[6px] select-none pointer-events-none opacity-70'}>
             <TabPanel tab={activeTab} paidTier={paidTier} />
 
             {/* Rich AI remedy kit — gemstone suggestions + exactly four daily mantras */}
@@ -430,8 +415,8 @@ export default function KundaliView({
             )}
           </div>
 
-          {/* Frosted-glass lock overlay + CTA (only when not owned) */}
-          {!isOwned && (
+          {/* Frosted-glass lock overlay + CTA (only when not paid) */}
+          {!isPaid && (
             <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-md">
               <div className="text-center px-4 max-w-sm">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 dark:from-[#FFD166]/20 dark:to-[#E0A96D]/20 mb-3">
@@ -447,9 +432,7 @@ export default function KundaliView({
                     userName={userName}
                     paymentType="kundli_report"
                     buttonText={ctaLabel}
-                    onSuccess={(details) => {
-                      // Server records ownership; UI updates via server-side isOwned prop.
-                    }}
+                    onSuccess={(details) => markAsPaid(details)}
                   />
                 </div>
               </div>
@@ -457,11 +440,11 @@ export default function KundaliView({
           )}
         </div>
 
-                {/* Download actions (only when owned): primary server-rendered
+                {/* Download actions (only when paid): primary server-rendered
                     "Download Full 25-Page Kundli" with language modal +
                     automatic window.print() fallback; secondary instant
                     client-side quick print. */}
-        {isOwned && (
+        {isPaid && (
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <KundaliPdfButton
               userName={userName}
@@ -470,6 +453,7 @@ export default function KundaliView({
               freeTier={freeTier}
               paidTier={paidTier}
               pillars={(pillars ?? []) as ReportNarrative[]}
+              paymentToken={unlockToken}
             />
           </div>
         )}

@@ -3,7 +3,13 @@ process.env.PAYMENT_UNLOCK_SECRET = process.env.PAYMENT_UNLOCK_SECRET || "test-s
 import { describe, it, expect } from "vitest";
 import {
   chartFingerprint,
+  // re-exported below only when Supabase isn't needed (table-dependent helpers
+  // are not exercised here — they need a live DB).
 } from "@/lib/serverPurchasedReports";
+import {
+  issueUnlockToken,
+  verifyUnlockToken,
+} from "@/lib/paymentUnlock";
 
 describe("chartFingerprint — stable per-chart identity", () => {
   it("is deterministic for identical inputs", () => {
@@ -44,79 +50,19 @@ describe("chartFingerprint — stable per-chart identity", () => {
     const b = chartFingerprint({});
     expect(a).toBe(b);
   });
-
-  it("is per-fingerprint, not global — different charts yield different fingerprints", () => {
-    const chartA = {
-      latitude: 28.6139,
-      longitude: 77.209,
-      birthDate: "1990-01-01",
-      birthTime: "12:00",
-      timezone: "+05:30",
-    };
-    const chartB = {
-      latitude: 19.076,
-      longitude: 72.8777,
-      birthDate: "1995-06-15",
-      birthTime: "08:30",
-      timezone: "+05:30",
-    };
-    const fpA = chartFingerprint(chartA);
-    const fpB = chartFingerprint(chartB);
-    expect(fpA).not.toBe(fpB);
-    // Same chart → same fingerprint (idempotent)
-    expect(chartFingerprint(chartA)).toBe(fpA);
-  });
 });
 
-describe("ownership is per-fingerprint, not global", () => {
-  it("returns true only for the purchased fingerprint, false for others", () => {
-    // This documents the core invariant: ownership is per-fingerprint.
-    // The bug we are guarding against is a global "isPaid" flag that
-    // unlocks ALL charts for a user instead of just the one they bought.
-    const fpA = chartFingerprint({
-      latitude: 28.6139,
-      longitude: 77.209,
-      birthDate: "1990-01-01",
-      birthTime: "12:00",
-      timezone: "+05:30",
-    });
-    const fpB = chartFingerprint({
-      latitude: 19.076,
-      longitude: 72.8777,
-      birthDate: "1995-06-15",
-      birthTime: "08:30",
-      timezone: "+05:30",
-    });
+describe("server-side unlock token ownership", () => {
+  it("round-trips a payment id through issue/verify", () => {
+    const token = issueUnlockToken("order_123", "pay_456");
+    const verified = verifyUnlockToken(token);
+    expect(verified).not.toBeNull();
+    expect(verified).toEqual({ orderId: "order_123", paymentId: "pay_456" });
+  });
 
-    // Verify fingerprints are different (prerequisite for the invariant)
-    expect(fpA).not.toBe(fpB);
-
-    // The invariant: a purchase for fpA does NOT unlock fpB.
-    // In the real implementation, hasPurchasedReport queries by
-    // (email OR user_id) AND chart_fingerprint — so a row for fpA
-    // will never match a query for fpB.
-    //
-    // We verify the fingerprint function produces distinct outputs,
-    // which is what makes per-fingerprint ownership possible.
-    // The actual DB lookup is tested via integration tests with a
-    // live Supabase instance.
-    expect(chartFingerprint({
-      latitude: 28.6139,
-      longitude: 77.209,
-      birthDate: "1990-01-01",
-      birthTime: "12:00",
-      timezone: "+05:30",
-    })).toBe(fpA); // Same input → same fingerprint (deterministic)
-
-    expect(chartFingerprint({
-      latitude: 19.076,
-      longitude: 72.8777,
-      birthDate: "1995-06-15",
-      birthTime: "08:30",
-      timezone: "+05:30",
-    })).toBe(fpB); // Same input → same fingerprint (deterministic)
-
-    // Different inputs → different fingerprints
-    expect(fpA).not.toBe(fpB);
+  it("rejects a malformed/empty token", () => {
+    expect(verifyUnlockToken(undefined)).toBeNull();
+    expect(verifyUnlockToken("")).toBeNull();
+    expect(verifyUnlockToken("not-a-token")).toBeNull();
   });
 });

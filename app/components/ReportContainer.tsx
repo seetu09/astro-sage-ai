@@ -22,18 +22,16 @@ interface ReportContainerProps {
   userName?: string;
   /** Price in INR for unlocking the full report. */
   price?: number;
-  /** The complete report content — rendered ONLY when isOwned === true. */
+  /** The complete report content — rendered ONLY when isPaid === true. */
   children: React.ReactNode;
-  /** Server-verified ownership flag — true only when this chart is owned. */
-  isOwned?: boolean;
 }
 
 /**
  * ReportContainer — Payment-gated universal report shell.
  *
  * - Sticky TOP bar: localized title + language <select> (instant switch, no refresh).
- * - !isOwned → preview panel + Razorpay payment CTA (children NOT rendered).
- * -  isOwned → renders the full report (children). The download CTA lives inside
+ * - !isPaid → preview panel + Razorpay payment CTA (children NOT rendered).
+ * -  isPaid → renders the full report (children). The download CTA lives inside
  *    the report children (KundaliView → KundliPdfButton) so only one download
  *    button appears on the result screen.
  */
@@ -43,9 +41,8 @@ export default function ReportContainer({
   userName = 'User',
   price = 49,
   children,
-  isOwned = false,
 }: ReportContainerProps) {
-  const { selectedLanguage, setSelectedLanguage } = useApp();
+  const { isPaid, markAsPaid, selectedLanguage, setSelectedLanguage } = useApp();
   const { t } = useTranslation();
 
   return (
@@ -82,7 +79,7 @@ export default function ReportContainer({
         </div>
       </div>
 
-      {!isOwned ? (
+      {!isPaid ? (
         /* --------------------------- LOCKED PREVIEW VIEW --------------------------- */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -141,7 +138,8 @@ export default function ReportContainer({
                 buttonText={`${t('kundali.sections.pay')} ₹${price} — ${t('kundali.sections.unlockFullReport')}`}
                 onSuccess={(details) => {
                   trackEvent('report_unlocked', { order_id: details.orderId });
-                  // Server records ownership; UI updates via server-side isOwned prop.
+                  // Post-payment handler → toggles isPaid = true globally & persists
+                  markAsPaid(details);
                 }}
               />
             </div>

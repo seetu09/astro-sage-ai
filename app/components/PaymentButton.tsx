@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Script from "next/script";
-import { useRouter } from "next/navigation";
 import { Loader2, Lock, AlertCircle } from "lucide-react";
 import { useTranslation } from "@/app/lib/i18n/useTranslation";
 import { useAuth } from "@/app/context/AuthContext";
@@ -11,6 +10,8 @@ import { getSupabaseClient } from "@/lib/supabase";
 export interface PaymentSuccessDetails {
   orderId: string;
   paymentId: string;
+  /** Server-minted signed unlock token returned by `/api/payment/verify`. */
+  unlockToken?: string;
 }
 
 interface PaymentButtonProps {
@@ -51,7 +52,6 @@ export default function PaymentButton({
   birthTime,
   report,
 }: PaymentButtonProps) {
-  const router = useRouter();
   const { t } = useTranslation();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -160,12 +160,10 @@ export default function PaymentButton({
 
             if (verifyData.success) {
               setIsLoading(false);
-              // Trigger server re-render so the page re-computes ownership
-              // via hasPurchasedReport() and shows the full report.
-              router.refresh();
               onSuccess?.({
                 orderId: response.razorpay_order_id,
                 paymentId: response.razorpay_payment_id,
+                unlockToken: verifyData.unlockToken as string | undefined,
               });
             } else {
               setError(verifyData.error || t("payment.messages.verificationFailed"));
