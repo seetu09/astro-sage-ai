@@ -26,6 +26,13 @@ interface PaymentButtonProps {
   createOrderEndpoint?: string;
   verifyEndpoint?: string;
   disabled?: boolean;
+  /** kundli_report: stable identity of the chart being purchased (ownership). */
+  chartFingerprint?: string;
+  /** kundli_report: client name / birth details for the owned-report record. */
+  birthDate?: string;
+  birthTime?: string;
+  /** kundli_report: full paid report payload persisted on purchase (for later re-download). */
+  report?: unknown;
 }
 
 export default function PaymentButton({
@@ -40,6 +47,10 @@ export default function PaymentButton({
   createOrderEndpoint = "/api/payment/create-order",
   verifyEndpoint = "/api/payment/verify",
   disabled = false,
+  chartFingerprint,
+  birthDate,
+  birthTime,
+  report,
 }: PaymentButtonProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -73,6 +84,9 @@ export default function PaymentButton({
       return;
     }
 
+    // Anonymous checkout is fine — the report is owned by email and can be
+    // re-downloaded / recovered with the same email. A signed-in buyer gets
+    // the report automatically surfaced in their profile tab too.
     setIsLoading(true);
 
     // Authenticated requests carry the Supabase access token — required for
@@ -101,6 +115,14 @@ export default function PaymentButton({
           userEmail,
           userName,
           paymentType,
+          ...(paymentType === "kundli_report"
+            ? {
+                chartFingerprint: chartFingerprint || "",
+                birthDate: birthDate || "",
+                birthTime: birthTime || "",
+                report: report ?? {},
+              }
+            : {}),
         }),
       });
 

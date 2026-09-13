@@ -18,7 +18,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useWallet } from "../context/WalletContext";
+import { useToast } from "./ToastProvider";
 import { useTranslation } from "@/app/lib/i18n/useTranslation";
+import { ReportData } from "@/lib/pdfHtmlTemplate";
 import { getKundaliHistory, getChatHistory } from "@/lib/user-history";
 import type {
   ChatHistoryEntry,
@@ -36,6 +38,7 @@ interface UserProfileModalProps {
 const sections = [
   { action: "personal-details" as const, key: "profile.titlePersonal", icon: CircleUserRound },
   { action: "wallet-details" as const, key: "profile.titleWallet", icon: WalletCards },
+  { action: "purchased-reports" as const, key: "profile.titlePurchasedReports", icon: FileClock },
   { action: "kundali-history" as const, key: "profile.titleKundaliHistory", icon: FileClock },
   { action: "chat-history" as const, key: "profile.titleChatHistory", icon: MessageCircleMore },
 ] as const;
@@ -48,6 +51,20 @@ function formatDate(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+/** A report the user paid for and owns — loaded from /api/profile/reports. */
+interface PurchasedReportEntry {
+  id: string;
+  chartFingerprint: string;
+  clientName: string;
+  birthDate: string;
+  birthTime: string;
+  orderId: string;
+  paymentId: string;
+  ownerEmail: string | null;
+  createdAt: string;
+  report: Record<string, unknown>;
 }
 
 function downloadReceipt(transaction: WalletTransaction, customerName: string, email: string, t: (key: string) => string) {
@@ -78,6 +95,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
   const { t } = useTranslation();
   const { user, updateProfile, uploadAvatar } = useAuth();
   const { walletBalance, freeMessagesLeft, transactions, openTopUp } = useWallet();
+  const toast = useToast();
   const [activeView, setActiveView] = useState<ProfileMenuAction>(initialView);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -87,6 +105,8 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
   const [form, setForm] = useState({ name: "", birthDate: "", birthTime: "", birthPlace: "", avatar: "" });
   const [kundaliHistory, setKundaliHistory] = useState<KundaliHistoryEntry[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
+  const [purchasedReports, setPurchasedReports] = useState<PurchasedReportEntry[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !user) return;
@@ -102,6 +122,45 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     setChatHistory(getChatHistory(user.id));
     setSaveMessage("");
     setUploadMessage("");
+
+    // Load the user's purchased (owned) reports from the server.
+    setReportsLoading(true);
+    const loadReports = async () => {
+      try {
+        const supabase = (await import("@/lib/supabase")).getSupabaseClient();
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        const sessionEmail = session.data.session?.user?.email ?? user.email ?? "";
+        if (!token) {
+          setPurchasedReports([]);
+          return;
+        }
+        // Auto-bind any reports purchased with this email (e.g. before account
+        // creation) to the signed-in account so they appear here immediately.
+        try {
+          const { bindPurchasedKundliToUser } = await import("@/lib/serverPurchasedReports");
+          if (sessionEmail) {
+            await bindPurchasedKundliToUser(sessionEmail, user.id);
+          }
+        } catch {
+          // binding is best-effort; ignore failures
+        }
+        const res = await fetch("/api/profile/reports", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          setPurchasedReports([]);
+          return;
+        }
+        const json = (await res.json()) as { reports?: PurchasedReportEntry[] };
+        setPurchasedReports(json.reports ?? []);
+      } catch {
+        setPurchasedReports([]);
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+    void loadReports();
   }, [initialView, isOpen, user]);
 
   useEffect(() => {
@@ -317,6 +376,85 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     </div>
   ) : <EmptyList icon={FileClock} title={t('profile.noKundaliHistory')} description={t('profile.noKundaliHistoryDesc')} actionHref="/kundali" actionLabel={t('profile.generateKundali')} />;
 
+  // Re-download an owned report using the durable server-side ownership path:
+  // the signed-in user (Bearer token) + their chart fingerprint authorize the
+  // PDF route — no re-payment, no dependence on a local token.
+  const downloadOwnedReport = async (entry: PurchasedReportEntry) => {
+    try {
+      const supabase = (await import("@/lib/supabase")).getSupabaseClient();
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        toast.error(t('profile.reportsSignInRequired'));
+        return;
+      }
+      const report = (entry.report ?? {}) as Record<string, unknown>;
+      const reportData = buildOwnedReportData(report);
+      const res = await fetch("/api/kundali/pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          reportData,
+          chartFingerprint: entry.chartFingerprint,
+          language: "en",
+          ownerEmail: entry.ownerEmail,
+          // Forward the rich slices captured when the report was unlocked so the
+          // PDF renders the full paid content (not just the deterministic shell).
+          chartData: report.chartData,
+          calculations: report.calculations,
+          freeTier: report.freeTier,
+          paidTier: report.paidTier,
+          pillars: report.pillars,
+        }),
+      });
+      if (!res.ok) {
+        toast.error(t('profile.reportsDownloadFailed'));
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${entry.clientName || "kundli"}-report.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch {
+      toast.error(t('profile.reportsDownloadFailed'));
+    }
+  };
+
+  const renderPurchasedReports = () => {
+    if (reportsLoading) {
+      return <div className="flex items-center justify-center gap-2 py-10 text-sm text-amber-900/60 dark:text-[#9CA3AF]"><Loader2 className="h-4 w-4 animate-spin" />{t('profile.reportsLoading')}</div>;
+    }
+    return purchasedReports.length ? (
+      <div className="divide-y divide-amber-200/60 overflow-hidden rounded-lg border border-amber-200/70 dark:divide-white/10 dark:border-white/10">
+        {purchasedReports.map((entry) => (
+          <div key={entry.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-amber-600 dark:text-[#FFD166]" />
+                <p className="truncate font-semibold text-amber-950 dark:text-[#F3F4F6]">{t('profile.reportsChartFor', { name: entry.clientName })}</p>
+              </div>
+              <p className="mt-1 text-xs text-amber-800/60 dark:text-[#9CA3AF]">{formatDate(entry.createdAt)} · {entry.paymentId || entry.orderId}</p>
+              <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{t('profile.reportsOwned')}</p>
+            </div>
+            <button onClick={() => void downloadOwnedReport(entry)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white dark:bg-[#FFD166] dark:text-[#080811]">
+              <Download className="h-4 w-4" /> {t('profile.reportsDownload')}
+            </button>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <EmptyList icon={FileClock} title={t('profile.noPurchasedReports')} description={t('profile.noPurchasedReportsDesc')} />
+    );
+  };
+
   const renderChatHistory = () => chatHistory.length ? (
     <div className="space-y-3">
       {chatHistory.map((entry) => (
@@ -338,6 +476,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     "personal-details": t('profile.titlePersonal'),
     "wallet-details": t('profile.titleWallet'),
     "payment-history": t('profile.titleWallet'),
+    "purchased-reports": t('profile.titlePurchasedReports'),
     "kundali-history": t('profile.titleKundaliHistory'),
     "chat-history": t('profile.titleChatHistory'),
   };
@@ -366,6 +505,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
           <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6">
             {activeView === "personal-details" && renderPersonalDetails()}
             {(activeView === "wallet-details" || activeView === "payment-history") && renderWallet()}
+            {activeView === "purchased-reports" && renderPurchasedReports()}
             {activeView === "kundali-history" && renderKundaliHistory()}
             {activeView === "chat-history" && renderChatHistory()}
           </div>
@@ -377,6 +517,68 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
 
 function HistoryStat({ label, value }: { label: string; value: string }) {
   return <div className="min-w-0"><dt className="text-xs text-amber-800/50 dark:text-[#9CA3AF]">{label}</dt><dd className="truncate font-medium text-amber-950 dark:text-[#F3F4F6]">{value}</dd></div>;
+}
+
+/**
+ * Reconstruct a `ReportData` shell from a previously-purchased kundli record
+ * so the user can re-download their owned PDF. The authoritative rich slices
+ * (paidTier, calculations, pillars, chartData) travel alongside in the PDF POST
+ * body — this builder only has to satisfy the route's non-empty contract
+ * (`planetaryPositions` must be an Array) and carry the identity/fingerprint.
+ */
+function buildOwnedReportData(report: Record<string, unknown>): ReportData {
+  const chart = (report.chartData as Record<string, unknown>) ?? {};
+  const planets = (Array.isArray(chart.planets) ? chart.planets : []) as Array<
+    Record<string, unknown>
+  >;
+  const houses = (Array.isArray(chart.houses) ? chart.houses : []) as Array<
+    Record<string, unknown>
+  >;
+  return {
+    clientName: String(report.name ?? report.clientName ?? "User"),
+    chartType: "North Indian",
+    birthDetails: {
+      date: String(report.dateOfBirth ?? report.birthDate ?? ""),
+      time: String(report.timeOfBirth ?? report.birthTime ?? ""),
+      latitude: String(report.latitude ?? ""),
+      longitude: String(report.longitude ?? ""),
+      timezone: String(report.timezone ?? "+05:30"),
+    },
+    planetaryPositions: planets.map((p) => ({
+      body: String(p?.name ?? ""),
+      sign: String(p?.sign ?? ""),
+      degree:
+        typeof p?.degree === "number"
+          ? String(p.degree)
+          : typeof p?.degree === "string"
+            ? p.degree
+            : "",
+      house: String(p?.house ?? ""),
+      retro: Boolean(p?.retrograde),
+      nakshatra: p?.nakshatra ? String(p.nakshatra) : undefined,
+    })),
+    houseCusps: houses.map((h) => ({
+      house: Number(h?.house ?? 0),
+      sign: cleanOwnedSign(h?.sign),
+      degree: "",
+    })),
+    dashaPeriods: [],
+    yogas: [],
+    remedies: [],
+    domainInsights: [],
+    northIndianChartSvg: "",
+    kalpurushaPhalDeepikaRefs: [],
+    scorecard: [],
+    isPaidTier: true,
+    narratives: [],
+    doshas: [],
+  };
+}
+
+function cleanOwnedSign(value: unknown): string {
+  const s = String(value ?? "").trim();
+  const idx = s.indexOf("(");
+  return idx >= 0 ? s.slice(0, idx).trim() : s;
 }
 
 function EmptyList({ icon: Icon, title, description, actionHref, actionLabel }: { icon: typeof FileClock; title: string; description: string; actionHref?: string; actionLabel?: string }) {

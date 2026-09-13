@@ -794,6 +794,15 @@ export interface Translations {
     transactionsDesc: string;
     addFunds: string;
     downloadReceipt: string;
+    titlePurchasedReports: string;
+    reportsChartFor: string;
+    reportsOwned: string;
+    reportsDownload: string;
+    reportsLoading: string;
+    reportsDownloadFailed: string;
+    reportsSignInRequired: string;
+    noPurchasedReports: string;
+    noPurchasedReportsDesc: string;
   };
   payment: {
     messages: {
@@ -801,8 +810,9 @@ export interface Translations {
       success: string;
       error: string;
       cancelled: string;
-      loadingSystem: string;
+            loadingSystem: string;
       enterEmail: string;
+      authRequired: string;
       verificationFailed: string;
       loadFailed: string;
       loading: string;
@@ -1663,6 +1673,15 @@ export const translations: Record<Language, Translations> = {
       transactionsDesc: 'Completed wallet payments and receipts',
       addFunds: 'Add funds',
       downloadReceipt: 'Download Receipt',
+      titlePurchasedReports: 'Downloaded Reports',
+      reportsChartFor: 'Report: {name}',
+      reportsOwned: 'You own this report — download anytime',
+      reportsDownload: 'Download PDF',
+      reportsLoading: 'Loading your reports…',
+      reportsDownloadFailed: 'Could not download the report. Please try again.',
+      reportsSignInRequired: 'You must be signed in to download a saved report.',
+      noPurchasedReports: 'No downloaded reports yet',
+      noPurchasedReportsDesc: 'Reports you purchase are saved here so you can re-download them anytime. Bought a report with this email before signing up? It will appear here automatically once you sign in.',
     },
     payment: {
       messages: {
@@ -1672,6 +1691,7 @@ export const translations: Record<Language, Translations> = {
         cancelled: 'Payment was cancelled.',
         loadingSystem: 'Payment system is still loading. Please wait a moment and try again.',
         enterEmail: 'Please enter your email first.',
+        authRequired: 'Please sign in first — purchased reports are saved to your profile and can be re-downloaded anytime.',
         verificationFailed: 'Payment verification failed',
         loadFailed: 'Failed to load payment system. Please refresh the page.',
         loading: 'Loading payment system...',
@@ -2689,6 +2709,15 @@ export const translations: Record<Language, Translations> = {
       transactionsDesc: 'पूर्ण किए गए वॉलेट भुगतान और रसीदें',
       addFunds: 'फंड जोड़ें',
       downloadReceipt: 'रसीद डाउनलोड करें',
+      titlePurchasedReports: 'डाउनलोडेड रिपोर्टें',
+      reportsChartFor: 'रिपोर्ट: {name}',
+      reportsOwned: 'आपका यह रिपोर्ट है — कभी भी डाउनलोड करें',
+      reportsDownload: 'PDF डाउनलोड करें',
+      reportsLoading: 'आपकी रिपोर्टें लोड हो रही हैं…',
+      reportsDownloadFailed: 'रिपोर्ट डाउनलोड नहीं की गई। कृपया पुनः प्रयास करें।',
+      reportsSignInRequired: 'एक सहेज़ रिपोर्ट डाउनलोड करने के लिए आपको साइन इन करना पड़ेगा।',
+      noPurchasedReports: 'अभी कोई डाउनलोडेड रिपोर्ट नहीं',
+      noPurchasedReportsDesc: 'आपके द्वारा खरीदी गई रिपोर्टें यहाँ सहेजी जाती हैं, ताकि आप कभी भी उन्हें डाउनलोड कर सकें। साइन अप से पहले इस ईमेल से कोई रिपोर्ट खरीदी थी? साइन इन करते ही वह यहाँ अपने आप दिखेगी।',
     },
     payment: {
       messages: {
@@ -2698,6 +2727,7 @@ export const translations: Record<Language, Translations> = {
         cancelled: 'भुगतान रद्द कर दिया गया।',
         loadingSystem: 'भुगतान प्रणाली लोड हो रही है। कृपया कुछ क्षण प्रतीक्षा करें।',
         enterEmail: 'कृपया पहले अपना ईमेल दर्ज करें।',
+        authRequired: 'पहले साइन इन करें — खरीदी गई रिपोर्ट आपकी प्रोफ़ाइल में सहेजी जाती है और कभी भी डाउनलोड की जा सकती है।',
         verificationFailed: 'भुगतान सत्यापन विफल',
         loadFailed: 'भुगतान प्रणाली लोड नहीं हुई। कृपया पृष्ठ ताज़ा करें।',
         loading: 'भुगतान प्रणाली लोड हो रही है...',

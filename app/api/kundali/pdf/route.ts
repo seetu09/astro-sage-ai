@@ -3,6 +3,8 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { PdfData, ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
 import { renderPdfToBuffer } from "@/lib/PdfDocument";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
+import { getUserFromAuthHeader } from "@/lib/serverWallet";
+import { hasPurchasedReport } from "@/lib/serverPurchasedReports";
 
 /**
  * POST /api/kundali/pdf — Vercel serverless "Download Full 25-Page Kundli".
@@ -182,17 +184,36 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Strict monetization guard ────────────────────────────────────────────
-    // Free users must never receive the full report: we require BOTH an
-    // explicit paid-tier flag AND a server-verified signed payment token.
-    if (incoming.isPaidTier !== true) {
+    // Free users must never receive the full report. A download is authorized
+    // through EITHER of two independent, server-verifiable paths:
+    //   1) The signed-in user OWNS this chart (a durable server-side purchase
+    //      recorded by /api/payment/verify) — lets buyers re-download from
+    //      their profile any time without paying again.
+    //   2) A fresh, server-verified signed payment token from /api/payment/verify.
+    // A caller-only `isPaid` flag or spoofed localStorage can never unlock it.
+    const chartFp =
+      typeof body.chartFingerprint === "string" && body.chartFingerprint
+        ? body.chartFingerprint
+        : null;
+    const paidTierFlag = incoming.isPaidTier === true;
+
+    let ownsReport = false;
+    if (chartFp) {
+      const authUser = await getUserFromAuthHeader(req);
+      const ownerEmail =
+        typeof body.ownerEmail === "string" && body.ownerEmail
+          ? body.ownerEmail.trim().toLowerCase()
+          : authUser?.email
+            ? authUser.email.trim().toLowerCase()
+            : "";
+      // Signed-in user: check by user_id AND by account email.
+      // Anonymous / recovered: check by the checkout email alone.
+      ownsReport = await hasPurchasedReport(ownerEmail, chartFp, authUser?.id ?? null);
+    }
+
+    if (!(paidTierFlag && (ownsReport || verifyUnlockToken(body.paymentToken)))) {
       return NextResponse.json(
         { error: "This report is locked. Complete payment to unlock the full PDF." },
-        { status: 402 }
-      );
-    }
-    if (!verifyUnlockToken(body.paymentToken)) {
-      return NextResponse.json(
-        { error: "Payment verification required to download the full report." },
         { status: 402 }
       );
     }

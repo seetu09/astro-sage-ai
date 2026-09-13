@@ -79,7 +79,6 @@ export function NativitySummarySection({ model }: { model: ReportModel }) {
         <div className="rpt-badge-group" style={{ marginTop: 12 }}>
           <Badge label={t('Running Mahadasha', 'चल रही महादशा')} value={model.calculations.vimshottari?.currentDasha?.mahadasha ?? '-'} tone="violet" />
           <Badge label={t('Solar Return', 'सौर वर्ष')} value={model.chartType} tone="cyan" />
-          <Badge label={t('Tier', 'स्तर')} value={model.isPaidTier ? 'Premium' : 'Basic'} tone="gold" />
         </div>
       )}
     </>

@@ -22,7 +22,9 @@ export function getServiceSupabase(): SupabaseClient {
 export type ConsumeResult = "free" | "wallet" | "insufficient";
 
 /** Resolve the authenticated user from a Bearer access token, or null. */
-export async function getUserFromAuthHeader(req: Request): Promise<{ id: string } | null> {
+export async function getUserFromAuthHeader(
+  req: Request
+): Promise<{ id: string; email: string | null } | null> {
   const header = req.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token) return null;
@@ -34,7 +36,7 @@ export async function getUserFromAuthHeader(req: Request): Promise<{ id: string 
     const supabase = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data?.user) return null;
-    return { id: data.user.id };
+    return { id: data.user.id, email: (data.user.email ?? null) };
   } catch {
     return null;
   }

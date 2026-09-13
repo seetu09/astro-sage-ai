@@ -28,6 +28,7 @@ import {
   type RichPredictionReport,
 } from "@/types/kundali";
 import { applyRichPredictions } from "@/lib/richPredictions";
+import { verifyUnlockToken } from "@/lib/paymentUnlock";
 
 // --- Language-aware system prompt builder ---
 function getSystemPrompt(lang: "en" | "hi"): string {
@@ -747,6 +748,16 @@ export async function POST(req: NextRequest) {
     // Frontend maps English responses to translation keys via @lib/i18n/translations.ts
     // (deterministic fallbacks below are English-only; the frontend translates them).
 
+    // Monetization gate: the FULL paid report slices (paidTier, richPredictions,
+    // pillars, rich calculations) are only returned when the caller presents a
+    // valid server-minted unlock token (`x-unlock-token`). Free/anon callers get
+    // only basic chart data + the free-tier teasers — the paid content never
+    // ships into a free user's browser.
+    const unlockTokenHeader = req.headers.get("x-unlock-token") || "";
+    const unlocked = Boolean(
+      unlockTokenHeader && verifyUnlockToken(unlockTokenHeader)
+    );
+
     const details: BirthDetails = {
       birthDate: body.birthDate,
       birthTime: body.birthTime,
@@ -907,17 +918,13 @@ export async function POST(req: NextRequest) {
 
     // Debug mode: return raw computed data without PDF generation
     if (debug) {
-      return NextResponse.json({
+      const debugPayload: Record<string, unknown> = {
         success: true,
         debug: true,
         language: lang,
         chartData,
-        calculations,
         freeTier,
-        paidTier,
         interpretation,
-        pillars,
-        richPredictions,
         aiSource,
         debugInfo: {
           timestamp: new Date().toISOString(),
@@ -927,21 +934,34 @@ export async function POST(req: NextRequest) {
           hasRichPredictions: richPredictions !== null,
           calculationMetadata: calculations.metadata,
         },
-      });
+      };
+      // Debug tooling is a dev path — include the full paid slices there too
+      // so debugging the paid report is possible.
+      debugPayload.calculations = calculations;
+      debugPayload.paidTier = paidTier;
+      debugPayload.pillars = pillars;
+      debugPayload.richPredictions = richPredictions;
+      return NextResponse.json(debugPayload);
     }
 
-    return NextResponse.json({
+    // Production response. Free/anon callers (no valid unlock token) must NOT
+    // receive the paid slices — the full report and its rich content stay
+    // server-side until a verified payment unlocks them.
+    const responsePayload: Record<string, unknown> = {
       success: true,
       language: lang,
       chartData,
       interpretation,
       freeTier,
-      paidTier,
-      richPredictions,
-      calculations,
-      pillars,
       aiSource,
-    } as FullKundliReportData & { pillars: LifePillarConfig[]; aiSource: boolean; richPredictions: RichPredictionReport | null });
+    };
+    if (unlocked) {
+      responsePayload.paidTier = paidTier;
+      responsePayload.richPredictions = richPredictions;
+      responsePayload.calculations = calculations;
+      responsePayload.pillars = pillars;
+    }
+    return NextResponse.json(responsePayload);
   } catch (error) {
     console.error("Kundali generation failed:", error);
     return NextResponse.json({ message: "Failed to generate kundali" }, { status: 500 });

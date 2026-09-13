@@ -40,6 +40,38 @@ import type { PreviewBirthData } from './components/Preview';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 
+/**
+ * Client-side stable fingerprint for a chart, matching the server's
+ * `chartFingerprint` in lib/serverPurchasedReports.ts. Keys server-side report
+ * ownership so the profile "Downloaded Reports" tab and the PDF route agree on
+ * which chart a user owns.
+ */
+function chartFingerprintof(input: {
+  latitude?: number | null;
+  longitude?: number | null;
+  birthDate?: string;
+  birthTime?: string;
+  timezone?: string;
+}): string {
+  const parts = [
+    String(input.latitude ?? ""),
+    String(input.longitude ?? ""),
+    String(input.birthDate ?? ""),
+    String(input.birthTime ?? ""),
+    String(input.timezone ?? "+05:30"),
+  ];
+  const text = parts.join("|");
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    h1 ^= c;
+    h1 = (h1 * 0x01000193) & 0xffffffff;
+    h2 = (h2 * 31 + c) & 0xffffffff;
+  }
+  return `${h1.toString(16)}-${h2.toString(16)}`;
+}
+
 interface Planet {
   name: string;
   sign: string;
@@ -536,7 +568,13 @@ export default function KundaliPage() {
     try {
       const response = await fetch('/api/kundali/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Free previews are generated WITHOUT the token so the server returns
+          // only basic details (paid content never ships to a free browser).
+          // When a user has already unlocked, send the token to get the full report.
+          'x-unlock-token': unlockToken ?? '',
+        },
         body: JSON.stringify({
           birthDate: dateOfBirth,
           birthTime: resolvedTime,
@@ -634,7 +672,10 @@ export default function KundaliPage() {
       try {
         const response = await fetch('/api/kundali/generate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-unlock-token': unlockToken ?? '',
+          },
           body: JSON.stringify({
             birthDate: kundliData.dateOfBirth,
             birthTime: kundliData.timeOfBirth,
@@ -678,6 +719,104 @@ export default function KundaliPage() {
     void regenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
+
+  // ─── Fetch full report after payment (ownership) ───────────────────────────
+  // A user generates a FREE preview first (server returns only basic details,
+  // since no unlock token was present). When they then pay, `markAsPaid` stores
+  // the unlock token in AppContext — but `kundliData` still holds the stripped
+  // free response. This effect re-fetches the SAME chart WITH the token so the
+  // full paid report (and the download) have the rich data to render.
+  const fetchedDataRef = useRef<any>(null);
+  fetchedDataRef.current = kundliData;
+  useEffect(() => {
+    if (!unlockToken || !kundliData) return;
+    // Only refetch when the current data is missing the paid slices that the
+    // token now authorizes (i.e. a free preview). Avoids redundant refetches.
+    const current = fetchedDataRef.current as KundliData | null;
+    const hasRich =
+      current &&
+      (Array.isArray(current.pillars) ||
+        (current.paidTier && current.richPredictions) ||
+        current.calculations);
+    if (hasRich) return;
+
+    const { latitude: lat, longitude: lng } = kundliData;
+    if (lat == null || lng == null) return;
+
+    setIsLoading(true);
+    const run = async () => {
+      try {
+        const response = await fetch('/api/kundali/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-unlock-token': unlockToken,
+          },
+          body: JSON.stringify({
+            birthDate: kundliData.dateOfBirth,
+            birthTime: kundliData.timeOfBirth,
+            birthPlace: kundliData.placeOfBirth,
+            latitude: lat,
+            longitude: lng,
+            timezoneOffset: kundliData.timezone || '+05:30',
+            language,
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to refetch paid report');
+        const result = await response.json();
+        const details: BirthDetailsForApi = {
+          name: kundliData.name,
+          email: kundliData.email,
+          dateOfBirth: kundliData.dateOfBirth,
+          timeOfBirth: kundliData.timeOfBirth,
+          placeOfBirth: kundliData.placeOfBirth,
+          latitude: lat,
+          longitude: lng,
+          timezone: kundliData.timezone,
+        };
+        const data = buildKundliData(result, details, selectedLanguage);
+        setKundliData(data);
+        persistKundliData(result);
+        // Publish the full report onto the owned server-side record so the
+        // profile "Downloaded Reports" tab can re-download it later.
+        if (user) {
+          try {
+            const supabase = await import('@/lib/supabase');
+            const cl = supabase.getSupabaseClient();
+            const sess = await cl.auth.getSession();
+            const token = sess.data.session?.access_token;
+            if (token) {
+              await fetch('/api/profile/reports', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  chartFingerprint: chartFingerprintof({
+                    latitude: lat,
+                    longitude: lng,
+                    birthDate: kundliData.dateOfBirth,
+                    birthTime: kundliData.timeOfBirth,
+                    timezone: kundliData.timezone || '+05:30',
+                  }),
+                  report: data,
+                }),
+              });
+            }
+          } catch {
+            // Best-effort — the in-session unlock still works either way.
+          }
+        }
+      } catch (err) {
+        console.error('Paid report refetch error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unlockToken, isPaid]);
 
   // Defensive rendering guard: only draw the SVG chart, planet tables and
   // analysis sections when a non-empty planets array actually exists.
@@ -1092,6 +1231,16 @@ export default function KundaliPage() {
               <KundaliPaywallBanner
                 userEmail={kundliData?.email || email}
                 userName={kundliData?.name || name}
+                chartFingerprint={kundliData
+                  ? chartFingerprintof({
+                      latitude: kundliData.latitude,
+                      longitude: kundliData.longitude,
+                      birthDate: kundliData.dateOfBirth,
+                      birthTime: kundliData.timeOfBirth,
+                      timezone: kundliData.timezone || '+05:30',
+                    })
+                  : ''}
+                report={kundliData}
               />
             </motion.div>
           )}

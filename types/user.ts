@@ -17,7 +17,8 @@ export type ProfileMenuAction =
   | "kundali-history"
   | "chat-history"
   | "wallet-details"
-  | "payment-history";
+  | "payment-history"
+  | "purchased-reports";
 
 export interface WalletTransaction {
   id: string;

@@ -16,6 +16,10 @@ interface KundaliPaywallBannerProps {
   userName?: string;
   /** One-time unlock price in INR (default ₹49). */
   price?: number;
+  /** Stable identity of the chart being purchased — keys server-side report ownership. */
+  chartFingerprint?: string;
+  /** Full paid report payload, persisted on purchase so it can be re-downloaded. */
+  report?: unknown;
 }
 
 /**
@@ -28,6 +32,8 @@ export default function KundaliPaywallBanner({
   userEmail,
   userName = 'User',
   price = 49,
+  chartFingerprint,
+  report,
 }: KundaliPaywallBannerProps) {
   const { language } = useLanguage();
   const hi = language === 'hi';
@@ -80,6 +86,10 @@ export default function KundaliPaywallBanner({
             userName={userName}
             paymentType="kundli_report"
             buttonText={t('kundali.sections.paywallButton', { price })}
+            chartFingerprint={chartFingerprint || ''}
+            birthDate=""
+            birthTime=""
+            report={report ?? {}}
             onSuccess={(details) => {
               trackEvent('premium_kundli_unlocked', { order_id: details.orderId });
               // Server-verified payment → flips global isPaid & persists token

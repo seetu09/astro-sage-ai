@@ -7,9 +7,8 @@ const MIN_AMOUNT_PAISE = MIN_AMOUNT_INR * 100;
 
 export async function POST(req: Request) {
   try {
-    // Rate limit the order-creation endpoint (Razorpay orders have a cost;and
+    // Rate limit the order-creation endpoint (Razorpay orders have a cost and
     // creates are idempotence-prone under bots) — 10 req / 60s / IP.
-
     const { allowed, retryAfter } = checkRateLimit(
       `payment-create-order:${getClientIp(req)}`,
       10,
@@ -24,11 +23,27 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    const { amount, currency = 'INR', userEmail, paymentType = 'wallet_topup' } = body;
+    const {
+      amount,
+      currency = 'INR',
+      userEmail,
+      paymentType = 'wallet_topup',
+      // kundli_report extras — captured at order-creation so /api/payment/verify
+      // can record durable report ownership once the order settles.
+      chartFingerprint,
+      clientName,
+      birthDate,
+      birthTime,
+      report,
+    } = body;
 
-    // Wallet top-ups must be tied to a signed-in account — the credit is
-    // applied server-side in /api/payment/verify using this identity.
+    // Wallet top-ups require a signed-in account so the credit is applied to the
+    // right profile. For kundli_report purchases auth is OPTIONAL — the report is
+    // owned by the checkout email and can be recovered without an account. We
+    // capture the signed-in user_id when present so the profile tab surfaces the
+    // report for account holders too.
     let walletUserId: string | undefined;
+    let reportOwnerUserId: string | null = null;
     if (paymentType === 'wallet_topup') {
       const user = await getUserFromAuthHeader(req);
       if (!user) {
@@ -38,6 +53,9 @@ export async function POST(req: Request) {
         );
       }
       walletUserId = user.id;
+    } else if (paymentType === 'kundli_report') {
+      const user = await getUserFromAuthHeader(req);
+      reportOwnerUserId = user?.id ?? null;
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -84,6 +102,16 @@ export async function POST(req: Request) {
           userEmail: userEmail || 'unknown',
           productType: paymentType,
           ...(walletUserId ? { userId: walletUserId } : {}),
+          ...(paymentType === 'kundli_report'
+            ? {
+                chartFingerprint: String(chartFingerprint ?? ''),
+                clientName: String(clientName ?? 'User'),
+                birthDate: String(birthDate ?? ''),
+                birthTime: String(birthTime ?? ''),
+                report: typeof report === 'object' && report ? JSON.stringify(report) : '',
+                ...(reportOwnerUserId ? { reportOwnerUserId } : {}),
+              }
+            : {}),
         },
       }),
     });

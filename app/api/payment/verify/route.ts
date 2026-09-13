@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { issueUnlockToken } from '@/lib/paymentUnlock';
 import { creditWallet, getUserFromAuthHeader, hasWalletCreditForPayment } from '@/lib/serverWallet';
+import { recordPurchasedKundliReport } from '@/lib/serverPurchasedReports';
 
 export async function POST(req: Request) {
   try {
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
     let orderStatus: string | undefined;
     let orderAmountPaise: number | undefined;
     let orderProductType: string | undefined;
+    let orderNotes: Record<string, unknown> | undefined;
     try {
       const orderRes = await fetch(
         `https://api.razorpay.com/v1/orders/${encodeURIComponent(razorpay_order_id)}`,
@@ -75,6 +77,8 @@ export async function POST(req: Request) {
           order.notes && typeof order.notes.productType === 'string'
             ? order.notes.productType
             : undefined;
+        orderNotes =
+          order.notes && typeof order.notes === 'object' ? order.notes : undefined;
       } else if (orderRes.status === 404) {
         // A non-existent order id can never be a valid verification.
 
@@ -122,6 +126,41 @@ export async function POST(req: Request) {
           );
         }
       }
+    }
+
+    // Record permanent report ownership for paid kundli report purchases.
+    // The full report payload + chart identity + owner email were captured in the
+    // Razorpay order notes at create-order time; once the order is PAID we persist
+    // them so the user owns the report server-side and can re-download it from their
+    // profile at any time — a browser refresh / session loss can never lose it.
+    // Email-based: ownership is keyed by checkout email so anonymous buyers can
+    // recover their report with the same email; if the buyer was signed in we
+    // also attach user_id for the profile tab.
+    if (orderProductType === 'kundli_report' && orderStatus === 'paid') {
+      const ownerEmail = String(orderNotes?.userEmail ?? '').trim().toLowerCase();
+      const reportOwnerUserId = orderNotes?.reportOwnerUserId
+        ? String(orderNotes.reportOwnerUserId)
+        : null;
+      let reportPayload: unknown = {};
+      const rawReport = orderNotes?.report;
+      if (typeof rawReport === 'string' && rawReport.trim()) {
+        try {
+          reportPayload = JSON.parse(rawReport);
+        } catch {
+          reportPayload = {};
+        }
+      }
+      await recordPurchasedKundliReport({
+        ownerEmail: ownerEmail || 'unknown@checkout',
+        userId: reportOwnerUserId,
+        chartFingerprint: String(orderNotes?.chartFingerprint ?? ''),
+        clientName: String(orderNotes?.clientName ?? 'User'),
+        birthDate: String(orderNotes?.birthDate ?? ''),
+        birthTime: String(orderNotes?.birthTime ?? ''),
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        report: reportPayload,
+      });
     }
 
     // Mint the signed unlock token the paid report + PDF routes require.
