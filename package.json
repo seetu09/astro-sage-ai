@@ -10,7 +10,8 @@
     "typecheck": "next lint && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:i18n": "node scripts/check-i18n.mjs"
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "lint:ownership": "\"scripts/lint-ownership.sh\""
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

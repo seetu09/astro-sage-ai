@@ -28,7 +28,8 @@ import {
   type RichPredictionReport,
 } from "@/types/kundali";
 import { applyRichPredictions } from "@/lib/richPredictions";
-import { verifyUnlockToken } from "@/lib/paymentUnlock";
+import { getUserFromAuthHeader } from "@/lib/serverWallet";
+import { chartFingerprint, hasPurchasedReport } from "@/lib/serverPurchasedReports";
 
 // --- Language-aware system prompt builder ---
 function getSystemPrompt(lang: "en" | "hi"): string {
@@ -172,7 +173,7 @@ async function generateCompleteReport(
 console.log("🤖 Calling Gemini API");
 console.log("🔑 API Key exists:", !!process.env.GEMINI_API_KEY);
 console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
-console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, isPaid: false, hasKey: !!process.env.GEMINI_API_KEY });
+console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, paid: false, hasKey: !!process.env.GEMINI_API_KEY });
 
   const { response: res } = await geminiWithRetry(() =>
     fetch(
@@ -749,14 +750,20 @@ export async function POST(req: NextRequest) {
     // (deterministic fallbacks below are English-only; the frontend translates them).
 
     // Monetization gate: the FULL paid report slices (paidTier, richPredictions,
-    // pillars, rich calculations) are only returned when the caller presents a
-    // valid server-minted unlock token (`x-unlock-token`). Free/anon callers get
-    // only basic chart data + the free-tier teasers — the paid content never
-    // ships into a free user's browser.
-    const unlockTokenHeader = req.headers.get("x-unlock-token") || "";
-    const unlocked = Boolean(
-      unlockTokenHeader && verifyUnlockToken(unlockTokenHeader)
-    );
+    // pillars, rich calculations) are only returned when the caller OWNS this
+    // chart server-side. Free/anon callers get only basic chart data + free-tier
+    // teasers — the paid content never ships into a free user's browser.
+    const authUser = await getUserFromAuthHeader(req);
+    const fingerprint = chartFingerprint({
+      latitude: body.latitude ?? null,
+      longitude: body.longitude ?? null,
+      birthDate: body.birthDate,
+      birthTime: body.birthTime,
+      timezone: body.timezoneOffset ?? "+05:30",
+    });
+    const ownsReport = authUser?.email
+      ? await hasPurchasedReport(authUser.email, fingerprint, authUser.id)
+      : false;
 
     const details: BirthDetails = {
       birthDate: body.birthDate,
@@ -944,9 +951,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(debugPayload);
     }
 
-    // Production response. Free/anon callers (no valid unlock token) must NOT
-    // receive the paid slices — the full report and its rich content stay
-    // server-side until a verified payment unlocks them.
+    // Production response. Free/anon callers (no ownership) must NOT receive
+    // the paid slices — the full report and its rich content stay server-side
+    // until a verified payment records ownership.
     const responsePayload: Record<string, unknown> = {
       success: true,
       language: lang,
@@ -955,7 +962,7 @@ export async function POST(req: NextRequest) {
       freeTier,
       aiSource,
     };
-    if (unlocked) {
+    if (ownsReport) {
       responsePayload.paidTier = paidTier;
       responsePayload.richPredictions = richPredictions;
       responsePayload.calculations = calculations;

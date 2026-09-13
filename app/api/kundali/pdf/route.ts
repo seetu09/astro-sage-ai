@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import type { PdfData, ReportData, ReportNarrative } from "@/lib/pdfHtmlTemplate";
 import { renderPdfToBuffer } from "@/lib/PdfDocument";
-import { verifyUnlockToken } from "@/lib/paymentUnlock";
 import { getUserFromAuthHeader } from "@/lib/serverWallet";
-import { hasPurchasedReport } from "@/lib/serverPurchasedReports";
+import { chartFingerprint, hasPurchasedReport } from "@/lib/serverPurchasedReports";
 
 /**
  * POST /api/kundali/pdf — Vercel serverless "Download Full 25-Page Kundli".
@@ -22,15 +21,13 @@ import { hasPurchasedReport } from "@/lib/serverPurchasedReports";
  *     "reportData": ReportData,          // required — localized report payload
  *     "language":   "en" | "hi",         // defaults to "en"
  *     "pillars":    ReportNarrative[],   // optional AI Life-Pillar narratives
- *     "paymentToken": string,            // REQUIRED — signed unlock token from /api/payment/verify
- *     "fileName":   string              // optional download filename stem
+ *     "ownerEmail": string,              // optional checkout email (for anon recovery)
+ *     "fileName":   string               // optional download filename stem
  *   }
  *
- * Monetization: this route is a paid endpoint. It refuses requests without a
- * valid signed `paymentToken` (see `lib/paymentUnlock`) or without
- * `reportData.isPaidTier === true`, returning 402. Only server-verified
- * Razorpay payments can mint such a token, so spoofing localStorage flags
- * does not unlock the PDF.
+ * Monetization: this route is a paid endpoint. It refuses requests without
+ * server-side ownership (recorded by /api/payment/verify), returning 401.
+ * A caller-only `isPaidTier` flag or spoofed localStorage can never unlock it.
  *
  * Response: application/pdf (Content-Disposition: attachment)
  */
@@ -185,12 +182,9 @@ export async function POST(req: NextRequest) {
 
     // ── Strict monetization guard ────────────────────────────────────────────
     // Free users must never receive the full report. A download is authorized
-    // through EITHER of two independent, server-verifiable paths:
-    //   1) The signed-in user OWNS this chart (a durable server-side purchase
-    //      recorded by /api/payment/verify) — lets buyers re-download from
-    //      their profile any time without paying again.
-    //   2) A fresh, server-verified signed payment token from /api/payment/verify.
-    // A caller-only `isPaid` flag or spoofed localStorage can never unlock it.
+    // ONLY when the user owns this chart (a durable server-side purchase
+    // recorded by /api/payment/verify). A caller-only `isPaid` flag or
+    // spoofed localStorage can never unlock it.
     const chartFp =
       typeof body.chartFingerprint === "string" && body.chartFingerprint
         ? body.chartFingerprint
@@ -211,10 +205,10 @@ export async function POST(req: NextRequest) {
       ownsReport = await hasPurchasedReport(ownerEmail, chartFp, authUser?.id ?? null);
     }
 
-    if (!(paidTierFlag && (ownsReport || verifyUnlockToken(body.paymentToken)))) {
+    if (!(paidTierFlag && ownsReport)) {
       return NextResponse.json(
         { error: "This report is locked. Complete payment to unlock the full PDF." },
-        { status: 402 }
+        { status: 401 }
       );
     }
 

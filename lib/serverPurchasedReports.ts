@@ -141,6 +141,37 @@ export async function hasPurchasedReport(
   }
 }
 
+/**
+ * Fetch a single purchased report by (email OR user_id) AND chart fingerprint.
+ * Returns the stored report payload, or null if not found / not owned.
+ */
+export async function getPurchasedReport(params: {
+  email?: string | null;
+  userId?: string | null;
+  fingerprint: string;
+}): Promise<unknown | null> {
+  const email = (params.email ?? "").trim().toLowerCase();
+  const { userId, fingerprint } = params;
+  if (!email && !userId) return null;
+  try {
+    const supabase = getServiceSupabase();
+    let query = supabase
+      .from("purchased_kundli_reports")
+      .select("report")
+      .eq("chart_fingerprint", fingerprint)
+      .or(`owner_email.eq.${email}${userId ? `,user_id.eq.${userId}` : ""}`)
+      .maybeSingle();
+    const { data, error } = await query;
+    if (error) {
+      console.error("GET_PURCHASED_REPORT_FAILED", error.message);
+      return null;
+    }
+    return data?.report ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Full list of purchased reports for a signed-in user's profile tab. */
 export async function listPurchasedReports(
   ownerEmail: string,

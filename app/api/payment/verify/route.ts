@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
-import { issueUnlockToken } from '@/lib/paymentUnlock';
 import { creditWallet, getUserFromAuthHeader, hasWalletCreditForPayment } from '@/lib/serverWallet';
 import { recordPurchasedKundliReport } from '@/lib/serverPurchasedReports';
 
@@ -163,22 +162,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // Mint the signed unlock token the paid report + PDF routes require.
-    let unlockToken: string | null = null;
-    try {
-      unlockToken = issueUnlockToken(razorpay_order_id, razorpay_payment_id);
-    } catch {
-      // Token issuance failing (misconfigured secret) must not silently pass.
-      return NextResponse.json(
-        { error: 'Unlock token issuance failed', success: false },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({
       success: true,
       message: 'Payment verified',
-      unlockToken,
     });
 
   } catch (error: any) {

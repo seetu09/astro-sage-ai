@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import { Lock, CheckCircle2 } from 'lucide-react';
 import PaymentButton from '@/app/components/PaymentButton';
-import { useApp } from '@/app/context/AppContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { getUILabel, type LocaleCode } from '@/lib/astrologyDictionary';
@@ -25,8 +24,8 @@ interface KundaliPaywallBannerProps {
 /**
  * KundaliPaywallBanner — prominent upsell shown to FREE users on the kundali
  * page ("Unlock Full 20+ Page Premium Kundli Report"). On a successful
- * Razorpay payment the server-verified details are handed to markAsPaid(),
- * flipping the global isPaid flag so every locked section unlocks instantly.
+ * Razorpay payment the server records ownership; the UI updates via server-side
+ * ownership checks (isOwned prop) rather than a client-side flag.
  */
 export default function KundaliPaywallBanner({
   userEmail,
@@ -38,7 +37,6 @@ export default function KundaliPaywallBanner({
   const { language } = useLanguage();
   const hi = language === 'hi';
   const locale: LocaleCode = hi ? 'hi' : 'en';
-  const { markAsPaid } = useApp();
   const { t } = useTranslation();
 
   const features = [
@@ -92,8 +90,7 @@ export default function KundaliPaywallBanner({
             report={report ?? {}}
             onSuccess={(details) => {
               trackEvent('premium_kundli_unlocked', { order_id: details.orderId });
-              // Server-verified payment → flips global isPaid & persists token
-              markAsPaid(details);
+              // Server records ownership; UI updates via server-side isOwned prop.
             }}
           />
         </div>

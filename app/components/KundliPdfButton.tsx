@@ -5,7 +5,6 @@ import { Download, Loader2 } from 'lucide-react';
 import LanguageSelectModal, { type PdfLanguage } from './LanguageSelectModal';
 import { generateReportHtml, type ReportData, type ReportNarrative } from '@/lib/pdfHtmlTemplate';
 import { NAKSHATRA_LORDS, NAKSHATRA_NAMES } from '@/lib/astrologyDictionary';
-import { useApp } from '@/app/context/AppContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import { useToast } from '@/app/components/ToastProvider';
 import { trackEvent } from '@/lib/analytics';
@@ -287,7 +286,6 @@ export default function KundaliPdfButton({
   label,
   compact = false,
 }: KundaliPdfButtonProps) {
-  const { unlockToken: fallbackToken } = useApp();
   const toast = useToast();
   const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
@@ -296,7 +294,7 @@ export default function KundaliPdfButton({
   const inFlight = useRef(false);
 
   const busy = phase !== 'idle';
-  const resolvedToken = paymentToken ?? fallbackToken ?? null;
+  const resolvedToken = paymentToken ?? null;
 
   const runFlow = useCallback(
     async (language: PdfLanguage, mode: 'download' | 'print') => {
