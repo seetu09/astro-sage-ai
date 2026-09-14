@@ -15,22 +15,19 @@ const withPWA = require('next-pwa')({
 
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    // Keep @react-pdf/renderer out of the serverless bundle.
-    // It ships internal font files / native binaries that must be
-    // loaded from disk at runtime — bundling them breaks the font paths and
-    // causes "Cannot find module '.../Helvetica.cjs'" errors on Vercel.
-    serverComponentsExternalPackages: ['@react-pdf/renderer', 'pdfkit', '@resvg/resvg-js'],
-    // In Next.js 14, outputFileTracingIncludes lives under experimental.
-    // It ensures Vercel's file tracer copies pdfkit's font/data files into
-    // the serverless function bundle so they can be required at runtime.
-    outputFileTracingIncludes: {
-      '/api/kundali/pdf': [
-        './node_modules/pdfkit/js/standard-fonts/**/*',
-        './node_modules/pdfkit/js/data/**/*',
-        './node_modules/pdfkit/js/**/*.js',
-      ],
-    },
+  // Keep pdfkit and @react-pdf/renderer out of the serverless bundle.
+  // Vercel's bundler only copies .js files and skips non-JS assets, which
+  // causes "Cannot find module '.../Helvetica.cjs'" errors at runtime.
+  serverExternalPackages: ['pdfkit', '@react-pdf/renderer', '@react-pdf/pdfkit'],
+  outputFileTracingIncludes: {
+    '/api/kundali/pdf': [
+      'node_modules/pdfkit/js/data/*.afm',
+      'node_modules/pdfkit/js/standard-fonts/*.cjs',
+      'node_modules/@react-pdf/pdfkit/js/data/*.afm',
+      'node_modules/@react-pdf/pdfkit/js/standard-fonts/*.cjs',
+      'node_modules/@react-pdf/renderer/node_modules/pdfkit/js/data/*.afm',
+      'node_modules/@react-pdf/renderer/node_modules/pdfkit/js/standard-fonts/*.cjs'
+    ]
   },
 }
 
