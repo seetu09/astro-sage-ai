@@ -47,38 +47,6 @@ export default function ReportContainer({
 
   return (
     <div className="relative">
-      {/* ------------------------- STICKY TOP ACTION BAR ------------------------- */}
-      <div className="sticky top-14 sm:top-16 z-40 -mx-4 sm:-mx-4 lg:-mx-6 px-4 sm:px-4 lg:px-6 py-2.5 mb-4 bg-[#F8F7FC]/85 dark:bg-[#080811]/85 backdrop-blur-md border-b border-slate-200/60 dark:border-white/10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <h2 className="text-sm sm:text-base font-serif font-semibold text-indigo-950 dark:text-[#F3F4F6] truncate flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-violet-600 dark:text-[#FFD166] shrink-0" />
-            {title || t('kundali.sections.kundliReport')}
-          </h2>
-
-          {/* Language select — triggers setSelectedLanguage; all labels re-render instantly */}
-          <label className="flex items-center gap-1.5 shrink-0">
-            <Globe className="w-3.5 h-3.5 text-slate-400 dark:text-[#6B7280]" />
-            <span className="sr-only">{t('kundali.sections.language')}</span>
-            <select
-              value={selectedLanguage}
-              onChange={(e) => {
-                // AppContext.setSelectedLanguage → LanguageContext.setLanguage
-                // Every consumer of useApp()/useLanguage() re-renders synchronously.
-                setSelectedLanguage(e.target.value as LocaleCode);
-              }}
-              className="text-xs sm:text-sm font-medium rounded-lg border border-slate-300/70 dark:border-white/15 bg-white dark:bg-white/5 text-indigo-950 dark:text-[#F3F4F6] px-2 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/40"
-              aria-label={t('kundali.sections.selectLanguage')}
-            >
-              {SUPPORTED_LOCALES.map((locale) => (
-                <option key={locale} value={locale}>
-                  {LANGUAGE_DISPLAY_NAMES[locale]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-
       {!isPaid ? (
         /* --------------------------- LOCKED PREVIEW VIEW --------------------------- */
         <motion.div

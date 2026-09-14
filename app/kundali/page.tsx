@@ -19,6 +19,7 @@ import PlaceAutocomplete from '@/app/components/PlaceAutocomplete';
 import ReportContainer from '@/app/components/ReportContainer';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
 import KundliReport, { type KundliReportProps } from '@/app/components/KundliReport';
+import KundliPdfButton from '@/app/components/KundliPdfButton';
 import Preview from './components/Preview';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
@@ -1263,30 +1264,41 @@ export default function KundaliPage() {
                   onClick={handleNewReport}
                   className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300/70 dark:border-white/15 text-indigo-950 dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                 >
-                  {t('kundali.newReport')}
+                  {t('kundali.sections.newReport')}
                 </button>
               </div>
             </div>
           )}
           {kundliData ? (
-            <KundliReport
-              name={kundliData?.name || name}
-              birthDetails={{
-                birthDate: kundliData?.dateOfBirth || '',
-                birthTime: kundliData?.timeOfBirth || '',
-                latitude: kundliData?.latitude ?? null,
-                longitude: kundliData?.longitude ?? null,
-                timezone: kundliData?.chartData?.timezone || kundliData?.timezone || '+05:30',
-              }}
-              chartData={buildReportChartData(
-                kundliData?.chartData,
-                kundliData?.timezone || '+05:30',
-              )}
-              calculations={kundliData?.calculations}
-              pillars={kundliData?.pillars}
-              richPredictions={kundliData?.richPredictions}
-              lang={selectedLanguage}
-            />
+            <>
+              <KundliReport
+                name={kundliData?.name || name}
+                birthDetails={{
+                  birthDate: kundliData?.dateOfBirth || '',
+                  birthTime: kundliData?.timeOfBirth || '',
+                  latitude: kundliData?.latitude ?? null,
+                  longitude: kundliData?.longitude ?? null,
+                  timezone: kundliData?.chartData?.timezone || kundliData?.timezone || '+05:30',
+                }}
+                chartData={buildReportChartData(
+                  kundliData?.chartData,
+                  kundliData?.timezone || '+05:30',
+                )}
+                calculations={kundliData?.calculations}
+                pillars={kundliData?.pillars}
+                richPredictions={kundliData?.richPredictions}
+                lang={selectedLanguage}
+              />
+              <KundliPdfButton
+                userName={kundliData?.name || name}
+                chartData={kundliData?.chartData}
+                calculations={kundliData?.calculations}
+                freeTier={kundliData?.freeTier}
+                paidTier={kundliData?.paidTier}
+                pillars={kundliData?.pillars}
+                paymentToken={unlockToken}
+              />
+            </>
           ) : (
             <p className="text-sm text-slate-500 dark:text-[#9CA3AF] text-center py-8">
               {t('kundali.errors.generic')}
