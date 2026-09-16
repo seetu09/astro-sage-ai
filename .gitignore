@@ -8,3 +8,6 @@ tsconfig.tsbuildinfo
 next-env.d.ts
 .vercel
 .env*
+project_bundle.txt
+file_structure.txt
+

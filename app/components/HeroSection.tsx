@@ -43,12 +43,14 @@ export default function HeroSection({ onAskGuru }: HeroSectionProps) {
             </div>
 
             {/* Main Heading */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-6 leading-tight">
-              {t.hero.title}{" "}
-              <span className="bg-gradient-to-r from-amber-600 via-orange-500 to-amber-500 dark:from-[#FFD166] dark:to-[#E0A96D] bg-clip-text text-transparent drop-shadow-sm">
-                {t.hero.titleHighlight}
-              </span>
-            </h1>
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-amber-900 dark:text-[#F3F4F6] mb-6 leading-tight py-4 text-balance">
+  <span className="inline-block">
+    {t.hero.title}{" "}
+  </span>
+  <span className="inline-block bg-gradient-to-r from-amber-600 via-orange-500 to-amber-500 dark:from-[#FFD166] dark:to-[#E0A96D] bg-clip-text text-transparent drop-shadow-sm">
+    {t.hero.titleHighlight}
+  </span>
+</h1>
 
             {/* Subtitle */}
             <p className="text-lg sm:text-xl text-amber-800/70 dark:text-[#9CA3AF] max-w-2xl mx-auto mb-10">
