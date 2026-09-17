@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import fs from 'fs/promises';
@@ -7,23 +7,7 @@ import path from 'path';
 import { Metadata } from 'next';
 import { ArtifactCatalogSchema, type CatalogArtifact } from '@/lib/catalogSchema';
 import { recommendArtifacts } from '@/lib/artifactRecommender';
-import { trackEvent } from '@/lib/analytics';
-
-/**
- * Client-only sub-component that fires a `store_view` analytics event on mount.
- *
- * Kept as the only client bit of this page so the parent `StoreIdPage` can
- * remain a server component. The `artifactId` prop is pulled from the server
- * -side resolved artifact.
- */
-function StoreViewTracker({ artifactId }: { artifactId: string }) {
-  'use client';
-  useEffect(() => {
-    trackEvent('store_view', { artifactId });
-  }, [artifactId]);
-
-  return null;
-}
+import StoreViewTracker from '@/app/components/StoreViewTracker';
 
 export const dynamic = 'force-dynamic';
 
