@@ -468,7 +468,20 @@ h1, h2, h3, h4, h5, h6 {
   font-family: "Noto Sans", "Noto Sans Devanagari", var(--font-noto-sans), var(--font-noto-devanagari), "Inter", sans-serif;
   font-size: 10.5pt;
   line-height: 1.4;
-  color: #1e293b;
+  /* Theme-aware ink. This was hardcoded to #1e293b with NO .dark override, and
+     because this rule is unlayered it outranks Tailwind's layered utilities.
+     On the dark app canvas (e.g. /kundali renders <KundliReport> directly,
+     not inside a white A4 .page) every descendant without its own text-*
+     utility inherited near-black and became unreadable — the Vimshottari /
+     Mangal Mahadasha table's Hindi <td> cells were the visible symptom.
+     Print keeps its #1e293b ink via the @media print override below. */
+  color: var(--text-primary);
+}
+
+/* Explicit dark override (var(--text-primary) is already #f3f4f6 in .dark).
+   Kept as a separate rule so the dark behaviour is greppable/auditable. */
+.dark .report-root {
+  color: var(--text-primary);
 }
 
 .report-root h1,
@@ -808,4 +821,31 @@ h1, h2, h3, h4, h5, h6 {
 @page {
   size: A4;
   margin: 15mm;
+}
+
+/* ===========================================================================
+   GLOBAL DARK-MODE TEXT INK FALLBACK
+   Root-level guard so that any element which does NOT carry its own text-*
+   utility still inherits a readable ink in dark mode instead of falling back
+   to a light-mode gray (or the old hardcoded #1e293b) and disappearing.
+   These rules live in @layer base on purpose: Tailwind utilities (including
+   every `dark:text-*` variant, and the unlayered .rpt-* / .page report
+   typography that must stay dark-on-white for PDF parity) still win, so this
+   only catches the "unstyled descendant" case — e.g. the Hindi <td> cells of
+   the Vimshottari / Mangal Mahadasha tables.
+   =========================================================================== */
+@layer base {
+  body {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+  /* NOTE: :where() is deliberate — it keeps this fallback at ZERO added
+     specificity so that any class-based colour still wins: .page and .rpt-*
+     (the white A4 report sheets), .astro-* helpers, and every .text-* utility
+     including the `dark:text-*` variants. Written without :where() this
+     selector scores (0,1,1), which out-ranks the single-class report
+     typography and would flip the white A4 pages to light-on-white. */
+  .dark :where(h1, h2, h3, h4, h5, h6,
+    p, span, td, th, li, div, label, a) {
+    color: inherit;
+  }
 }

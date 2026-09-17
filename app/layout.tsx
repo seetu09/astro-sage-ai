@@ -190,7 +190,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className} ${notoDevanagari.variable} ${notoSans.variable} font-sans`}>
+      <body className={`${inter.className} ${cinzel.className} ${cormorant.className} ${plusJakarta.className} ${notoDevanagari.variable} ${notoSans.variable} font-sans text-gray-900 dark:text-gray-100`}>
         <HtmlLangSync lang={lang} />
         {/* Pre-launch analytics placeholder — activates only when NEXT_PUBLIC_GA_ID is set.
             Swap for Plausible/PostHog by replacing this block; funnel events use lib/analytics.ts trackEvent(). */}

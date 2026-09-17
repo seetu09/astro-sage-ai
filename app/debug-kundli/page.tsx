@@ -56,7 +56,7 @@ export default function DebugKundliPage() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">🔍 Kundli API Debug Tool</h1>
-      <p className="text-gray-600 mb-4">Enter birth details to see the raw API response before PDF generation.</p>
+      <p className="text-gray-600 dark:text-gray-300 mb-4">Enter birth details to see the raw API response before PDF generation.</p>
       
       <div className="grid grid-cols-2 gap-4 mb-4">
         <input 
