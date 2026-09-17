@@ -5,6 +5,8 @@ import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import type { KundliCalculations, RichPredictionReport } from '@/types/kundali';
 import { PLANET_NAMES, ZODIAC_SIGNS, SIGN_LORDS } from '@/lib/astrologyDictionary';
 import { getLocalizedYogaName } from '@/lib/localizedData';
+import ArtifactRecommendations from '@/app/components/ArtifactRecommendations';
+
 
 export interface ReportPlanet {
   name: string; sign: string; house: number; degree: string; nakshatra: string; retrograde: boolean; longitude: number;
@@ -104,6 +106,12 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
   const houses = chartData?.houses ?? [];
   const vimshottari = calculations?.vimshottari;
   const doshas = calculations?.doshas;
+  const activeDoshas = [
+    doshas?.mangal?.isPresent && 'mangal_dosh',
+    doshas?.sadeSati?.isActive && 'sade_sati',
+    doshas?.kaalSarp?.isPresent && 'kaal_sarp_dosh',
+  ].filter((x): x is string => Boolean(x));
+
   const yogas = calculations?.yogas;
   const currentDasha = vimshottari?.currentDasha;
   const mahadashas = vimshottari?.mahadashas ?? [];
@@ -541,6 +549,10 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
               <ul className="space-y-2">{rpMantras.map((m, i) => (<li key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{fixHindi(m)}</span></li>))}</ul>
             </div>
           )}
+          {activeDoshas.length > 0 && (
+            <ArtifactRecommendations userDoshas={activeDoshas} lang={lang} />
+          )}
+
         </section>
       )}
 
