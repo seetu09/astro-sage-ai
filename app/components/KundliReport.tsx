@@ -129,6 +129,19 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
   const rpGemstones = richPredictions?.remedies?.gemstones ?? [];
   const rpMantras = richPredictions?.remedies?.dailyMantras ?? [];
 
+  // TODO: remove after diagnosing missing richPredictions content
+  console.log('[KundliReport debug]', {
+    richPredictionsPresent: !!richPredictions,
+    healthNarrativeLen: richPredictions?.health?.narrative?.length ?? 0,
+    wealthNarrativeLen: richPredictions?.wealth?.narrative?.length ?? 0,
+    marriageNarrativeLen: richPredictions?.marriage?.narrative?.length ?? 0,
+    careerNarrativeLen: richPredictions?.career?.narrative?.length ?? 0,
+    gemstonesCount: richPredictions?.remedies?.gemstones?.length ?? 0,
+    mantrasCount: richPredictions?.remedies?.dailyMantras?.length ?? 0,
+    activeDoshasCount: activeDoshas.length,
+    activeDoshas,
+  });
+
   return (
     <div id="kundli-report" className="report-root max-w-5xl mx-auto px-4 py-8 space-y-10">
 
@@ -549,10 +562,17 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
               <ul className="space-y-2">{rpMantras.map((m, i) => (<li key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2"><span className="text-amber-500 mt-0.5">•</span><span>{fixHindi(m)}</span></li>))}</ul>
             </div>
           )}
-          {activeDoshas.length > 0 && (
-            <ArtifactRecommendations userDoshas={activeDoshas} lang={lang} />
-          )}
 
+        </section>
+      )}
+      {/* RECOMMENDED FOR YOUR CHART — artifact suggestions based on active doshas */}
+      {activeDoshas.length > 0 && (
+        <section className="report-page">
+          <SectionHeading
+            title={_t('Recommended for Your Chart', 'आपकी कुंडली के लिए अनुशंसित')}
+            subtitle={_t('Traditional remedies matched to your active doshas', 'आपके सक्रिय दोषों के अनुसार पारंपरिक उपाय')}
+          />
+          <ArtifactRecommendations userDoshas={activeDoshas} lang={lang} />
         </section>
       )}
 
