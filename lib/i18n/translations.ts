@@ -630,6 +630,10 @@ export interface Translations {
     subtitle: string;
     yourName: string;
     namePlaceholder: string;
+    dateOfBirth: string;
+    timeOfBirth: string;
+    placeOfBirth: string;
+    placePlaceholder: string;
     moonSign: string;
     marsSign: string;
     ascendant: string;
@@ -1779,6 +1783,10 @@ export const translations: Record<Language, Translations> = {
       subtitle: 'Check for Mangal Dosha and Shani Sade Sati in your birth chart with detailed remedies.',
       yourName: 'Your Name (optional)',
       namePlaceholder: 'Enter your name',
+      dateOfBirth: 'Date of Birth',
+      timeOfBirth: 'Time of Birth',
+      placeOfBirth: 'Place of Birth',
+      placePlaceholder: 'e.g. New Delhi, India',
       moonSign: 'Moon Sign (Rashi)',
       marsSign: 'Mars Sign (Placement)',
       ascendant: 'Ascendant (Lagna)',
@@ -2815,6 +2823,10 @@ export const translations: Record<Language, Translations> = {
       subtitle: 'अपनी जन्म कुंडली में मांगल दोष और शनि साढ़े साती की जांच विस्तृत उपायों के साथ करें।',
       yourName: 'आपका नाम (वैकल्पिक)',
       namePlaceholder: 'अपना नाम दर्ज करें',
+      dateOfBirth: 'जन्म तिथि',
+      timeOfBirth: 'जन्म समय',
+      placeOfBirth: 'जन्म स्थान',
+      placePlaceholder: 'जैसे नई दिल्ली, भारत',
       moonSign: 'चंद्र राशि',
       marsSign: 'मंगल राशि (स्थिति)',
       ascendant: 'लग्न',

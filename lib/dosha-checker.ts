@@ -1,12 +1,36 @@
 // ─── Types ────────────────────────────────────────────────────────────────
 
+import { computeChart } from "@/lib/astrology";
+
 export type LocaleCode = 'en' | 'hi';
 
+/** Legacy birth details using manually selected signs (for backward compatibility) */
 export interface BirthDetails {
   name: string;
   moonSign: number; // 1-12
   marsSign: number; // 1-12 (Mars placement)
   ascendantSign: number; // 1-12 (Lagna)
+}
+
+/** Birth details from date/time/place input (used by new API and form) */
+export interface BirthDetailsFromDate {
+  name: string;
+  birthDate: string; // YYYY-MM-DD
+  birthTime: string; // HH:MM
+  birthPlace: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezoneOffset: string; // e.g. "+05:30"
+}
+
+/** Extracted planetary positions for dosha calculation */
+export interface CalculatedPositions {
+  moonSign: number; // 1-12
+  marsSign: number; // 1-12
+  ascendantSign: number; // 1-12
+  moonSignName: string;
+  marsSignName: string;
+  ascendantSignName: string;
 }
 
 export type ManglikSeverity = "none" | "mild" | "moderate" | "severe";
@@ -319,6 +343,63 @@ export function calculateSadeSati(details: BirthDetails, locale: LocaleCode = 'e
   };
 }
 
+// ─── Helper: Extract positions from chart data ─────────────────────────────
+
+const SIGN_NUMBERS: Record<string, number> = {
+  "Mesha": 1, "Vrishabha": 2, "Mithuna": 3, "Karka": 4,
+  "Simha": 5, "Kanya": 6, "Tula": 7, "Vrishchika": 8,
+  "Dhanu": 9, "Makara": 10, "Kumbha": 11, "Meena": 12,
+  "Aries": 1, "Taurus": 2, "Gemini": 3, "Cancer": 4,
+  "Leo": 5, "Virgo": 6, "Libra": 7, "Scorpio": 8,
+  "Sagittarius": 9, "Capricorn": 10, "Aquarius": 11, "Pisces": 12,
+};
+
+function extractSignNumber(signName: string): number {
+  // Handle both English and Hindi sign names
+  const parts = signName.split(' ');
+  const englishPart = parts[0];
+  return SIGN_NUMBERS[englishPart] || 1;
+}
+
+export function extractPositionsFromChart(chartData: {
+  moonSign: string;
+  ascendant: string;
+  planets: Array<{ name: string; sign: string }>;
+}): CalculatedPositions {
+  const moonPlanet = chartData.planets.find(p => p.name === "Moon");
+  const marsPlanet = chartData.planets.find(p => p.name === "Mars");
+
+  const moonSignNum = moonPlanet ? extractSignNumber(moonPlanet.sign) : 1;
+  const marsSignNum = marsPlanet ? extractSignNumber(marsPlanet.sign) : 1;
+  const ascendantNum = extractSignNumber(chartData.ascendant);
+
+  return {
+    moonSign: moonSignNum,
+    marsSign: marsSignNum,
+    ascendantSign: ascendantNum,
+    moonSignName: moonPlanet?.sign || RASHI_NAMES[0],
+    marsSignName: marsPlanet?.sign || RASHI_NAMES[0],
+    ascendantSignName: chartData.ascendant || RASHI_NAMES[0],
+  };
+}
+
+// ─── Calculate positions from birth date/time/place ────────────────────────
+
+export function calculatePositionsFromBirthDetails(
+  details: BirthDetailsFromDate
+): CalculatedPositions {
+  const chartData = computeChart({
+    birthDate: details.birthDate,
+    birthTime: details.birthTime,
+    birthPlace: details.birthPlace,
+    latitude: details.latitude,
+    longitude: details.longitude,
+    timezoneOffset: details.timezoneOffset,
+  });
+
+  return extractPositionsFromChart(chartData);
+}
+
 // ─── Main Check Function ──────────────────────────────────────────────────
 
 export function checkDoshas(details: BirthDetails, locale: LocaleCode = 'en'): DoshaCheckResult {
@@ -352,5 +433,35 @@ export function checkDoshas(details: BirthDetails, locale: LocaleCode = 'en'): D
       severity,
       summary,
     },
+  };
+}
+
+// ─── Check Doshas from Birth Date/Time/Place ─────────────────────────────
+
+export interface DoshaCheckResultWithPositions extends DoshaCheckResult {
+  positions: CalculatedPositions;
+}
+
+export function checkDoshasFromBirthDetails(
+  details: BirthDetailsFromDate,
+  locale: LocaleCode = 'en'
+): DoshaCheckResultWithPositions {
+  // Extract positions using the astrology engine
+  const positions = calculatePositionsFromBirthDetails(details);
+
+  // Create legacy BirthDetails for the existing dosha calculation functions
+  const legacyDetails: BirthDetails = {
+    name: details.name,
+    moonSign: positions.moonSign,
+    marsSign: positions.marsSign,
+    ascendantSign: positions.ascendantSign,
+  };
+
+  // Run the existing dosha calculations
+  const result = checkDoshas(legacyDetails, locale);
+
+  return {
+    ...result,
+    positions,
   };
 }

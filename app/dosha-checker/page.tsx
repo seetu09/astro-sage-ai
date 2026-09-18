@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, FormEvent, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, AlertTriangle, CheckCircle2, Moon, Flame, Sparkles, Activity } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle2, Moon, Flame, Sparkles, Activity, MapPin, Calendar, Clock } from "lucide-react";
 import {
-  checkDoshas,
+  checkDoshasFromBirthDetails,
   RASHI_NAMES,
-  type BirthDetails,
-  type DoshaCheckResult,
+  type DoshaCheckResultWithPositions,
   type ManglikSeverity,
   type SadeSatiPhase,
 } from "@/lib/dosha-checker";
 import { useLanguage } from "@/app/context/LanguageContext";
+import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
 
 const SEVERITY_STYLES: Record<ManglikSeverity, { badge: string; label: string }> = {
   none: { badge: "bg-green-500/10 text-green-500 border-green-500/20", label: "None" },
@@ -29,55 +29,75 @@ const PHASE_STYLES: Record<SadeSatiPhase, { badge: string; label: string }> = {
 
 interface FormState {
   name: string;
-  moonSign: number;
-  marsSign: number;
-  ascendantSign: number;
+  dob: string;
+  tob: string;
+  place: string;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string;
 }
 
-const emptyForm: FormState = { name: "", moonSign: 1, marsSign: 1, ascendantSign: 1 };
+const emptyForm: FormState = { 
+  name: "", 
+  dob: "", 
+  tob: "", 
+  place: "", 
+  latitude: null, 
+  longitude: null, 
+  timezone: "+05:30" 
+};
 
 export default function DoshaCheckerPage() {
   const { language, t } = useLanguage();
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [result, setResult] = useState<DoshaCheckResult | null>(null);
+  const [result, setResult] = useState<DoshaCheckResultWithPositions | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
 
-    setTimeout(() => {
-      const details: BirthDetails = {
-        ...form,
-        name: form.name || (language === 'hi' ? "आपका" : "Your"),
-      };
-      setResult(checkDoshas(details, language));
+    try {
+      const response = await fetch("/api/dosha-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name || (language === 'hi' ? "आपका" : "Your"),
+          dob: form.dob,
+          tob: form.tob,
+          place: form.place,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to calculate doshas");
+      }
+
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
-  const renderSelect = (
-    label: string,
-    icon: React.ReactNode,
-    value: number,
-    onChange: (v: number) => void
-  ) => (
-    <div>
-      <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-1">
-        {icon}
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
-        className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-      >
-        {RASHI_NAMES.map((name, i) => (
-          <option key={i} value={i + 1}>{i + 1}. {name}</option>
-        ))}
-      </select>
-    </div>
-  );
+  const handlePlaceSelect = (place: { placeName: string; latitude: number; longitude: number; timezone: string }) => {
+    setForm({
+      ...form,
+      place: place.placeName,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      timezone: place.timezone,
+    });
+  };
+
+  const handlePlaceChange = (value: string) => {
+    setForm({ ...form, place: value });
+  };
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-4">
@@ -111,36 +131,70 @@ export default function DoshaCheckerPage() {
                     type="text"
                     placeholder={t.dosha.namePlaceholder}
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {renderSelect(
-                    t.dosha.moonSign,
-                    <Moon className="w-4 h-4 text-[var(--accent)]" />,
-                    form.moonSign,
-                    (v) => setForm({ ...form, moonSign: v })
-                  )}
-                  {renderSelect(
-                    t.dosha.marsSign,
-                    <Flame className="w-4 h-4 text-red-500" />,
-                    form.marsSign,
-                    (v) => setForm({ ...form, marsSign: v })
-                  )}
-                  {renderSelect(
-                    t.dosha.ascendant,
-                    <Activity className="w-4 h-4 text-blue-500" />,
-                    form.ascendantSign,
-                    (v) => setForm({ ...form, ascendantSign: v })
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-1">
+                      <Calendar className="w-4 h-4 text-[var(--accent)]" />
+                      {t.dosha.dateOfBirth}
+                    </label>
+                    <input
+                      type="date"
+                      value={form.dob}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, dob: e.target.value })}
+                      required
+                      className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-1">
+                      <Clock className="w-4 h-4 text-[var(--accent)]" />
+                      {t.dosha.timeOfBirth}
+                    </label>
+                    <input
+                      type="time"
+                      value={form.tob}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, tob: e.target.value })}
+                      required
+                      className="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                    />
+                  </div>
                 </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-1">
+                    <MapPin className="w-4 h-4 text-blue-500" />
+                    {t.dosha.placeOfBirth}
+                  </label>
+                  <PlaceAutocomplete
+                    value={form.place}
+                    onChange={handlePlaceChange}
+                    onSelect={handlePlaceSelect}
+                    latitude={form.latitude}
+                    longitude={form.longitude}
+                    onLatitudeChange={(lat) => setForm({ ...form, latitude: lat })}
+                    onLongitudeChange={(lng) => setForm({ ...form, longitude: lng })}
+                    placeholder={t.dosha.placePlaceholder}
+                    inputClassName="w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] text-sm"
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                    {error}
+                  </div>
+                )}
 
                 <div className="flex justify-center">
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !form.dob || !form.tob || !form.place}
                     className="px-12 py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-700 transition-all disabled:opacity-50 flex items-center gap-3 text-lg"
                   >
                     <Shield className="w-6 h-6" />
@@ -171,6 +225,39 @@ export default function DoshaCheckerPage() {
                   {result.overall.hasDosha ? t.dosha.remediesAvailable : t.dosha.chartClear}
                 </h2>
                 <p className="text-[var(--text-secondary)] max-w-xl mx-auto">{result.overall.summary}</p>
+
+                {/* Calculated Positions Summary */}
+                <div className="mt-6 pt-6 border-t border-[var(--border-color)]">
+                  <p className="text-sm font-semibold text-[var(--text-muted)] mb-3">
+                    {language === 'hi' ? 'आपकी गणना की गई स्थितियां:' : 'Your Calculated Positions:'}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+                      <p className="text-xs text-[var(--text-muted)] mb-1">
+                        {language === 'hi' ? 'चंद्र राशि' : 'Moon Sign (Rashi)'}
+                      </p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">
+                        {result.positions.moonSignName}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+                      <p className="text-xs text-[var(--text-muted)] mb-1">
+                        {language === 'hi' ? 'मंगल राशि' : 'Mars Sign'}
+                      </p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">
+                        {result.positions.marsSignName}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)]">
+                      <p className="text-xs text-[var(--text-muted)] mb-1">
+                        {language === 'hi' ? 'लग्न' : 'Ascendant (Lagna)'}
+                      </p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">
+                        {result.positions.ascendantSignName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <button
                   onClick={() => setResult(null)}
                   className="mt-6 px-6 py-2 border border-[var(--border-color)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] transition-colors"
