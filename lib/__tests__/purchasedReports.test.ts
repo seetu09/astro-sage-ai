@@ -6,12 +6,17 @@ import {
   // re-exported below only when Supabase isn't needed (table-dependent helpers
   // are not exercised here — they need a live DB).
 } from "@/lib/serverPurchasedReports";
+import { chartFingerprint as fromShared } from "@/lib/chartFingerprint";
 import {
   issueUnlockToken,
   verifyUnlockToken,
 } from "@/lib/paymentUnlock";
 
 describe("chartFingerprint — stable per-chart identity", () => {
+  it("serverPurchasedReports re-exports the shared chartFingerprint (no duplicate logic)", () => {
+    expect(chartFingerprint).toBe(fromShared);
+  });
+
   it("is deterministic for identical inputs", () => {
     const a = chartFingerprint({
       latitude: 28.6139,

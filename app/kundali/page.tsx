@@ -40,38 +40,8 @@ import { FreeTierData, PaidTierData, DashaRoadmapEntry, type KundliCalculations,
 import type { PreviewBirthData } from './components/Preview';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
+import { chartFingerprint } from '@/lib/chartFingerprint';
 
-/**
- * Client-side stable fingerprint for a chart, matching the server's
- * `chartFingerprint` in lib/serverPurchasedReports.ts. Keys server-side report
- * ownership so the profile "Downloaded Reports" tab and the PDF route agree on
- * which chart a user owns.
- */
-function chartFingerprintof(input: {
-  latitude?: number | null;
-  longitude?: number | null;
-  birthDate?: string;
-  birthTime?: string;
-  timezone?: string;
-}): string {
-  const parts = [
-    String(input.latitude ?? ""),
-    String(input.longitude ?? ""),
-    String(input.birthDate ?? ""),
-    String(input.birthTime ?? ""),
-    String(input.timezone ?? "+05:30"),
-  ];
-  const text = parts.join("|");
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    h1 ^= c;
-    h1 = (h1 * 0x01000193) & 0xffffffff;
-    h2 = (h2 * 31 + c) & 0xffffffff;
-  }
-  return `${h1.toString(16)}-${h2.toString(16)}`;
-}
 
 interface Planet {
   name: string;
@@ -794,7 +764,7 @@ export default function KundaliPage() {
                   Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                  chartFingerprint: chartFingerprintof({
+                  chartFingerprint: chartFingerprint({
                     latitude: lat,
                     longitude: lng,
                     birthDate: kundliData.dateOfBirth,
@@ -1233,7 +1203,7 @@ export default function KundaliPage() {
                 userEmail={kundliData?.email || email}
                 userName={kundliData?.name || name}
                 chartFingerprint={kundliData
-                  ? chartFingerprintof({
+                  ? chartFingerprint({
                       latitude: kundliData.latitude,
                       longitude: kundliData.longitude,
                       birthDate: kundliData.dateOfBirth,

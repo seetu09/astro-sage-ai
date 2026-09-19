@@ -1,4 +1,7 @@
 import { getServiceSupabase } from "@/lib/serverWallet";
+import { chartFingerprint } from "@/lib/chartFingerprint";
+
+export { chartFingerprint };
 
 /**
  * Server-side purchased-kundli-report ownership.
@@ -29,36 +32,6 @@ export interface PurchasedKundliReportSummary {
   report: unknown;
 }
 
-/**
- * Stable fingerprint for a specific chart, used to key ownership. A user who
- * buys the exact same birth details twice owns a single report (upsert).
- */
-export function chartFingerprint(input: {
-  latitude?: number | string | null;
-  longitude?: number | string | null;
-  birthDate?: string | null;
-  birthTime?: string | null;
-  timezone?: string | null;
-}): string {
-  const parts = [
-    String(input.latitude ?? ""),
-    String(input.longitude ?? ""),
-    String(input.birthDate ?? ""),
-    String(input.birthTime ?? ""),
-    String(input.timezone ?? "+05:30"),
-  ];
-  // Content hash so the fingerprint never embeds personal detail verbatim.
-  const text = parts.join("|");
-  let h1 = 0x811c9dc5;
-  let h2 = 0x01000193;
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    h1 ^= c;
-    h1 = (h1 * 0x01000193) & 0xffffffff;
-    h2 = (h2 * 31 + c) & 0xffffffff;
-  }
-  return `${h1.toString(16)}-${h2.toString(16)}`;
-}
 
 /**
  * Record a purchase (idempotent per owner+chart).
