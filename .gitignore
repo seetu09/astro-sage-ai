@@ -16,3 +16,8 @@ file_structure.txt
 app/api/debug/
 
 public/sw.js
+
+*.bak
+_context-bundle.txt
+_filelist.txt
+test-font-coverage.js
