@@ -8,7 +8,7 @@ import { ArtifactCatalogSchema, type CatalogArtifact } from '@/lib/catalogSchema
 
 async function fetchCatalog(): Promise<CatalogArtifact[]> {
   try {
-    const res = await fetch('/api/admin/artifacts');
+    const res = await fetch('/api/artifacts');
     if (!res.ok) return [];
     const data = await res.json();
     const result = ArtifactCatalogSchema.safeParse(data);

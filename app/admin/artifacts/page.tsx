@@ -19,18 +19,19 @@ export default function AdminArtifactsPage() {
 
   const _t = (en: string, hi: string) => (language === 'hi' ? hi : en);
 
+  /**
+   * Load catalog from the admin endpoint. This page itself is gated by
+   * middleware.ts via the session cookie, so the authenticated admin user
+   * has the session cookie auto-attached to this same-origin fetch. The
+   * /api/admin/artifacts GET returns the full catalog (including inactive
+   * items); the public storefront reads from /api/artifacts instead.
+   */
   const loadCatalog = useCallback(async () => {
-    if (!_password.trim()) {
-      toast.error(_t('Please enter your admin password to continue', 'Admin password dalein'));
-      return;
-    }
     setIsLoading(true);
     try {
-      const res = await fetch('/api/admin/artifacts', {
-        headers: { 'x-admin-password': _password },
-      });
+      const res = await fetch('/api/admin/artifacts');
       if (res.status === 401) {
-        toast.error(_t('Invalid admin password', 'Galat admin password'));
+        toast.error(_t('Authentication required. Please log in again.', 'Praamanyatavada avashyakta. Kripaya phir se log in karein.'));
         return;
       }
       if (!res.ok) {
@@ -52,7 +53,7 @@ export default function AdminArtifactsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [_password, toast]);
+  }, [toast]);
 
   const saveCatalog = useCallback(async () => {
     if (!_password.trim()) {
@@ -112,7 +113,7 @@ export default function AdminArtifactsPage() {
         </header>
         <section className="astro-card mb-6">
           <label htmlFor="admin-password" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-            {_t('Admin Password', 'Admin password')}
+            {_t('Save Password (required for changes)', 'Save password (badlav ke liye avashyakta)')}
           </label>
           <div className="flex gap-2">
             <input
@@ -120,13 +121,13 @@ export default function AdminArtifactsPage() {
               type="password"
               value={_password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={_t('Enter admin password', 'Admin password dalein')}
+              placeholder={_t('Required to save changes', 'Badlav save karein ye avashyakta')}
               className="flex-1 px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
             <button
               type="button"
               onClick={loadCatalog}
-              disabled={isLoading || !_password.trim()}
+              disabled={isLoading}
               className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white font-medium hover:bg-[var(--accent-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {_t('Load catalog', 'Catalog load karein')}
@@ -158,7 +159,7 @@ export default function AdminArtifactsPage() {
           />
           {!hasLoaded && (
             <p className="text-xs text-[var(--text-muted)] mt-2">
-              {_t('Enter the admin password above and click Load catalog to begin.', 'Upar admin password dalein aur Load catalog par click karein shuru karne ke liye.')}
+              {_t('Click Load catalog to fetch the current catalog.', 'Current catalog fetch karne ke liye Load catalog dalein.')}
             </p>
           )}
         </section>

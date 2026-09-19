@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { hasValidSession } from '@/lib/adminSession';
 
 /**
  * Server-side gate for admin surfaces.
@@ -11,40 +12,28 @@ import { NextRequest, NextResponse } from 'next/server';
  * Session model: `/api/admin/login` verifies ADMIN_PASSWORD (timing-safe) and
  * sets an httpOnly `admin_session` cookie whose value is ADMIN_SESSION_TOKEN.
  * This middleware compares that cookie — it is an opaque shared secret, so the
- * cookie never carries a user-supplied value.
+  * cookie never carries a user-supplied value.
  *
- * Public exceptions (see PUBLIC_ADMIN_API / isPublicAdminPage below):
+ * Public exceptions (see PUBLIC_ADMIN_API below):
  *   - /admin/login          the login form itself
  *   - /api/admin/login      the credential-exchange endpoint
- *   - /api/admin/artifacts  has its own x-admin-password header auth and is
- *                           called by the client with a header, not a cookie
+ *
+ * All other `/api/admin/*` routes require a valid session cookie. Read-only
+ * catalog data that is legitimately public (consumed by the storefront) is
+ * served from `/api/artifacts` — a route outside the admin tree that the
+ * middleware intentionally leaves unprotected.
  */
 
-const SESSION_COOKIE = 'admin_session';
 
 /** Paths under /api/admin that must stay reachable without the session cookie. */
 const PUBLIC_ADMIN_API = new Set([
   '/api/admin/login',
-  // Self-authenticating via `x-admin-password`; the browser never sends the
-  // session cookie here, so cookie-gating it would 401 the existing UI.
-  '/api/admin/artifacts',
 ]);
 
 /** The only page under /admin that is allowed to render unauthenticated. */
 const PUBLIC_ADMIN_PAGE = '/admin/login';
 
-/** True when the request carries a valid admin session cookie. */
-function hasValidSession(req: NextRequest): boolean {
-  const expected = process.env.ADMIN_SESSION_TOKEN;
-  // Fail closed: an unset token means nobody is authenticated, including a
-  // caller presenting an empty cookie.
-  if (!expected) return false;
-
-  const provided = req.cookies.get(SESSION_COOKIE)?.value;
-  return provided === expected;
-}
-
-export function middleware(req: NextRequest) {
+/**
   const { pathname } = req.nextUrl;
 
   // --- API routes: 401 JSON, never a redirect (fetch callers expect JSON) ---

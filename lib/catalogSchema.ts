@@ -36,6 +36,11 @@ export const ArtifactSchema = z.object({
   productUrl: z.string().min(1),
   priority: z.number().int().min(0),
   disclaimer: BilingualTextSchema,
+  // When false, the artifact is hidden from the public storefront but still
+  // visible to authenticated admin editors. Absent values are treated as
+  // active (true) by the public /api/artifacts endpoint, preserving backward
+  // compatibility with existing catalog entries.
+  isActive: z.boolean().optional(),
 });
 
 // ── Full catalog file ─────────────────────────────────────────────────
