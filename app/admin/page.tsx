@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, ImagePlus, Loader2, Lock, Sparkles, XCircle } from 'lucide-react';
+import { CheckCircle, ImagePlus, Loader2, Sparkles, XCircle } from 'lucide-react';
 
 const CATEGORIES = ['Vedic Astrology', 'Love & Compatibility', 'Planetary Transits', 'Remedies'] as const;
 
 type Notification = { type: 'success' | 'error'; message: string } | null;
 
 export default function AdminPage() {
-  // Password gate (local state only — re-validated by the API on every publish)
-  const [password, setPassword] = useState('');
-  const [unlocked, setUnlocked] = useState(false);
+  // Access is enforced server-side by middleware.ts via the httpOnly
+  // `admin_session` cookie — there is no client-side password gate here.
+  // (The publish API separately re-validates ADMIN_PASSWORD server-side.)
 
   // Form fields
   const [title, setTitle] = useState('');
@@ -65,12 +65,6 @@ export default function AdminPage() {
     setImagePreview(null);
   };
 
-  const handleUnlock = (e: FormEvent) => {
-    e.preventDefault();
-    if (!password.trim()) return;
-    setUnlocked(true);
-  };
-
   const handlePublish = async () => {
     setNotification(null);
     if (!title.trim() || !excerpt.trim() || !content.trim() || !imageFile) {
@@ -86,7 +80,6 @@ export default function AdminPage() {
       formData.append('excerpt', excerpt.trim());
       formData.append('content', content.trim());
       formData.append('imageFile', imageFile);
-      formData.append('adminPassword', password);
 
       const res = await fetch('/api/admin/blogs', { method: 'POST', body: formData });
       const data = await res.json().catch(() => ({}));
@@ -134,38 +127,8 @@ export default function AdminPage() {
         )}
       </AnimatePresence>
 
-      {!unlocked ? (
-        /* ---------- Password Gate ---------- */
-        <div className="flex items-center justify-center min-h-[70vh]">
-          <motion.form
-            onSubmit={handleUnlock}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="astro-card w-full max-w-md"
-          >
-            <div className="flex flex-col items-center text-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-[var(--accent)]/10 flex items-center justify-center mb-4">
-                <Lock className="w-6 h-6 text-[var(--accent)]" />
-              </div>
-              <h1 className="text-2xl font-bold font-serif text-[var(--text-primary)]">Admin Access</h1>
-              <p className="astro-text-secondary text-sm mt-1">Enter the admin password to continue.</p>
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Admin Password"
-              className="astro-input w-full mb-4"
-              autoFocus
-            />
-            <button type="submit" disabled={!password.trim()} className="astro-button w-full disabled:opacity-50 disabled:cursor-not-allowed">
-              Unlock Dashboard
-            </button>
-          </motion.form>
-        </div>
-      ) : (
-        /* ---------- Publishing Form ---------- */
-        <div className="max-w-2xl mx-auto">
+      {/* ---------- Publishing Form (access gated by middleware.ts) ---------- */}
+      <div className="max-w-2xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-medium mb-3">
               <Sparkles className="w-3 h-3" /> Admin Panel
@@ -264,7 +227,6 @@ export default function AdminPage() {
             </button>
           </motion.div>
         </div>
-      )}
     </div>
   );
 }

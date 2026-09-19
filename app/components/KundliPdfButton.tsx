@@ -212,8 +212,6 @@ function printReportHtml(html: string): void {
 
   iframe.onload = () => {
     setTimeout(() => {
-      const pageCount = (html.match(/class="page"/g) || []).length;
-      console.log(`[Print Fallback] Rendering ${pageCount} pages via window.print()`);
       try {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
@@ -322,8 +320,6 @@ export default function KundaliPdfButton({
         if (mode === 'print') {
           trackEvent('kundali_pdf_print_fallback', { lang: language, source: 'manual' });
           const html = generateReportHtml(reportData, language);
-          const pageCount = (html.match(/class="page"/g) || []).length;
-          console.log(`[KundaliPdfButton] Print fallback: ${pageCount} pages, ${reportData.domainInsights?.length || 0} domains, ${pillars?.length || 0} narratives.`);
           printReportHtml(html);
           setModalOpen(false);
           return;

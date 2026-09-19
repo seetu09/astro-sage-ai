@@ -14,11 +14,11 @@ export default function PWARegister() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered:', registration.scope);
+        .then(() => {
+          // Registered — nothing to report.
         })
         .catch((error) => {
-          console.log('SW registration failed:', error);
+          console.warn('SW registration failed:', error);
         });
     }
 
@@ -52,7 +52,7 @@ export default function PWARegister() {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-      console.log('User accepted install');
+      setIsInstalled(true);
     }
     setDeferredPrompt(null);
     setShowInstall(false);
