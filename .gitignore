@@ -11,3 +11,7 @@ next-env.d.ts
 project_bundle.txt
 file_structure.txt
 
+# Local-only dev diagnostics — never commit (see .env.example DEBUG_SECRET).
+# A committed /api/debug leaks env presence flags; keep it on your machine.
+app/api/debug/
+

@@ -93,13 +93,6 @@ function normalizeReportData(input: Partial<ReportData> | undefined): ReportData
   const arr = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
   const birth = (src.birthDetails ?? {}) as Record<string, string>;
 
-  console.log("[normalizeReportData] payload presence check:", {
-    hasPanchang: !!src.panchang,
-    hasD9Chart: !!src.d9Chart,
-    hasSarvashtakavarga: !!src.sarvashtakavarga,
-    hasNarratives: Array.isArray(src.narratives),
-  });
-
   return {
     clientName: String(src.clientName ?? "User"),
     chartType: String(src.chartType ?? "North Indian"),
@@ -150,23 +143,6 @@ export async function POST(req: NextRequest) {
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "A JSON body is required" }, { status: 400 });
     }
-
-    console.log("PDF Route - Received data:", {
-      hasChartData: !!body.chartData,
-      hasCalculations: !!body.calculations,
-      hasPillars: Array.isArray(body.pillars) && (body.pillars as unknown[]).length > 0,
-      pillarsCount: Array.isArray(body.pillars) ? (body.pillars as unknown[]).length : 0,
-      doshasKeys: Object.keys(
-        (body.calculations as { doshas?: Record<string, unknown> } | undefined)?.doshas ?? {}
-      ),
-      yogasKeys: Object.keys(
-        (body.calculations as { yogas?: Record<string, unknown> } | undefined)?.yogas ?? {}
-      ),
-      dashaCount:
-        (body.calculations as {
-          vimshottari?: { mahadashas?: unknown[] };
-        } | undefined)?.vimshottari?.mahadashas?.length ?? 0,
-    });
 
     const rawLang = typeof body.language === "string" ? body.language.trim().toLowerCase() : "en";
     const lang: Lang = rawLang === "hi" ? "hi" : "en";

@@ -168,12 +168,6 @@ async function generateCompleteReport(
 
   const langRule = getLanguageRule(lang);
 
-// --- DEBUG LOGS ---
-console.log("🤖 Calling Gemini API");
-console.log("🔑 API Key exists:", !!process.env.GEMINI_API_KEY);
-console.log("🌍 NODE_ENV:", process.env.NODE_ENV);
-console.log("🔍 Checking skip conditions:", { isDev: process.env.DEV_MODE, isPaid: false, hasKey: !!process.env.GEMINI_API_KEY });
-
   const { response: res } = await geminiWithRetry(() =>
     fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
@@ -694,13 +688,6 @@ const remedies = structured?.paidTier?.remedies ?? [];
       recommendations: current.recommendations ?? [],
     };
   }
-
-  console.log(
-    `[kundali/generate] localized yogas (${lang}):`,
-    JSON.stringify(yogas.map((y) => ({ name: y.name, benefit: y.benefit }))),
-    "| localized doshas:",
-    JSON.stringify(doshas.map((d) => ({ name: d.name, severity: d.severity })))
-  );
 
   return {
     careerTimings,
