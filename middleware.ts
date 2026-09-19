@@ -33,7 +33,7 @@ const PUBLIC_ADMIN_API = new Set([
 /** The only page under /admin that is allowed to render unauthenticated. */
 const PUBLIC_ADMIN_PAGE = '/admin/login';
 
-/**
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // --- API routes: 401 JSON, never a redirect (fetch callers expect JSON) ---
@@ -51,7 +51,6 @@ const PUBLIC_ADMIN_PAGE = '/admin/login';
 
   if (!hasValidSession(req)) {
     const loginUrl = new URL('/admin/login', req.url);
-    // Send the user back where they were headed after a successful login.
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -59,11 +58,6 @@ const PUBLIC_ADMIN_PAGE = '/admin/login';
   return NextResponse.next();
 }
 
-/**
- * Kept tight on purpose: only the admin trees and the legacy `/debug-kundli`
- * diagnostics page. Static assets, images, and every public page skip
- * middleware entirely so there is no per-request cost on the marketing site.
- */
 export const config = {
   matcher: ['/admin/:path*', '/api/admin/:path*', '/debug-kundli/:path*'],
 };
