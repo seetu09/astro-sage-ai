@@ -29,6 +29,7 @@ import {
 } from "@/types/kundali";
 import { applyRichPredictions } from "@/lib/richPredictions";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
+import { DEFAULT_TIMEZONE, parseFixedOffsetMinutes, resolveOffsetMinutes } from "@/lib/timezone";
 
 // --- Language-aware system prompt builder ---
 function getSystemPrompt(lang: "en" | "hi"): string {
@@ -65,6 +66,45 @@ function getLanguageRule(lang: "en" | "hi"): string {
     ? `ABSOLUTE RULE: Every string in this response MUST be written in 100% pure Hindi using Devanagari script only. NO English, NO Hinglish, NO Roman characters anywhere — including inside the "interpretation", "narrative", "overview", "summary", "note", "recommendations", "event", "milestones" and every other text field. Example terms: 'दशम भाव', 'सूर्य', 'करियर एवं पदोन्नति', 'विवाह'। Milestone "period" fields may keep year ranges like '2026–2028' (digits are allowed).
 Use correct Hindi spelling: 'वैदिक कुंडली रिपोर्ट', 'शनि', 'साढ़े साती', 'मंगल दोष', 'अष्टम भाव', 'वक्री स्थिति'. Do NOT write 'वेदक कुठलो', 'शिन', 'साढे साती', 'मंगली दोष', 'अहम भाव', 'बकी स्थिति', or any Marathi/corrupted Devanagari. Always use the nuqta (़) where Hindi requires it (साढ़े, साढ़ी).`
     : `ABSOLUTE RULE: Every string in this response MUST be written in 100% modern English for a layperson. Explain every Vedic term in plain language (e.g., '10th house (career and public standing)', 'Saturn (the planet of discipline)'). NO Hindi, NO Devanagari, NO Hinglish anywhere.`;
+}
+
+/**
+ * Convert signed minutes from UTC into a "+HH:MM" / "-HH:MM" string.
+ * e.g. 330 → "+05:30", -240 → "-04:00", 0 → "+00:00"
+ *
+ * NOTE: inline duplicate of formatOffset() in app/api/dosha-check/route.ts —
+ * consolidate into lib/timezone.ts if a third copy appears.
+ */
+function formatOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMinutes);
+  const hours = String(Math.floor(abs / 60)).padStart(2, "0");
+  const minutes = String(abs % 60).padStart(2, "0");
+  return `${sign}${hours}:${minutes}`;
+}
+
+/**
+ * Resolve a timezone value (either a fixed offset like "+05:30" or an IANA
+ * zone name like "America/New_York") into a "+HH:MM" string for the astrology
+ * engine. Returns null when the timezone cannot be resolved.
+ */
+function resolveTimezoneOffset(
+  timezone: string,
+  dob: string,
+  tob: string,
+): string | null {
+  // Fixed offset?
+  const fixed = parseFixedOffsetMinutes(timezone);
+  if (fixed !== null) {
+    return formatOffset(fixed);
+  }
+
+  // IANA zone name — resolve against the birth moment
+  const at = new Date(`${dob}T${tob}:00`);
+  const offset = resolveOffsetMinutes(timezone, at);
+  if (offset === null) return null;
+
+  return formatOffset(offset);
 }
 
 // --- Build the deterministic cache key from birth details ---
@@ -745,18 +785,36 @@ export async function POST(req: NextRequest) {
       unlockTokenHeader && verifyUnlockToken(unlockTokenHeader)
     );
 
+    if (!body.birthDate || !body.birthTime) {
+      return NextResponse.json({ message: "Birth date and time are required" }, { status: 400 });
+    }
+
+    // Resolve the client-supplied timezone — which may be an IANA zone name
+    // (e.g. "America/New_York") from the place autocomplete, a fixed offset
+    // ("+05:30"), or empty when the user typed a place instead of picking one.
+    // computeChart() cannot parse IANA names, so we must normalize here: an
+    // unresolved zone must never silently fall back to IST.
+    const rawTz = typeof body.timezoneOffset === "string" ? body.timezoneOffset : "";
+    const resolvedOffset = resolveTimezoneOffset(
+      rawTz || DEFAULT_TIMEZONE,
+      body.birthDate,
+      body.birthTime
+    );
+    if (resolvedOffset === null) {
+      return NextResponse.json(
+        { error: "Could not resolve the timezone for the birth place. Please try a nearby city." },
+        { status: 400 }
+      );
+    }
+
     const details: BirthDetails = {
       birthDate: body.birthDate,
       birthTime: body.birthTime,
       birthPlace: body.birthPlace,
       latitude: body.latitude ?? null,
       longitude: body.longitude ?? null,
-      timezoneOffset: body.timezoneOffset ?? "+05:30",
+      timezoneOffset: resolvedOffset,
     };
-
-    if (!details.birthDate || !details.birthTime) {
-      return NextResponse.json({ message: "Birth date and time are required" }, { status: 400 });
-    }
 
     const cacheKey = buildCacheKey(details);
 
