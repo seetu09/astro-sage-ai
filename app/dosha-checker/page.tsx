@@ -44,7 +44,7 @@ const emptyForm: FormState = {
   place: "", 
   latitude: null, 
   longitude: null, 
-  timezone: "+05:30" 
+  timezone: "" 
 };
 
 export default function DoshaCheckerPage() {
@@ -68,6 +68,9 @@ export default function DoshaCheckerPage() {
           dob: form.dob,
           tob: form.tob,
           place: form.place,
+          latitude: form.latitude ?? undefined,
+          longitude: form.longitude ?? undefined,
+          timezone: form.timezone || undefined,
         }),
       });
 
