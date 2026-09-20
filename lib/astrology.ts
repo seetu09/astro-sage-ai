@@ -763,6 +763,20 @@ export function computeChart(details: BirthDetails): ChartData {
     houses[p.house - 1]?.planets.push(p.name);
   }
 
+  // ── Timezone label (reflects the actual offset used, not always IST) ───
+  // Keep the legacy "IST (+05:30)" label byte-for-byte for Indian charts;
+  // otherwise emit a bare "+HH:MM" / "-HH:MM" offset string.
+  // NOTE: inline duplicate of formatOffset() in app/api/dosha-check/route.ts —
+  // consolidate into lib/timezone.ts if a third copy appears.
+  const timezoneAbs = Math.abs(offsetMinutes);
+  const timezoneSign = offsetMinutes >= 0 ? "+" : "-";
+  const timezoneLabel =
+    offsetMinutes === 330
+      ? "IST (+05:30)"
+      : `${timezoneSign}${String(Math.floor(timezoneAbs / 60)).padStart(2, "0")}:${String(
+          timezoneAbs % 60
+        ).padStart(2, "0")}`;
+
   return {
     engineVersion: CHART_ENGINE_VERSION,
     lagna: lagnaStr,
@@ -772,7 +786,7 @@ export function computeChart(details: BirthDetails): ChartData {
     moonSign: moon.sign,
     sunSign: signNameWithHindi(sunSignNum),
     nakshatra: getNakshatraNameWithHindi(getSiderealLongitude(jdUT, "Moon")),
-    timezone: `IST (+05:30)`,
+    timezone: timezoneLabel,
     houses,
     planets: planetResults,
   };

@@ -6,7 +6,8 @@
  * instead of silently falling back to 330 (IST).
  */
 import { describe, it, expect } from 'vitest';
-import { parseTimezoneOffset } from '@/lib/astrology';
+import { computeChart, parseTimezoneOffset } from '@/lib/astrology';
+import type { BirthDetailsFromDate } from '@/lib/dosha-checker';
 
 describe('parseTimezoneOffset — current (buggy) behavior pin', () => {
   it('parses "+05:30" → 330', () => {
@@ -51,5 +52,32 @@ describe('parseTimezoneOffset — current (buggy) behavior pin', () => {
 
   it('returns 330 (fallback) for "IST"', () => {
     expect(parseTimezoneOffset('IST')).toBe(330);
+  });
+});
+
+describe('computeChart — timezone label', () => {
+  const baseDetails: BirthDetailsFromDate = {
+    name: 'Test User',
+    birthDate: '1990-06-15',
+    birthTime: '12:00',
+    birthPlace: 'Test Place',
+    latitude: 28.6139,
+    longitude: 77.209,
+    timezoneOffset: '+05:30',
+  };
+
+  it("computeChart returns 'IST (+05:30)' when offset is +05:30", () => {
+    const chart = computeChart({ ...baseDetails, timezoneOffset: '+05:30' });
+    expect(chart.timezone).toBe('IST (+05:30)');
+  });
+
+  it('computeChart returns offset string for non-IST timezones', () => {
+    const chart = computeChart({ ...baseDetails, timezoneOffset: '-05:00' });
+    expect(chart.timezone).toBe('-05:00');
+  });
+
+  it('computeChart returns offset string for +09:00', () => {
+    const chart = computeChart({ ...baseDetails, timezoneOffset: '+09:00' });
+    expect(chart.timezone).toBe('+09:00');
   });
 });
