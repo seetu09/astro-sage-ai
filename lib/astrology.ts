@@ -5,6 +5,7 @@
 // ecliptic longitudes accurate to a fraction of a degree for modern dates.
 
 import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
+import { parseFixedOffsetMinutes } from "@/lib/timezone";
 
 export const DEFAULT_NOON_TIME = "12:00";
 
@@ -20,13 +21,26 @@ export function resolveBirthTime(birthTime: string, timeUnknown: boolean): strin
 }
 
 /**
+ * TEMPORARY SHIM — delegates to the new lib/timezone.ts helper.
+ *
+ * This preserves the EXISTING (buggy) behavior: when the offset string
+ * doesn't match the fixed-offset format (e.g. "America/New_York", "IST",
+ * "", null, undefined), it silently falls back to 330 minutes (IST) instead
+ * of signaling "unknown" via null.
+ *
+ * Phase 3 will remove this fallback. Callers should be migrated to import
+ * parseFixedOffsetMinutes / resolveOffsetMinutes directly from lib/timezone.ts
+ * and handle the null case explicitly.
+ *
+ * NOTE: New code should NOT call this function. Import from lib/timezone.ts.
+ *
  * Parse a timezone offset string like "+05:30" or "-08:00" into signed minutes.
  */
 export function parseTimezoneOffset(offset: string): number {
-  const match = String(offset || "+05:30").match(/^([+-])(\d{2}):(\d{2})$/);
-  if (!match) return 330; // default IST
-  const sign = match[1] === "-" ? -1 : 1;
-  return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
+  const parsed = parseFixedOffsetMinutes(offset);
+  // Preserve current behavior: null → 330 (IST fallback). This is the known bug
+  // that Phase 3 will fix by making this function return null instead.
+  return parsed ?? 330; // default IST
 }
 
 /**
