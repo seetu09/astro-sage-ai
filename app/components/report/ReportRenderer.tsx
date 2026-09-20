@@ -5,6 +5,7 @@ import { buildReportModel, type ReportModel } from './reportModel';
 import type { ReportData } from '@/lib/pdfHtmlTemplate';
 import type { ReportPage } from '@/types/kundali';
 import type { KundliCalculations } from '@/types/kundali';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
 import PageShell from './PageShell';
 import { NativitySummarySection } from './sections/NativitySummary';
@@ -73,7 +74,7 @@ function buildPages(model: ReportModel, pillars?: LifePillarConfig[], fullBreakd
       className="report-page section-start"
     >
       <div className="report-section-content">
-        <div dangerouslySetInnerHTML={{ __html: page.content }} />
+        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(page.content) }} />
       </div>
     </PageShell>
   ));
