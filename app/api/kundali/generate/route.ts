@@ -747,7 +747,7 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limit — this is the most expensive route: a cache miss triggers two
     // Gemini calls, so throttle hard (12 req / 60s / IP) to cap AI spend..
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `kundali-generate:${getClientIp(req)}`,
       12,
       60_000

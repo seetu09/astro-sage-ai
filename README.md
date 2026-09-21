@@ -73,7 +73,7 @@ scripts/          # i18n consistency checker
 
 - **Domain math is pure** (`lib/ashtakoot.ts`, `lib/numerology.ts`, `lib/astrology.ts`) — fully unit-testable, no I/O.
 - **Paid reports are server-gated**: `lib/paymentUnlock.ts` mints HMAC-signed unlock tokens that only `/api/payment/verify` issues after Razorpay confirms an order.
-- **Rate limiting**: `lib/rateLimit.ts` provides per-instance IP sliding windows on all AI/payment routes. For hard global quotas on serverless, front it with Upstash Redis or a WAF.
+- **Rate limiting**: `lib/rateLimit.ts` provides IP sliding windows on all AI/payment routes, backed by Upstash Redis in production (set `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`). When those env vars are absent — or a Redis call fails — it falls back to an in-memory limiter so local dev, CI, and Redis outages never block requests.
 
 ## Testing
 

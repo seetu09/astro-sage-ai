@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limit — PDF rendering is compute/IO heavy and PDFs are paid,
     // so throttle per IP (10 req / 120s / IP) to cap cost and abuse.
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `kundali-pdf:${getClientIp(req)}`,
       10,
       120_000

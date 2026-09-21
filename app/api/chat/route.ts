@@ -26,7 +26,7 @@ function textStream(stream: ReadableStream<Uint8Array>): Response {
 export async function POST(request: NextRequest) {
   try {
     // Rate limit check — protect API costs from bot abuse
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `chat:${getClientIp(request)}`,
       RATE_LIMIT,
       RATE_WINDOW_MS

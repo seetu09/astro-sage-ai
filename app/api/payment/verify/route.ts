@@ -8,7 +8,7 @@ import { recordPurchasedKundliReport } from '@/lib/serverPurchasedReports';
 export async function POST(req: Request) {
   try {
     // Rate limit — trial-and-error / forged-verification spam (20 req / 60s / IP).
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `payment-verify:${getClientIp(req)}`,
       20,
       60_000

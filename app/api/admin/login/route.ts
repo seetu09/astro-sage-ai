@@ -32,7 +32,7 @@ function safeEqual(a: string, b: string): boolean {
 export async function POST(req: NextRequest) {
   // Rate limit before touching credentials so guessing is expensive.
   const ip = getClientIp(req);
-  const { allowed, retryAfter } = checkRateLimit(
+  const { allowed, retryAfter } = await checkRateLimit(
     `admin-login:${ip}`,
     MAX_ATTEMPTS,
     WINDOW_MS

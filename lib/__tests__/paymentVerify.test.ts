@@ -71,7 +71,7 @@ describe('POST /api/payment/verify', () => {
     vi.clearAllMocks();
     (global.fetch as any) = vi.fn();
     (getClientIp as any).mockReturnValue('127.0.0.1');
-    (checkRateLimit as any).mockReturnValue({ allowed: true, retryAfter: 0 });
+    (checkRateLimit as any).mockResolvedValue({ allowed: true, retryAfter: 0 });
     (hasWalletCreditForPayment as any).mockResolvedValue(false);
     (getUserFromAuthHeader as any).mockResolvedValue(null);
     (creditWallet as any).mockResolvedValue(null);
@@ -81,7 +81,7 @@ describe('POST /api/payment/verify', () => {
 
 
   it('returns 429 when rate limited', async () => {
-    (checkRateLimit as any).mockReturnValue({ allowed: false, retryAfter: 30 });
+    (checkRateLimit as any).mockResolvedValue({ allowed: false, retryAfter: 30 });
 
     const orderId = 'order_1';
     const paymentId = 'pay_1';

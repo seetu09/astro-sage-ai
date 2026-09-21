@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting check (10 requests per minute per IP)
     const ip = getClientIp(request);
-    const rateLimitResult = checkRateLimit(`dosha-check:${ip}`, 10, 60000);
+    const rateLimitResult = await checkRateLimit(`dosha-check:${ip}`, 10, 60000);
     
     if (!rateLimitResult.allowed) {
       return NextResponse.json(

@@ -16,7 +16,7 @@ import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
  */
 export async function POST(req: NextRequest) {
   // Light rate limit — reset is a trivial op, but never an open spam target.
-  const { allowed, retryAfter } = checkRateLimit(
+  const { allowed, retryAfter } = await checkRateLimit(
     `payment-reset:${getClientIp(req)}`,
     30,
     60_000

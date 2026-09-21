@@ -167,7 +167,7 @@ function buildMockHoroscope(sign: string, period: string, lang: string = "en"): 
 export async function GET(request: NextRequest) {
   try {
     // Rate limit — protect Gemini spend from bot abuse (30 req / 60s / IP).
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `horoscope:${getClientIp(request)}`,
       30,
       60_000

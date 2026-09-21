@@ -20,7 +20,7 @@ import { verifyUnlockToken } from "@/lib/paymentUnlock";
  */
 export async function POST(req: NextRequest) {
   // Brute-force resistance — forgery attempts are capped per IP.
-  const { allowed, retryAfter } = checkRateLimit(
+  const { allowed, retryAfter } = await checkRateLimit(
     `payment-validate:${getClientIp(req)}`,
     30,
     60_000

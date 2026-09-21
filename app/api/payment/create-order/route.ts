@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   try {
     // Rate limit the order-creation endpoint (Razorpay orders have a cost and
     // creates are idempotence-prone under bots) — 10 req / 60s / IP.
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `payment-create-order:${getClientIp(req)}`,
       10,
       60_000

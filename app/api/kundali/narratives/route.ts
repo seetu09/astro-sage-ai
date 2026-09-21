@@ -37,7 +37,7 @@ const GEMINI_MODEL = "gemini-2.0-flash";
 export async function POST(req: NextRequest) {
   try {
     // Rate limit — protect Gemini pillar-spend from abuse (20 req / 60s / IP).);
-    const { allowed, retryAfter } = checkRateLimit(
+    const { allowed, retryAfter } = await checkRateLimit(
       `kundali-narratives:${getClientIp(req)}`,
       20,
       60_000

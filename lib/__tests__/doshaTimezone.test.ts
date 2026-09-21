@@ -26,7 +26,7 @@ describe('dosha-check timezone handling', () => {
     vi.clearAllMocks();
     (global.fetch as any) = vi.fn();
     (getClientIp as any).mockReturnValue('127.0.0.1');
-    (checkRateLimit as any).mockReturnValue({ allowed: true, retryAfter: 0 });
+    (checkRateLimit as any).mockResolvedValue({ allowed: true, retryAfter: 0 });
   });
 
   it('same local clock in different timezones produces different ascendants', () => {

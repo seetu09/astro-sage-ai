@@ -19,7 +19,7 @@ import {
  * account was created (with the same email) surface automatically.
  */
 export async function GET(req: Request) {
-  const { allowed, retryAfter } = checkRateLimit(`profile-reports:${getClientIp(req)}`, 60, 60_000);
+  const { allowed, retryAfter } = await checkRateLimit(`profile-reports:${getClientIp(req)}`, 60, 60_000);
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests. Please try again shortly." },
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
  * Body: { chartFingerprint: string, report: object }
  */
 export async function POST(req: Request) {
-  const { allowed, retryAfter } = checkRateLimit(`profile-reports:${getClientIp(req)}`, 60, 60_000);
+  const { allowed, retryAfter } = await checkRateLimit(`profile-reports:${getClientIp(req)}`, 60, 60_000);
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests. Please try again shortly." },

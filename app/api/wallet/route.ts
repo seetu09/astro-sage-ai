@@ -7,7 +7,7 @@ import { getWalletState, getUserFromAuthHeader } from "@/lib/serverWallet";
  * Auth: Bearer Supabase access token (sent by WalletContext via supabase.auth.getSession()).
  */
 export async function GET(req: Request) {
-  const { allowed, retryAfter } = checkRateLimit(`wallet:${getClientIp(req)}`, 60, 60_000);
+  const { allowed, retryAfter } = await checkRateLimit(`wallet:${getClientIp(req)}`, 60, 60_000);
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests. Please try again shortly." },

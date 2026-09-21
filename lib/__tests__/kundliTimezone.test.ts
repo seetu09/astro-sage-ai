@@ -46,7 +46,7 @@ describe('kundali generate timezone handling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (getClientIp as any).mockReturnValue('127.0.0.1');
-    (checkRateLimit as any).mockReturnValue({ allowed: true, retryAfter: 0 });
+    (checkRateLimit as any).mockResolvedValue({ allowed: true, retryAfter: 0 });
     // No API key → deterministic fallbacks, no outbound AI calls.
     delete process.env.GEMINI_API_KEY;
   });

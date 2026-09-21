@@ -49,7 +49,7 @@ function buildMockInterpretation(req: InterpretRequest): string {
 export async function POST(request: NextRequest) {
   try {
      // Rate limit — protect Gemini spend (30 req / 60s / IP).
-     const { allowed, retryAfter } = checkRateLimit(
+     const { allowed, retryAfter } = await checkRateLimit(
        `tarot:${getClientIp(request)}`,
        30,
        60_000
