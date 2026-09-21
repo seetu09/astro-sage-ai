@@ -5,7 +5,7 @@
 // ecliptic longitudes accurate to a fraction of a degree for modern dates.
 
 import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
-import { parseFixedOffsetMinutes } from "@/lib/timezone";
+import { parseFixedOffsetMinutes, resolveOffsetMinutes } from "@/lib/timezone";
 
 export const DEFAULT_NOON_TIME = "12:00";
 
@@ -596,17 +596,29 @@ export interface MoonDetails {
 /**
  * Derive Moon sign (rashi), nakshatra, and pada from birth date/time.
  * If timeUnknown is true, defaults to 12:00 PM (noon).
+ *
+ * `timezone` is an IANA zone name (e.g. "America/New_York") resolved against
+ * the birth moment so DST is handled correctly. When it is missing/empty (or
+ * unresolvable) we fall back to 330 minutes (IST) — this matches the pre-fix
+ * behavior and is intentional backward compatibility for legacy callers.
  */
 export function deriveMoonDetails(
   birthDate: string,
   birthTime: string,
-  timeUnknown: boolean
+  timeUnknown: boolean,
+  timezone?: string | null
 ): MoonDetails {
   const [year, month, day] = birthDate.split("-").map(Number);
   const time = resolveBirthTime(birthTime, timeUnknown);
   const [hour, minute] = time.split(":").map(Number);
 
-  const jd = calculateJulianDay(year, month, day, hour, minute, 330); // IST
+  // Resolve the offset at the SAME instant the Julian day is computed for, using
+  // the post-fallback local clock time, so a noon "time unknown" birth resolves
+  // the correct side of a DST transition.
+  const offsetMinutes =
+    resolveOffsetMinutes(timezone, new Date(Date.UTC(year, month - 1, day, hour, minute))) ?? 330; // IST fallback
+
+  const jd = calculateJulianDay(year, month, day, hour, minute, offsetMinutes);
   const moonLong = getSiderealLongitude(jd, "Moon");
 
   const { index, pada } = getNakshatra(moonLong);

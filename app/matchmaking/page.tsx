@@ -100,6 +100,7 @@ interface PersonForm {
   placeOfBirth: string;
   latitude: number | null;
   longitude: number | null;
+  timezone: string;
   rashi: number;
   nakshatra: number;
   pada: number;
@@ -113,6 +114,7 @@ const emptyPerson: PersonForm = {
   placeOfBirth: "",
   latitude: null,
   longitude: null,
+  timezone: "",
   rashi: 1,
   nakshatra: 1,
   pada: 1,
@@ -215,7 +217,7 @@ export default function MatchmakingPage() {
       const buildDetails = (p: PersonForm): PersonDetails => {
         const moon = showAdvanced
           ? { rashi: p.rashi, nakshatra: p.nakshatra, pada: p.pada }
-          : deriveMoonDetails(p.dateOfBirth, p.timeOfBirth, p.timeUnknown);
+          : deriveMoonDetails(p.dateOfBirth, p.timeOfBirth, p.timeUnknown, p.timezone);
         return {
           name: p.name || (language === "hi" ? "लड़का" : "Boy"),
           ...moon,
@@ -325,9 +327,9 @@ export default function MatchmakingPage() {
           value={data.placeOfBirth}
           onChange={(v) => setData((prev) => ({ ...prev, placeOfBirth: v }))}
           onSelect={(place) =>
-            setData((prev) => ({ ...prev, placeOfBirth: place.placeName, latitude: place.latitude, longitude: place.longitude }))
+            setData((prev) => ({ ...prev, placeOfBirth: place.placeName, latitude: place.latitude, longitude: place.longitude, timezone: place.timezone }))
           }
-          onClear={() => setData((prev) => ({ ...prev, latitude: null, longitude: null }))}
+          onClear={() => setData((prev) => ({ ...prev, latitude: null, longitude: null, timezone: "" }))}
           latitude={data.latitude}
           longitude={data.longitude}
           onLatitudeChange={(v) => setData((prev) => ({ ...prev, latitude: v }))}
