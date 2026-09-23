@@ -2,12 +2,22 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { recommendArtifacts, type Recommendation } from '@/lib/artifactRecommender';
+import { type Recommendation } from '@/lib/artifactRecommender';
 import { trackEvent } from '@/lib/analytics';
 
 interface Props {
-  /** Active dosha keys from `calculations.doshas`, e.g. ["mangal_dosh", "sade_sati"]. */
-  userDoshas: string[];
+  /**
+   * Already-computed recommendations, produced by `recommendArtifacts`.
+   *
+   * This component is purely PRESENTATIONAL: it deliberately does not call the
+   * recommender and does not fetch a catalog. The catalog is injected by the
+   * caller (see app/components/KundliReport.tsx) because:
+   *   - `recommendArtifacts` is sync + pure, so computing it during render keeps
+   *     this component free of loading states, and
+   *   - the catalog now lives in the database, so only an async caller
+   *     (a Server Component or a page holding `useState`) can load it.
+   */
+  recommendations: Recommendation[];
   lang: 'en' | 'hi';
 }
 
@@ -19,20 +29,18 @@ interface Props {
  * static — so the block reads as part of the reading rather than as an ad.
  * Renders nothing at all when there is no relevant recommendation.
  */
-export default function ArtifactRecommendations({ userDoshas, lang }: Props) {
-  const recommendations = recommendArtifacts(userDoshas, { maxResults: 2 });
-
+export default function ArtifactRecommendations({ recommendations, lang }: Props) {
   // Fire an impression event for each recommendation on mount.
   useEffect(() => {
     for (const recommendation of recommendations) {
       trackEvent('artifact_impression', {
         artifactId: recommendation.artifact.id,
-        matchedDoshas: userDoshas,
+        matchedDoshas: recommendation.matchedDoshas,
         lang,
         source: 'kundli_report',
       });
     }
-  }, [recommendations, userDoshas, lang]);
+  }, [recommendations, lang]);
 
   if (recommendations.length === 0) return null;
 

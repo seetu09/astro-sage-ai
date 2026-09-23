@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { ArtifactCatalogSchema } from "@/lib/catalogSchema";
 import { hasValidSession } from "@/lib/adminSession";
+import { loadArtifactCatalog, writeArtifactCatalog } from "@/lib/serverArtifactCatalog";
 
 export const runtime = "nodejs";
 
-const CATALOG_FILE = path.join(process.cwd(), "data", "artifacts.json");
-
 /**
- * Admin API for managing `data/artifacts.json`.
+ * Admin API for the artifact catalog (backed by `public.artifacts`).
  *
  * Auth: requires both (a) a valid admin_session cookie (verified by middleware
  * and redundantly here via lib/adminSession, so the route is safe even if called
@@ -17,6 +14,10 @@ const CATALOG_FILE = path.join(process.cwd(), "data", "artifacts.json");
  * mutations (PUT), the `x-admin-password` header matching ADMIN_PASSWORD.
  * GET is protected by the session cookie; the public storefront reads from
  * /api/artifacts instead.
+ *
+ * Storage moved from `data/artifacts.json` to Supabase because Vercel's
+ * filesystem is read-only — the old fs.writeFile made every save fail in
+ * production.
  *
  * Note on timing safety: the session cookie is an opaque shared secret set by
  * `/api/admin/login` via crypto.randomBytes — never derived from user input —
@@ -29,17 +30,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const raw = await fs.readFile(CATALOG_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    const result = ArtifactCatalogSchema.safeParse(parsed);
-
-    if (!result.success) {
-      // eslint-disable-next-line no-console
-      console.error("[GET /api/admin/artifacts] catalog validation failed:", result.error.message);
-      return NextResponse.json({ message: "Catalog validation failed" }, { status: 500 });
-    }
-
-    return NextResponse.json(result.data);
+    // The admin view intentionally includes isActive === false entries; the
+    // public endpoint is the one that filters them out.
+    const catalog = await loadArtifactCatalog();
+    return NextResponse.json(catalog);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[GET /api/admin/artifacts]", error);
@@ -80,8 +74,8 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Write back to the file — pretty-printed for human readability.
-    await fs.writeFile(CATALOG_FILE, JSON.stringify(result.data, null, 2), "utf-8");
+    // Full replace, written through the service role (bypasses RLS).
+    await writeArtifactCatalog(result.data);
 
     return NextResponse.json({ success: true, version: result.data.version });
   } catch (error) {

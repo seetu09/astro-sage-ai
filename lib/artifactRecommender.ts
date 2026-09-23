@@ -4,7 +4,20 @@
  * Deterministic, pure recommender behind the "Remedial Measures" section of the
  * Kundli report. It maps the doshas detected by the calculation layer
  * (`calculations.doshas`) onto a curated catalog of physical artifacts
- * (gemstones, rudraksha, yantras, ...) loaded from `data/artifacts.json`.
+ * (gemstones, rudraksha, yantras, ...).
+ *
+ * THE CATALOG IS INJECTED, NOT IMPORTED
+ * -------------------------------------
+ * This module used to `import artifacts from '@/data/artifacts.json'` — a
+ * build-time static import. The catalog now lives in the `public.artifacts`
+ * table so admins can edit it from the dashboard without a redeploy, which
+ * means it is fetched at runtime and can no longer be a module-level import.
+ *
+ * The catalog therefore arrives as an explicit parameter. That keeps this
+ * function SYNC and PURE (the report renders it inline, so it must not become
+ * async) and keeps it unit-testable without mocking module resolution. Loading
+ * is the caller's job: `lib/serverArtifactCatalog.ts` on the server,
+ * `fetch('/api/artifacts')` in client components.
  *
  * WHY `doshaAliases` EXISTS
  * -------------------------
@@ -15,8 +28,10 @@
  *      like "Manglik", "Shani Sade Sati" or "Kaal Sarp".
  * The alias map lets a canonical key fan out into every spelling we have seen
  * in the wild, so matching happens on *expanded* alias sets. Adding a new
- * spelling is one line of JSON instead of touching the catalog or the engine,
- * and the recommender keeps working when either side renames a key.
+ * spelling is one line of data instead of touching the catalog or the engine,
+ * and the recommender keeps working when either side renames a key. The map is
+ * currently empty (see `loadArtifactCatalog`); matching still works on the
+ * canonical keys themselves, and alias storage is a follow-up.
  *
  * WHY THE CAP IS 2
  * ----------------
@@ -29,14 +44,14 @@
  *
  * WHY IT NEVER THROWS
  * -------------------
- * The recommender runs while the paid report renders. A renamed JSON field, a
- * null dosha array or a malformed catalog row must never take the report down
- * or blank the section. Every failure path degrades to "no suggestions"
- * (`[]`), which the UI renders as `null`. Failing soft — no throws, no partial
- * state, no noise — is the entire error strategy.
+ * The recommender runs while the paid report renders. A renamed field, a null
+ * dosha array or a malformed catalog row must never take the report down or
+ * blank the section. Every failure path degrades to "no suggestions" (`[]`),
+ * which the UI renders as `null`. Failing soft — no throws, no partial state,
+ * no noise — is the entire error strategy.
  */
 
-import artifactsData from '@/data/artifacts.json';
+import type { ArtifactCatalog } from '@/lib/catalogSchema';
 
 export interface ArtifactName { en: string; hi: string; }
 export interface ArtifactText { en: string; hi: string; }
@@ -52,6 +67,15 @@ export interface Artifact {
   productUrl: string;
   priority: number;
   disclaimer: ArtifactText;
+  /**
+   * Extra fields the schema/DB carry that the report's card does not read.
+   * Declared here so a `CatalogArtifact` (which includes them) is assignable to
+   * this interface without a cast at the call sites.
+   */
+  category?: string;
+  priceInr?: number;
+  currency?: string;
+  isActive?: boolean;
 }
 
 export interface Recommendation {
@@ -65,12 +89,6 @@ export interface Recommendation {
   score: number;
 }
 
-/** Shape of `data/artifacts.json` (kept local; the JSON is the source of truth). */
-interface ArtifactCatalog {
-  version?: number;
-  artifacts?: Artifact[];
-  doshaAliases?: Record<string, string[]>;
-}
 
 const DEFAULT_MAX_RESULTS = 2;
 /** Hard product ceiling — the report must never feel like a catalog. */
@@ -106,22 +124,28 @@ function expandDosha(dosha: string, aliases: Record<string, string[]>): Set<stri
 /**
  * Rank catalog artifacts for the given active doshas.
  *
+ * The catalog is passed in (see the module docblock): this function stays
+ * synchronous and pure so the report can call it inline during render.
+ *
  * @param userDoshas Active dosha keys from `calculations.doshas`
  *                   (e.g. `["mangal_dosh", "sade_sati"]`).
+ * @param catalog    The loaded artifact catalog. A missing/empty catalog yields
+ *                   `[]`; the parameter is required so no caller can silently
+ *                   fall back to a stale built-in catalog.
  * @param options    `maxResults` is clamped to the hard cap of 2.
  * @returns 0–2 recommendations, highest score first. Never throws.
  */
 export function recommendArtifacts(
   userDoshas: string[],
+  catalog: ArtifactCatalog,
   options?: { maxResults?: number }
 ): Recommendation[] {
   try {
     if (!Array.isArray(userDoshas) || userDoshas.length === 0) return [];
 
-    const catalog = (artifactsData ?? {}) as unknown as ArtifactCatalog;
-    const artifacts = Array.isArray(catalog.artifacts) ? catalog.artifacts : [];
+    const artifacts = Array.isArray(catalog?.artifacts) ? catalog.artifacts : [];
     const aliases =
-      catalog.doshaAliases && typeof catalog.doshaAliases === 'object' ? catalog.doshaAliases : {};
+      catalog?.doshaAliases && typeof catalog.doshaAliases === 'object' ? catalog.doshaAliases : {};
     if (artifacts.length === 0) return [];
 
     // Step 2 — expand each user dosha, remembering the original string so

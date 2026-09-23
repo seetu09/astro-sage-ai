@@ -2,50 +2,36 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
-import fs from 'fs/promises';
-import path from 'path';
 import { Metadata } from 'next';
-import { ArtifactCatalogSchema, type CatalogArtifact } from '@/lib/catalogSchema';
+import { type CatalogArtifact } from '@/lib/catalogSchema';
+import { loadArtifactCatalog } from '@/lib/serverArtifactCatalog';
 import { recommendArtifacts } from '@/lib/artifactRecommender';
 import StoreViewTracker from '@/app/components/StoreViewTracker';
 
 export const dynamic = 'force-dynamic';
 
-const CATALOG_FILE = path.join(process.cwd(), 'data', 'artifacts.json');
-
 type Lang = 'en' | 'hi';
 
-async function getCatalog(): Promise<{ artifacts: CatalogArtifact[]; doshaAliases: Record<string, string[]> }> {
-  const raw = await fs.readFile(CATALOG_FILE, 'utf-8');
-  const parsed = JSON.parse(raw);
-  const result = ArtifactCatalogSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error(`Catalog validation failed: ${result.error.message}`);
-  }
-  return {
-    artifacts: result.data.artifacts,
-    doshaAliases: result.data.doshaAliases ?? {},
-  };
+/**
+ * The catalog comes from `loadArtifactCatalog`, which is wrapped in React's
+ * `cache`. generateMetadata and `getRecommended` both read it on the same
+ * request, and that pair now collapses into ONE database query.
+ */
+function getArtifact(catalog: Awaited<ReturnType<typeof loadArtifactCatalog>>, id: string): CatalogArtifact | null {
+  return catalog.artifacts.find((a) => a.id === id) ?? null;
 }
 
-async function getArtifact(id: string): Promise<CatalogArtifact | null> {
+function getRecommended(
+  catalog: Awaited<ReturnType<typeof loadArtifactCatalog>>,
+  id: string
+): CatalogArtifact[] {
   try {
-    const { artifacts } = await getCatalog();
-    return artifacts.find((a) => a.id === id) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-async function getRecommended(id: string): Promise<CatalogArtifact[]> {
-  try {
-    const { artifacts } = await getCatalog();
-    const current = artifacts.find((a) => a.id === id);
+    const current = catalog.artifacts.find((a) => a.id === id);
     if (!current) return [];
-    const recs = recommendArtifacts(current.doshas, { maxResults: 2 });
+    const recs = recommendArtifacts(current.doshas, catalog, { maxResults: 2 });
     return recs
-      .map((r) => r.artifact)
-      .filter((a) => a.id !== id)
+      .map((r) => catalog.artifacts.find((a) => a.id === r.artifact.id))
+      .filter((a): a is CatalogArtifact => Boolean(a) && a!.id !== id)
       .slice(0, 2);
   } catch {
     return [];
@@ -53,7 +39,8 @@ async function getRecommended(id: string): Promise<CatalogArtifact[]> {
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const artifact = await getArtifact(params.id);
+  const catalog = await loadArtifactCatalog();
+  const artifact = getArtifact(catalog, params.id);
   if (!artifact) {
     return { title: 'Artifact not found' };
   }
@@ -75,7 +62,8 @@ function getLangForSSR(): Lang {
 }
 
 async function RecommendedSection({ id }: { id: string }) {
-  const recs = await getRecommended(id);
+  const catalog = await loadArtifactCatalog();
+  const recs = getRecommended(catalog, id);
   const lang = getLangForSSR();
   const _t = (en: string, hi: string) => (lang === 'hi' ? hi : en);
 
@@ -122,7 +110,8 @@ async function RecommendedSection({ id }: { id: string }) {
 }
 
 export default async function StoreIdPage({ params }: { params: { id: string } }) {
-  const artifact = await getArtifact(params.id);
+  const catalog = await loadArtifactCatalog();
+  const artifact = getArtifact(catalog, params.id);
   if (!artifact) {
     notFound();
   }

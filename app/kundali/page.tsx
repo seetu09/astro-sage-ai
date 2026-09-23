@@ -41,6 +41,7 @@ import type { PreviewBirthData } from './components/Preview';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 import { chartFingerprint } from '@/lib/chartFingerprint';
+import { ArtifactCatalogSchema, type ArtifactCatalog } from '@/lib/catalogSchema';
 
 
 interface Planet {
@@ -473,6 +474,40 @@ export default function KundaliPage() {
   const [error, setError] = useState('');
   const [errorKind, setErrorKind] = useState<'geocode' | 'network' | 'generic'>('generic');
   const { profile, saveProfile } = useUserProfile();
+
+  // ── Artifact catalog (for the report's "Recommended for Your Chart" block) ──
+  // Fetched ONCE here rather than inside ArtifactRecommendations so that
+  // component stays purely presentational and so the catalog is shared by any
+  // future consumer on this page. `/api/artifacts` strips `_note` and
+  // `doshaAliases`, both of which are optional in the schema, so safeParse
+  // succeeds against the storefront response — the same pattern
+  // app/store/page.tsx uses.
+  const [artifactCatalog, setArtifactCatalog] = useState<ArtifactCatalog>({
+    artifacts: [],
+    doshaAliases: {},
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCatalog = async () => {
+      try {
+        const res = await fetch('/api/artifacts');
+        if (!res.ok) return;
+        const data = await res.json();
+        const result = ArtifactCatalogSchema.safeParse(data);
+        if (!cancelled && result.success) {
+          setArtifactCatalog(result.data);
+        }
+      } catch {
+        // Degraded behavior: leave the empty catalog in place. KundliReport then
+        // renders zero recommendations instead of failing.
+      }
+    };
+    fetchCatalog();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Pre-fill saved profile data on mount
   useEffect(() => {
@@ -1257,6 +1292,7 @@ export default function KundaliPage() {
                 calculations={kundliData?.calculations}
                 pillars={kundliData?.pillars}
                 richPredictions={kundliData?.richPredictions}
+                catalog={artifactCatalog}
                 lang={selectedLanguage}
               />
               <KundliPdfButton

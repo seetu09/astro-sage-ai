@@ -6,6 +6,8 @@ import type { KundliCalculations, RichPredictionReport } from '@/types/kundali';
 import { PLANET_NAMES, ZODIAC_SIGNS, SIGN_LORDS } from '@/lib/astrologyDictionary';
 import { getLocalizedYogaName } from '@/lib/localizedData';
 import ArtifactRecommendations from '@/app/components/ArtifactRecommendations';
+import { recommendArtifacts } from '@/lib/artifactRecommender';
+import type { ArtifactCatalog } from '@/lib/catalogSchema';
 
 
 export interface ReportPlanet {
@@ -21,6 +23,16 @@ export interface KundliReportProps {
   calculations?: KundliCalculations;
   pillars?: LifePillarConfig[];
   richPredictions?: RichPredictionReport | null;
+  /**
+   * Artifact catalog used for the "Recommended for Your Chart" block.
+   *
+   * Loaded by the caller (app/kundali/page.tsx fetches /api/artifacts once on
+   * mount) because the catalog lives in the database and this component is a
+   * Client Component. Optional so a caller that has no catalog — or whose
+   * fetch failed — can omit it: the block then renders zero recommendations,
+   * which is the correct degraded behavior.
+   */
+  catalog?: ArtifactCatalog;
   lang: 'en' | 'hi';
 }
 
@@ -100,7 +112,7 @@ function Td({ children, className = '' }: { children: React.ReactNode; className
   return <td className={`px-4 py-3 ${className}`}>{children}</td>;
 }
 
-export default function KundliReport({ name, birthDetails, chartData, calculations, pillars, richPredictions, lang }: KundliReportProps) {
+export default function KundliReport({ name, birthDetails, chartData, calculations, pillars, richPredictions, catalog, lang }: KundliReportProps) {
   const _t = (en: string, hi: string) => tr(lang, en, hi);
   const planets = chartData?.planets ?? [];
   const houses = chartData?.houses ?? [];
@@ -111,6 +123,14 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
     doshas?.sadeSati?.isActive && 'sade_sati',
     doshas?.kaalSarp?.isPresent && 'kaal_sarp_dosh',
   ].filter((x): x is string => Boolean(x));
+
+  // Remedial suggestions are computed here (not inside ArtifactRecommendations)
+  // so that component stays purely presentational. `recommendArtifacts` is sync
+  // and never throws, so this is safe to run inline during render; an absent or
+  // empty catalog simply yields [] and the section renders nothing.
+  const artifactRecommendations = catalog
+    ? recommendArtifacts(activeDoshas, catalog, { maxResults: 2 })
+    : [];
 
   const yogas = calculations?.yogas;
   const currentDasha = vimshottari?.currentDasha;
@@ -559,7 +579,7 @@ export default function KundliReport({ name, birthDetails, chartData, calculatio
             title={_t('Recommended for Your Chart', 'आपकी कुंडली के लिए अनुशंसित')}
             subtitle={_t('Traditional remedies matched to your active doshas', 'आपके सक्रिय दोषों के अनुसार पारंपरिक उपाय')}
           />
-          <ArtifactRecommendations userDoshas={activeDoshas} lang={lang} />
+          <ArtifactRecommendations recommendations={artifactRecommendations} lang={lang} />
         </section>
       )}
 
