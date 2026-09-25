@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**
- * Unit tests for `loadArtifactCatalog`'s row mapping and degraded behavior.
+ * Unit tests for `loadArtifactCatalog`'s row mapping and error policy.
+ *
+ * The error policy is the point of these: a config/schema/transport failure
+ * must THROW (so /api/artifacts can answer 500 with a real reason), while a
+ * successful query with zero rows must resolve to an empty catalog. Swallowing
+ * both into `[]` is the bug these tests now guard against.
  *
  * `react` is mocked with a passthrough `cache` and `@/lib/serverWallet` with a
  * minimal fake of the supabase-js query builder, so
@@ -101,30 +106,35 @@ describe('loadArtifactCatalog — snake_case to camelCase mapping', () => {
     expect(catalog.doshaAliases).toEqual({});
   });
 
-  it('returns an empty catalog (and does not throw) when the query returns an error', async () => {
+  it('THROWS when the query returns an error object (config/schema failure is not an empty catalog)', async () => {
     // Simulate PostgREST returning `{ data: null, error }` rather than throwing.
     h.state.result = { data: null, error: { message: 'relation "artifacts" does not exist' } };
 
-    await expect(loadArtifactCatalog()).resolves.toEqual({
-      artifacts: [],
-      doshaAliases: {},
-    });
+    await expect(loadArtifactCatalog()).rejects.toThrow();
     expect(console.error).toHaveBeenCalled();
     expect(
       String((console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0])
     ).toContain('LOAD_ARTIFACT_CATALOG_FAILED');
   });
 
-  it('returns an empty catalog (and does not throw) when the client rejects', async () => {
+  it('THROWS when the client rejects (transport/config failure is not an empty catalog)', async () => {
     h.state.result = null;
+
+    await expect(loadArtifactCatalog()).rejects.toThrow('boom');
+    expect(console.error).toHaveBeenCalled();
+    expect(
+      String((console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0])
+    ).toContain('LOAD_ARTIFACT_CATALOG_ERR');
+  });
+
+  it('returns an empty catalog (does NOT throw) when the query legitimately returns zero rows', async () => {
+    // The one and only "empty" outcome: a successful query with no matching rows.
+    h.state.result = { data: [], error: null };
 
     await expect(loadArtifactCatalog()).resolves.toEqual({
       artifacts: [],
       doshaAliases: {},
     });
-    expect(console.error).toHaveBeenCalled();
-    expect(
-      String((console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0])
-    ).toContain('LOAD_ARTIFACT_CATALOG_ERR');
+    expect(console.error).not.toHaveBeenCalled();
   });
 });

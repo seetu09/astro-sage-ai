@@ -4,10 +4,15 @@ import type { ArtifactCatalog, CatalogArtifact } from '@/lib/catalogSchema';
 /**
  * Server-side artifact catalog storage (backed by `public.artifacts`).
  *
- * Requires the `003_artifact_catalog` migration to have been applied. Reads
- * degrade gracefully — `loadArtifactCatalog` returns an empty catalog rather
- * than throwing, so a not-yet-migrated project keeps rendering (just with no
- * suggestions) instead of 500-ing the storefront and the paid report.
+ * Requires the `003_artifact_catalog` migration to have been applied.
+ *
+ * Error policy — read failures are NOT silent:
+ *   - zero rows            → a valid empty catalog (the only "empty" outcome)
+ *   - Supabase error object → log it in full, then THROW
+ *   - transport/config throw → log it, then THROW
+ * Callers surface this as a 5xx with the real reason. An earlier version
+ * swallowed every failure into an empty catalog, which made a misconfigured
+ * Supabase indistinguishable from an empty storefront.
  *
  * The catalog used to live at `data/artifacts.json` and be read off disk. That
  * broke the admin editor on Vercel, whose filesystem is read-only; this module
@@ -100,8 +105,9 @@ function mapArtifactToRow(artifact: CatalogArtifact) {
  * a stale catalog after an admin edits it, which is the exact bug this
  * migration exists to fix.
  *
- * Never throws — a failed read returns an empty catalog so the caller renders
- * zero recommendations rather than an error page.
+ * Throws when the read fails (bad config, transport error, or a PostgREST
+ * error object). Only a successful query returning zero rows produces an empty
+ * catalog — see the error policy in this module's header.
  */
 export const loadArtifactCatalog = perRequestCache(async (): Promise<ArtifactCatalog> => {
   try {
@@ -113,10 +119,20 @@ export const loadArtifactCatalog = perRequestCache(async (): Promise<ArtifactCat
       .order('id', { ascending: true });
 
     if (error) {
-      console.error('LOAD_ARTIFACT_CATALOG_FAILED', error.message);
-      return emptyCatalog();
+      // PostgREST answered, but with a failure (missing table, bad key, RLS
+      // denial, ...). That is a CONFIG/SCHEMA problem, not an empty catalog —
+      // rethrow so the caller can answer 500 instead of a silent 200 with [].
+      console.error('LOAD_ARTIFACT_CATALOG_FAILED', {
+        message: error.message,
+        code: (error as { code?: string }).code,
+        details: (error as { details?: string }).details,
+        hint: (error as { hint?: string }).hint,
+      });
+      throw error;
     }
 
+    // Zero rows is a legitimate state (fresh project, everything deactivated),
+    // NOT an error. This is the only path that yields an empty catalog.
     return {
       version: undefined,
       artifacts: ((data ?? []) as ArtifactRow[]).map(mapRow),
@@ -126,8 +142,14 @@ export const loadArtifactCatalog = perRequestCache(async (): Promise<ArtifactCat
       doshaAliases: {},
     };
   } catch (err) {
+    // Covers two cases, both fatal and both reported rather than swallowed:
+    //   1. getServiceSupabase() threw — Supabase env config is missing/invalid.
+    //   2. the transport threw (DNS, TLS, timeout, malformed URL) or the error
+    //      rethrown just above bubbled through.
+    // Swallowing these made "config is broken" indistinguishable from "no
+    // active rows", which is exactly the bug this change fixes.
     console.error('LOAD_ARTIFACT_CATALOG_ERR', err);
-    return emptyCatalog();
+    throw err;
   }
 });
 

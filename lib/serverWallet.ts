@@ -3,20 +3,31 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 const FREE_MESSAGES_LIMIT = 3;
 const PRICE_PER_QUESTION = 5;
 
-let serviceClient: SupabaseClient | null = null;
-
-/** Service-role client (bypasses RLS) — server routes only. */
+/**
+ * Service-role client (bypasses RLS) — server routes only.
+ *
+ * Deliberately NOT memoized: a module-level singleton created from a bad URL
+ * would poison that serverless instance for its whole (warm) lifetime, which
+ * is exactly the "works locally, empty in production" class of bug we chased.
+ * A fresh client is a cheap object — it only allocates; the network work
+ * happens per query — so the cost is negligible against that risk.
+ *
+ * URL resolution pref: `SUPABASE_URL` first. It is a server-only name, so
+ * Next.js reads it at RUNTIME. `NEXT_PUBLIC_SUPABASE_URL` is statically
+ * INLINED at build time, so if it was wrong during the build, the deployed
+ * bundle keeps the wrong value until the next build. Preferring the private
+ * name makes server-side code immune to build-time inlining staleness; the
+ * public name stays as a fallback for existing deployments.
+ */
 export function getServiceSupabase(): SupabaseClient {
-  if (serviceClient) return serviceClient;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
   }
-  serviceClient = createClient(url, serviceKey, {
+  return createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  return serviceClient;
 }
 
 export type ConsumeResult = "free" | "wallet" | "insufficient";
