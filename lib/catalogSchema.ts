@@ -86,6 +86,23 @@ export const ArtifactCatalogSchema = z.object({
   doshaAliases: z.record(z.string(), z.array(z.string())),
 });
 
+// ── Storefront response (public /api/artifacts) ────────────────────────
+/**
+ * The shape the PUBLIC `/api/artifacts` endpoint actually returns.
+ *
+ * That endpoint deliberately strips catalog-internal metadata — `_note`,
+ * `doshaAliases` — so unauthenticated callers can't see it. Validating that
+ * response with `ArtifactCatalogSchema` therefore FAILED (doshaAliases is
+ * required there), which silently blanked the storefront. Browser-side
+ * consumers must use this schema instead: it requires only what the storefront
+ * actually reads, and passes catalog metadata through untouched when present
+ * (the admin endpoint's full payload also satisfies it).
+ *
+ * Rule of thumb: server-side writers/readers of the whole catalog use
+ * `ArtifactCatalogSchema`; browser code talking to `/api/artifacts` uses this.
+ */
+export const StorefrontCatalogSchema = ArtifactCatalogSchema.pick({ artifacts: true });
+
 // ── Convenience exports ───────────────────────────────────────────────
 export type ArtifactCatalog = z.infer<typeof ArtifactCatalogSchema>;
 export type CatalogArtifact = z.infer<typeof ArtifactSchema>;

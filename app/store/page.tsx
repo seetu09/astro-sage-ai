@@ -4,19 +4,27 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Package } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
-import { ArtifactCatalogSchema, type CatalogArtifact } from '@/lib/catalogSchema';
+import { StorefrontCatalogSchema, type CatalogArtifact } from '@/lib/catalogSchema';
 
 async function fetchCatalog(): Promise<CatalogArtifact[]> {
   try {
     const res = await fetch('/api/artifacts');
-    if (!res.ok) return [];
-    const data = await res.json();
-    const result = ArtifactCatalogSchema.safeParse(data);
-    if (result.success) {
-      return [...result.data.artifacts].sort((a, b) => b.priority - a.priority);
+    if (!res.ok) {
+      console.error('[store] /api/artifacts responded', res.status, res.statusText);
+      return [];
     }
-    return [];
-  } catch {
+    const data = await res.json();
+    // StorefrontCatalogSchema, NOT ArtifactCatalogSchema: this endpoint
+    // intentionally omits `doshaAliases`, which the full catalog schema requires.
+    // Parsing with the full schema silently blanked this page.
+    const result = StorefrontCatalogSchema.safeParse(data);
+    if (!result.success) {
+      console.error('[store] catalog parse failed', result.error.message);
+      return [];
+    }
+    return [...result.data.artifacts].sort((a, b) => b.priority - a.priority);
+  } catch (error) {
+    console.error('[store] catalog fetch failed', error);
     return [];
   }
 }

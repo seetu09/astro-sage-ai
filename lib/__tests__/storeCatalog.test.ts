@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { ArtifactCatalogSchema, ARTIFACT_CATEGORIES } from '@/lib/catalogSchema';
+import {
+  ArtifactCatalogSchema,
+  StorefrontCatalogSchema,
+  ARTIFACT_CATEGORIES,
+} from '@/lib/catalogSchema';
 
 /**
  * Catalog shape validation.
@@ -93,6 +97,43 @@ describe('storeCatalog', () => {
       expect(result.data.artifacts[0].category).toBe('Crystals');
       // The suggestion list is intentionally NOT a whitelist.
       expect((ARTIFACT_CATEGORIES as readonly string[]).includes('Crystals')).toBe(false);
+    });
+  });
+
+  describe('StorefrontCatalogSchema (the public /api/artifacts response)', () => {
+    /** Exactly what app/api/artifacts/route.ts returns: no _note, no doshaAliases. */
+    function makePublicResponse() {
+      return { artifacts: [makeArtifact()], version: undefined };
+    }
+
+    it('REGRESSION: the full ArtifactCatalogSchema REJECTS the public response', () => {
+      // This mismatch is what blanked /store: doshaAliases is required by the
+      // full schema but deliberately stripped by the public endpoint.
+      const full = ArtifactCatalogSchema.safeParse(makePublicResponse());
+      expect(full.success).toBe(false);
+      if (full.success) return;
+      expect(full.error.issues.some((i) => i.path.includes('doshaAliases'))).toBe(true);
+    });
+
+    it('ACCEPTS the public response that omits doshaAliases', () => {
+      const result = StorefrontCatalogSchema.safeParse(makePublicResponse());
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.artifacts).toHaveLength(1);
+      expect(result.data.artifacts[0].id).toBe('example-neelam');
+    });
+
+    it('still rejects a public response with a malformed artifact', () => {
+      const { name: _omit, ...withoutName } = makeArtifact();
+      const result = StorefrontCatalogSchema.safeParse({ artifacts: [withoutName] });
+      expect(result.success).toBe(false);
+    });
+
+    it('accepts the FULL admin payload too (metadata passes through untouched)', () => {
+      const result = StorefrontCatalogSchema.safeParse(makeCatalog());
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.artifacts).toHaveLength(1);
     });
   });
 });

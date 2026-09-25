@@ -41,7 +41,7 @@ import type { PreviewBirthData } from './components/Preview';
 import type { LifePillarConfig } from '@/lib/pillarNarratives';
 import { ReportData } from '@/lib/pdfHtmlTemplate';
 import { chartFingerprint } from '@/lib/chartFingerprint';
-import { ArtifactCatalogSchema, type ArtifactCatalog } from '@/lib/catalogSchema';
+import { StorefrontCatalogSchema, type ArtifactCatalog } from '@/lib/catalogSchema';
 
 
 interface Planet {
@@ -479,9 +479,9 @@ export default function KundaliPage() {
   // Fetched ONCE here rather than inside ArtifactRecommendations so that
   // component stays purely presentational and so the catalog is shared by any
   // future consumer on this page. `/api/artifacts` strips `_note` and
-  // `doshaAliases`, both of which are optional in the schema, so safeParse
-  // succeeds against the storefront response — the same pattern
-  // app/store/page.tsx uses.
+  // `doshaAliases`; `doshaAliases` is REQUIRED by the full ArtifactCatalogSchema,
+  // so validating with that schema failed and left this catalog empty. Use the
+  // storefront schema, which requires only what is actually present.
   const [artifactCatalog, setArtifactCatalog] = useState<ArtifactCatalog>({
     artifacts: [],
     doshaAliases: {},
@@ -492,15 +492,23 @@ export default function KundaliPage() {
     const fetchCatalog = async () => {
       try {
         const res = await fetch('/api/artifacts');
-        if (!res.ok) return;
-        const data = await res.json();
-        const result = ArtifactCatalogSchema.safeParse(data);
-        if (!cancelled && result.success) {
-          setArtifactCatalog(result.data);
+        if (!res.ok) {
+          console.error('[kundali] /api/artifacts responded', res.status, res.statusText);
+          return;
         }
-      } catch {
+        const data = await res.json();
+        const result = StorefrontCatalogSchema.safeParse(data);
+        if (!result.success) {
+          console.error('[kundali] catalog parse failed', result.error.message);
+          return;
+        }
+        if (!cancelled) {
+          setArtifactCatalog({ ...result.data, doshaAliases: {} });
+        }
+      } catch (error) {
         // Degraded behavior: leave the empty catalog in place. KundliReport then
         // renders zero recommendations instead of failing.
+        console.error('[kundali] catalog fetch failed', error);
       }
     };
     fetchCatalog();
