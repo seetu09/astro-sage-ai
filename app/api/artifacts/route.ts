@@ -5,6 +5,12 @@ export const runtime = 'nodejs';
 // REQUIRED: without it Next 14 may statically render this route at build time,
 // freezing the catalog and hiding admin edits until the next deploy.
 export const dynamic = 'force-dynamic';
+// Belt-and-braces on top of `force-dynamic`: in Next 14 `force-dynamic` alone
+// is not a documented cache opt-out for GET route handlers, so `revalidate = 0`
+// is set here too. It costs nothing and guarantees the catalog is re-read on
+// every request. (The same reason is why stale catalog reads are never served
+// from a module-level Supabase client — see lib/serverArtifactCatalog.ts.)
+export const revalidate = 0;
 
 /**
  * Public, read-only endpoint for the artifact catalog.
