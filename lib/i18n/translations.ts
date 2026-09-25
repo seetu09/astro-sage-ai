@@ -123,6 +123,20 @@ export interface Translations {
     addToCart: string;
     outOfStock: string;
     price: string;
+    loading: string;
+    heading: string;
+    description: string;
+    comingSoon: string;
+    emptyCatalog: string;
+    viewDetails: string;
+    recommended: string;
+    backToStore: string;
+    notFound: string;
+    detail: {
+      priority: string;
+      benefits: string;
+      addToCartSoon: string;
+    };
   };
   blog: {
     title: string;
@@ -984,6 +998,20 @@ export const translations: Record<Language, Translations> = {
       addToCart: 'Add to Cart',
       outOfStock: 'Out of Stock',
       price: 'Price',
+      loading: 'Loading...',
+      heading: 'Cosmic Remedies Store',
+      description: 'Hand-curated gemstones, rudraksha, and yantras aligned to your doshas.',
+      comingSoon: 'Coming soon',
+      emptyCatalog: 'The remedy catalog is being prepared — check back soon.',
+      viewDetails: 'View details',
+      recommended: 'Recommended for you',
+      backToStore: 'Back to Store',
+      notFound: 'Artifact not found',
+      detail: {
+        priority: 'Priority',
+        benefits: 'Benefits',
+        addToCartSoon: 'Add to cart - coming soon',
+      },
     },
     blog: {
       title: 'Cosmic Insights',
@@ -2024,6 +2052,20 @@ export const translations: Record<Language, Translations> = {
       addToCart: 'कार्ट में जोड़ें',
       outOfStock: 'स्टॉक में नहीं',
       price: 'मूल्य',
+      loading: 'लोड हो रहा है...',
+      heading: 'कॉज़मिक रिमीडीज़ स्टोर',
+      description: 'आपकी दोषों के अनुरूप चयनित हाथ से बनाए गए रत्न, रुद्राक्ष और यंत्र।',
+      comingSoon: 'जल्द आएगा',
+      emptyCatalog: 'उपचार कैटलॉग तैयार किया जा रहा है — जल्दी वापस आएं।',
+      viewDetails: 'विवरण देखें',
+      recommended: 'आपके लिए अनुशंसित',
+      backToStore: 'स्टोर पर वापस जाएं',
+      notFound: 'उत्पाद नहीं मिला',
+      detail: {
+        priority: 'प्राथमिकता',
+        benefits: 'लाभ',
+        addToCartSoon: 'कार्ट में जोड़ें - जल्द आएगा',
+      },
     },
     blog: {
       title: 'ब्रह्मांडीय अंतर्दृष्टि',

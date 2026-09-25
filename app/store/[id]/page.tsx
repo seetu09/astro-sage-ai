@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Sparkles } from 'lucide-react';
@@ -6,11 +7,14 @@ import { Metadata } from 'next';
 import { type CatalogArtifact } from '@/lib/catalogSchema';
 import { loadArtifactCatalog } from '@/lib/serverArtifactCatalog';
 import { recommendArtifacts } from '@/lib/artifactRecommender';
+import { LANGUAGE_COOKIE_KEY, isLanguage, type Language } from '@/lib/i18n';
+import { getTranslation } from '@/lib/i18n/translations';
+import ArtifactImage from '@/app/components/ArtifactImage';
 import StoreViewTracker from '@/app/components/StoreViewTracker';
 
 export const dynamic = 'force-dynamic';
 
-type Lang = 'en' | 'hi';
+type Lang = Language;
 
 /**
  * The catalog comes from `loadArtifactCatalog`, which is wrapped in React's
@@ -39,15 +43,17 @@ function getRecommended(
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const lang = getLangForSSR();
+  const t = (key: string) => getTranslation(lang, key);
   const catalog = await loadArtifactCatalog();
   const artifact = getArtifact(catalog, params.id);
   if (!artifact) {
-    return { title: 'Artifact not found' };
+    return { title: t('store.notFound') };
   }
-  const name = artifact.name.en;
-  const description = artifact.pitch.en;
+  const name = artifact.name?.[lang] ?? artifact.name?.en ?? '';
+  const description = artifact.pitch?.[lang] ?? artifact.pitch?.en ?? '';
   return {
-    title: `${name} | Cosmic Remedies Store`,
+    title: `${name} | ${t('store.heading')}`,
     description,
     openGraph: {
       title: name,
@@ -57,22 +63,34 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
+/**
+ * Server-Side Rendering cannot use the `useTranslation` hook, so the language is
+ * resolved from the persisted cookie — mirroring `resolveLayoutLang` in
+ * app/layout.tsx. `cookies()` throws outside a request scope (e.g. some edge
+ * runtimes), hence the guard; both callers are dynamic by design.
+ */
 function getLangForSSR(): Lang {
-  return 'en' as const;
+  try {
+    const stored = cookies().get(LANGUAGE_COOKIE_KEY)?.value;
+    if (stored && isLanguage(stored)) return stored;
+  } catch {
+    // cookies() unavailable — fall back to the default language.
+  }
+  return 'en';
 }
 
 async function RecommendedSection({ id }: { id: string }) {
   const catalog = await loadArtifactCatalog();
   const recs = getRecommended(catalog, id);
   const lang = getLangForSSR();
-  const _t = (en: string, hi: string) => (lang === 'hi' ? hi : en);
+  const t = (key: string) => getTranslation(lang, key);
 
   if (recs.length === 0) return null;
 
   return (
     <section className="mt-12">
       <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] mb-4">
-        {_t('Recommended for you', 'aapke liye anushansit')}
+        {t('store.recommended')}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {recs.map((rec) => {
@@ -85,8 +103,7 @@ async function RecommendedSection({ id }: { id: string }) {
               className="astro-card group flex flex-col p-0 overflow-hidden"
             >
               <div className="aspect-video overflow-hidden bg-[var(--bg-secondary)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <ArtifactImage
                   src={rec.imageUrl}
                   alt={name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -98,7 +115,7 @@ async function RecommendedSection({ id }: { id: string }) {
                 </h3>
                 <p className="text-sm text-[var(--text-muted)] line-clamp-3 mb-4">{pitch}</p>
                 <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)]">
-                  {_t('View details', 'vivaran dekhein')}
+                  {t('store.viewDetails')}
                 </span>
               </div>
             </Link>
@@ -117,7 +134,7 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
   }
 
   const lang = getLangForSSR();
-  const _t = (en: string, hi: string) => (lang === 'hi' ? hi : en);
+  const t = (key: string) => getTranslation(lang, key);
 
   const name = artifact.name?.[lang] ?? artifact.name?.en ?? '';
   const pitch = artifact.pitch?.[lang] ?? artifact.pitch?.en ?? '';
@@ -132,15 +149,14 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
           className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          {_t('Back to Store', 'stoore wapas')}
+          {t('store.backToStore')}
         </Link>
         {/* Fire a `store_view` event as soon as the server-rendered page mounts. */}
         <StoreViewTracker artifactId={artifact.id} />
 
         <article className="astro-card">
           <div className="aspect-video overflow-hidden rounded-xl bg-[var(--bg-secondary)] mb-6">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <ArtifactImage
               src={artifact.imageUrl}
               alt={name}
               className="w-full h-full object-cover"
@@ -154,13 +170,13 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
 
           <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-medium mb-6">
             <Sparkles className="w-3 h-3" />
-            {_t('Priority', 'prathaminat')}: {artifact.priority}
+            {t('store.detail.priority')}: {artifact.priority}
           </div>
 
           {benefits.length > 0 && (
             <div className="mb-6">
               <h2 className="text-xl font-bold font-serif text-[var(--text-primary)] mb-3">
-                {_t('Benefits', 'labh')}
+                {t('store.detail.benefits')}
               </h2>
               <ul className="space-y-2">
                 {benefits.map((benefit, index) => (
@@ -188,7 +204,7 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
             type="button"
             className="astro-button w-full py-4 text-base disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {_t('Add to cart - coming soon', 'cart mein jodein - jald aayega')}
+            {t('store.detail.addToCartSoon')}
           </button>
         </article>
 
