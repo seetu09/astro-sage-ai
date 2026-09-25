@@ -1,4 +1,14 @@
-"use client";
+/**
+ * Shared bilingual dictionaries + the pure `getTranslation` lookup.
+ *
+ * This module MUST stay free of the `"use client"` directive. It has no React
+ * or browser dependencies, and Server Components (e.g. app/store/[id]/page.tsx)
+ * import `getTranslation` directly. With `"use client"` present, Next.js turns
+ * the named export into a client-reference proxy for any server importer, so
+ * `getTranslation(lang, key)` compiled to `(0, f.i)(...)` and threw
+ * `TypeError: (0, f.i) is not a function` at request time — which is what broke
+ * the store detail page while the listing page (a Client Component) worked.
+ */
 
 export type Language = 'en' | 'hi';
 

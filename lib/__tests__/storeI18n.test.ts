@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { getTranslation, translations } from '@/lib/i18n/translations';
+// The path Server Components use — must stay a real, callable function.
+import { getTranslation as barrelGetTranslation } from '@/lib/i18n';
 
 /**
  * Store-page i18n contract.
@@ -112,6 +116,41 @@ describe('storeI18n', () => {
       expect(getTranslation('en', 'store.viewDetails')).toBe('View details');
       expect(getTranslation('en', 'store.viewDetails')).not.toContain('→');
       expect(getTranslation('hi', 'store.viewDetails')).not.toContain('→');
+    });
+  });
+
+  describe('Server Component import safety (regression: 129428a broke /store/[id])', () => {
+    /**
+     * `lib/i18n/translations.ts` once began with `"use client"`. The store
+     * LISTING page is a Client Component and kept working, but the detail page
+     * is a Server Component — for it, Next.js replaced the named
+     * `getTranslation` export with a client-reference proxy, so the call
+     * compiled to `(0, f.i)(...)` and threw at request time:
+     *
+     *   TypeError: (0 , f.i) is not a function
+     *     at i (.next/server/app/store/[id]/page.js:11:4109)
+     *
+     * producing a 500 + error boundary (digest 4019489461). Unit tests could
+     * not see it: importing the module directly in Node always yields the real
+     * function, so only a source-level assertion catches a reintroduced
+     * directive. Server-rendered pages depend on this staying true.
+     */
+    it('translations.ts carries NO "use client" directive', () => {
+      const source = readFileSync(
+        path.join(process.cwd(), 'lib/i18n/translations.ts'),
+        'utf8'
+      );
+      // A directive must be a bare top-of-file statement, not a mention in a
+      // comment — match only the line-initial form.
+      expect(source).not.toMatch(/^\s*['"]use client['"]\s*;?/m);
+    });
+
+    it('the barrel re-exports getTranslation as a callable function', () => {
+      // Server Components import from '@/lib/i18n'; that path must resolve to
+      // the real implementation, not a client-reference stub.
+      expect(typeof barrelGetTranslation).toBe('function');
+      expect(barrelGetTranslation('en', 'store.heading')).toBe('Cosmic Remedies Store');
+      expect(barrelGetTranslation('hi', 'store.heading')).toBe('कॉज़मिक रिमीडीज़ स्टोर');
     });
   });
 });

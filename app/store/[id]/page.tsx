@@ -7,8 +7,7 @@ import { Metadata } from 'next';
 import { type CatalogArtifact } from '@/lib/catalogSchema';
 import { loadArtifactCatalog } from '@/lib/serverArtifactCatalog';
 import { recommendArtifacts } from '@/lib/artifactRecommender';
-import { LANGUAGE_COOKIE_KEY, isLanguage, type Language } from '@/lib/i18n';
-import { getTranslation } from '@/lib/i18n/translations';
+import { LANGUAGE_COOKIE_KEY, isLanguage, getTranslation, type Language } from '@/lib/i18n';
 import ArtifactImage from '@/app/components/ArtifactImage';
 import StoreViewTracker from '@/app/components/StoreViewTracker';
 
