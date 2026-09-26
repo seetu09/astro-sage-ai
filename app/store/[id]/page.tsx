@@ -10,6 +10,7 @@ import { recommendArtifacts } from '@/lib/artifactRecommender';
 import { LANGUAGE_COOKIE_KEY, isLanguage, getTranslation, type Language } from '@/lib/i18n';
 import ArtifactImage from '@/app/components/ArtifactImage';
 import StoreViewTracker from '@/app/components/StoreViewTracker';
+import { formatPrice } from '@/lib/formatPrice';
 
 export const dynamic = 'force-dynamic';
 
@@ -196,6 +197,10 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
               <p className="text-xs italic text-[var(--text-muted)]">{disclaimer}</p>
             </div>
           )}
+
+          <p className="text-2xl font-bold text-[var(--accent)] mb-4">
+            {formatPrice(artifact.priceInr, artifact.currency)}
+          </p>
 
           {/* TODO: wire checkout in Phase 4 */}
           <button

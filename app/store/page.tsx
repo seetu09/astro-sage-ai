@@ -6,6 +6,7 @@ import { Package } from 'lucide-react';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
 import ArtifactImage from '@/app/components/ArtifactImage';
 import { StorefrontCatalogSchema, type CatalogArtifact } from '@/lib/catalogSchema';
+import { formatPrice } from '@/lib/formatPrice';
 
 async function fetchCatalog(): Promise<CatalogArtifact[]> {
   try {
@@ -96,7 +97,10 @@ export default function StorePage() {
                     <h2 className="text-lg font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 mb-2">
                       {name}
                     </h2>
-                    <p className="text-sm text-[var(--text-muted)] line-clamp-3 mb-4">{pitch}</p>
+                    <p className="text-sm text-[var(--text-muted)] line-clamp-3 mb-2">{pitch}</p>
+                    <p className="text-base font-semibold text-[var(--accent)] mb-3">
+                      {formatPrice(artifact.priceInr, artifact.currency)}
+                    </p>
                     <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-[var(--accent)]">
                       {t('store.viewDetails')}
                     </span>
