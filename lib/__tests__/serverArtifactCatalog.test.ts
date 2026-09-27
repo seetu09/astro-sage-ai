@@ -100,10 +100,82 @@ describe('loadArtifactCatalog — snake_case to camelCase mapping', () => {
     expect(artifact.priceInr).toBe(1299);
   });
 
-  it('returns the stable catalog shape with an empty alias map', async () => {
+  it('returns the stable catalog shape, with an empty alias map when no row carries one', async () => {
+    // SHIPPED_ROWS has no `dosha_aliases`, so the union is {} — the exact
+    // pre-007 behaviour, which must survive the migration for rows the admin
+    // has not given aliases to.
     const catalog = await loadArtifactCatalog();
     expect(catalog.version).toBeUndefined();
     expect(catalog.doshaAliases).toEqual({});
+  });
+
+  // ── dosha_aliases (migration 007) ──────────────────────────────────────
+  it('unions every row\'s dosha_aliases into the catalog-level map', async () => {
+    // The map is stored per row, so reading it back means merging. Both rows
+    // carry a map here, exactly as the writer broadcasts them.
+    h.state.result = {
+      data: [
+        { ...SHIPPED_ROWS[0], dosha_aliases: { sade_sati: ['sadesati', 'shani_sade_sati'] } },
+        { ...SHIPPED_ROWS[0], id: 'example-rudraksha', dosha_aliases: { mangal_dosh: ['manglik'] } },
+      ],
+      error: null,
+    };
+
+    const catalog = await loadArtifactCatalog();
+    expect(catalog.doshaAliases).toEqual({
+      sade_sati: ['sadesati', 'shani_sade_sati'],
+      mangal_dosh: ['manglik'],
+    });
+  });
+
+  it('de-duplicates and normalizes aliases so " Mangal " cannot become a second key', async () => {
+    h.state.result = {
+      data: [
+        { ...SHIPPED_ROWS[0], dosha_aliases: { ' Mangal_Dosh ': ['manglik', ' MANGAL '] } },
+        { ...SHIPPED_ROWS[0], id: 'example-rudraksha', dosha_aliases: { mangal_dosh: ['manglik'] } },
+      ],
+      error: null,
+    };
+
+    const catalog = await loadArtifactCatalog();
+    // Merging is a lookup by canonical key, so it must be idempotent: two rows
+    // carrying the same mapping collapse to one entry, not a doubled one.
+    expect(catalog.doshaAliases).toEqual({ mangal_dosh: ['manglik', 'mangal'] });
+  });
+
+  it('skips a malformed dosha_aliases value instead of failing the read', async () => {
+    // `dosha_aliases` is free-form jsonb, so a hand-edited row can hold
+    // anything. A read must not throw on it — the catalog degrades to fewer
+    // aliases, which is the behaviour the recommender had before 007.
+    h.state.result = {
+      data: [
+        { ...SHIPPED_ROWS[0], dosha_aliases: ['not', 'a', 'map'] },
+        { ...SHIPPED_ROWS[0], id: 'b', dosha_aliases: { sade_sati: 'not-an-array' } },
+        { ...SHIPPED_ROWS[0], id: 'c', dosha_aliases: { shani_dosh: ['shani', 42, null, '  '] } },
+        { ...SHIPPED_ROWS[0], id: 'd', dosha_aliases: null },
+        { ...SHIPPED_ROWS[0], id: 'e', dosha_aliases: { mangal_dosh: ['manglik'] } },
+      ],
+      error: null,
+    };
+
+    const catalog = await loadArtifactCatalog();
+    expect(catalog.doshaAliases).toEqual({ mangal_dosh: ['manglik'], shani_dosh: ['shani'] });
+  });
+
+  it('does NOT copy dosha_aliases onto the artifact rows', async () => {
+    // /api/artifacts returns catalog.artifacts verbatim to unauthenticated
+    // callers, so a row-shape leak here would publish the whole alias map to
+    // the storefront. mapRow is the single gate that prevents it.
+    h.state.result = {
+      data: [{ ...SHIPPED_ROWS[0], dosha_aliases: { sade_sati: ['sadesati'] } }],
+      error: null,
+    };
+
+    const catalog = await loadArtifactCatalog();
+    expect(catalog.artifacts[0]).not.toHaveProperty('dosha_aliases');
+    expect(catalog.artifacts[0]).not.toHaveProperty('doshaAliases');
+    // ...while the catalog itself still carries it for server-side consumers.
+    expect(catalog.doshaAliases).toEqual({ sade_sati: ['sadesati'] });
   });
 
   it('THROWS when the query returns an error object (config/schema failure is not an empty catalog)', async () => {

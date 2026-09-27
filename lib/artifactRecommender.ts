@@ -30,8 +30,11 @@
  * in the wild, so matching happens on *expanded* alias sets. Adding a new
  * spelling is one line of data instead of touching the catalog or the engine,
  * and the recommender keeps working when either side renames a key. The map is
- * currently empty (see `loadArtifactCatalog`); matching still works on the
- * canonical keys themselves, and alias storage is a follow-up.
+ * stored in the `artifacts.dosha_aliases` column (migration 007) and read back
+ * by `loadArtifactCatalog`; it is `{}` until the admin sets aliases in the
+ * catalog editor, in which case matching falls back to the canonical keys —
+ * which is exactly how it behaved from the moment data/artifacts.json was
+ * deleted until migration 007 landed.
  *
  * WHY THE CAP IS 2
  * ----------------

@@ -37,6 +37,7 @@ type ArtifactRow = {
   price_inr: unknown;
   currency: unknown;
   is_active: unknown;
+  dosha_aliases: unknown;
 };
 
 /**
@@ -53,6 +54,14 @@ const perRequestCache: typeof cache = typeof cache === 'function' ? cache : ((fn
  * Explicit and defensive on purpose: `price_inr` is `numeric(12,2)` and
  * PostgREST serializes numerics as STRINGS, so a bare spread would hand the UI
  * `"1299.00"` where it expects a number.
+ *
+ * `dosha_aliases` is deliberately NOT mapped here. The column is catalog-level
+ * metadata (see `mergeDoshaAliases` and migration 007), and `app/api/artifacts`
+ * returns `catalog.artifacts` verbatim to UNAUTHENTICATED callers — mapping it
+ * onto the row shape would publish the whole alias map to the storefront. This
+ * mapper is the single place that decides what leaves the database, so keeping
+ * the column out of it is what makes that endpoint safe by construction rather
+ * than by accident.
  */
 function mapRow(row: ArtifactRow): CatalogArtifact {
   return {
@@ -72,8 +81,47 @@ function mapRow(row: ArtifactRow): CatalogArtifact {
   };
 }
 
+/**
+ * Collapse every row's `dosha_aliases` into the single catalog-level map that
+ * `ArtifactCatalogSchema.doshaAliases` and the recommender expect.
+ *
+ * The map is stored per artifact row (migration 007) because the admin editor
+ * does a full delete-then-upsert replace, so there is no singleton row to keep
+ * it on. Reading it back therefore means merging. Every row holds the same map
+ * after an admin save, and the merge is a lookup by canonical key — unioning is
+ * idempotent, so duplicates collapse and a row with no aliases contributes
+ * nothing.
+ *
+ * Defensive on purpose: `dosha_aliases` is free-form jsonb, so a hand-edited row
+ * can hold anything at all. A value that is not a `{ string: string[] }` map is
+ * skipped rather than allowed to break the read — a missing alias list means
+ * "no aliases", which is exactly how the recommender behaved before this column
+ * existed. Keys and aliases are normalized (trim + lowercase) to match
+ * `normalizeDosha` in the recommender, so `' Mangal '` and `'mangal'` cannot
+ * end up as two different entries.
+ */
+function mergeDoshaAliases(rows: ArtifactRow[]): Record<string, string[]> {
+  const merged: Record<string, string[]> = {};
+  for (const row of rows) {
+    const map = row?.dosha_aliases;
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    for (const [rawKey, rawAliases] of Object.entries(map as Record<string, unknown>)) {
+      if (typeof rawKey !== 'string' || !Array.isArray(rawAliases)) continue;
+      const key = rawKey.trim().toLowerCase();
+      if (!key) continue;
+      const list = merged[key] ?? (merged[key] = []);
+      for (const alias of rawAliases) {
+        if (typeof alias !== 'string') continue;
+        const normalized = alias.trim().toLowerCase();
+        if (normalized && !list.includes(normalized)) list.push(normalized);
+      }
+    }
+  }
+  return merged;
+}
+
 /** Map a validated artifact back to its column names for a write. */
-function mapArtifactToRow(artifact: CatalogArtifact) {
+function mapArtifactToRow(artifact: CatalogArtifact, doshaAliases: Record<string, string[]>) {
   return {
     id: artifact.id,
     name: artifact.name,
@@ -87,6 +135,11 @@ function mapArtifactToRow(artifact: CatalogArtifact) {
     category: artifact.category,
     price_inr: artifact.priceInr,
     currency: artifact.currency,
+    // Catalog-level alias map broadcast onto EVERY row (migration 007). The
+    // write path is a full replace, so a map that only some rows carried would
+    // be silently lost; broadcasting keeps admin-save -> load a lossless
+    // round-trip without a second table or a singleton row.
+    dosha_aliases: doshaAliases,
     // Absent means active — same convention the public endpoint applies.
     is_active: artifact.isActive !== false,
     // No DB trigger for updated_at (001/002 have none either); the writer sets
@@ -133,13 +186,16 @@ export const loadArtifactCatalog = perRequestCache(async (): Promise<ArtifactCat
 
     // Zero rows is a legitimate state (fresh project, everything deactivated),
     // NOT an error. This is the only path that yields an empty catalog.
+    const rows = (data ?? []) as ArtifactRow[];
     return {
       version: undefined,
-      artifacts: ((data ?? []) as ArtifactRow[]).map(mapRow),
-      // The recommender's alias expansion is still useful, but the alias map is
-      // not currently stored in the DB. Returning {} keeps the catalog shape
-      // stable for every consumer. (Alias storage is a follow-up.)
-      doshaAliases: {},
+      artifacts: rows.map(mapRow),
+      // Union of every row's `dosha_aliases` (migration 007). This is what
+      // re-enables the recommender's alias expansion — the map used to come
+      // from data/artifacts.json, which was deleted when the catalog moved to
+      // Postgres. Until the admin sets aliases it stays `{}`, and matching
+      // falls back to the canonical keys exactly as it does today.
+      doshaAliases: mergeDoshaAliases(rows),
     };
   } catch (err) {
     // Covers two cases, both fatal and both reported rather than swallowed:
@@ -163,12 +219,25 @@ export const loadArtifactCatalog = perRequestCache(async (): Promise<ArtifactCat
  * editor exactly the JSON-in/JSON-out semantics it already had. Unlike the read
  * path this THROWS on failure, so the route can answer 500 instead of
  * pretending the save worked.
+ *
+ * The catalog-level `doshaAliases` map is stored per row (migration 007), so
+ * it is broadcast onto every upserted row here. The editor round-trips the
+ * whole catalog JSON, which means aliases the admin typed come straight back
+ * out of `loadArtifactCatalog` on the next read.
  */
 export async function writeArtifactCatalog(catalog: ArtifactCatalog): Promise<void> {
   const supabase = getServiceSupabase();
 
   const artifacts = Array.isArray(catalog.artifacts) ? catalog.artifacts : [];
   const keepIds = artifacts.map((artifact) => artifact.id);
+  // Guarded like the artifacts array: a malformed payload must not write a
+  // non-map into a `jsonb not null` column. An absent map writes `{}`, which
+  // is the column default and keeps the recommender on canonical keys.
+  const rawAliases = catalog.doshaAliases;
+  const doshaAliases =
+    rawAliases && typeof rawAliases === 'object' && !Array.isArray(rawAliases)
+      ? (rawAliases as Record<string, string[]>)
+      : {};
 
   // 1) Drop rows the incoming catalog no longer contains. The `in` list is
   //    built by hand so ids containing PostgREST metacharacters can't break the
@@ -194,7 +263,7 @@ export async function writeArtifactCatalog(catalog: ArtifactCatalog): Promise<vo
   // 2) Upsert the incoming rows, stamping updated_at on each.
   const { error: upsertError } = await supabase
     .from('artifacts')
-    .upsert(artifacts.map(mapArtifactToRow), { onConflict: 'id' });
+    .upsert(artifacts.map((artifact) => mapArtifactToRow(artifact, doshaAliases)), { onConflict: 'id' });
   if (upsertError) {
     console.error('WRITE_ARTIFACT_CATALOG_UPSERT_FAILED', upsertError.message);
     throw new Error(upsertError.message);

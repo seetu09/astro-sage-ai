@@ -5,6 +5,7 @@
 ### Added
 - **Store checkout (Task 11)** — `artifact_purchase` payment type: prices are validated server-side against `artifacts.price_inr` (`lib/artifactPricing.ts` — a mismatching client amount is rejected, never charged), Razorpay orders carry an item snapshot in their notes, and `/api/payment/verify` records durable ownership in `purchased_artifacts` (migration 005, idempotent on `order_id`). The Buy Now flow on `/store/[id]` is live with an email field for guest buyers and a bilingual success receipt.
 - **Blog publishing that works on Vercel** — posts moved off the read-only filesystem (`data/posts.json` + `public/blogs/`) into `public.blog_posts` + the `blog-images` storage bucket (migration 006); the admin route re-checks the session cookie in-handler.
+- **Artifact dosha alias storage** — migration 007 adds `artifacts.dosha_aliases`; `loadArtifactCatalog` unions it into the catalog-level `doshaAliases` map so the recommender's alias expansion works again, and the admin catalog editor round-trips it. No backfill: the alias vocabulary is admin-authored content, and an empty map simply keeps matching on canonical dosha keys. The map stays server-side — `/api/artifacts` still does not publish it.
 - **`kundali_charts` under migration control** — migration 004 enables RLS, drops every hand-created policy (strict deny for `anon`/`authenticated`), and the chart-cache read/write in `/api/kundali/generate` now goes through the service role with both PostgREST `{error}` results checked and logged.
 - **`/api/health` reports `rateLimitBackend`** (`upstash` | `memory`) so the Upstash wiring can be verified after a deploy.
 - **Artifact recommendation engine** — lib/artifactRecommender.ts (pure, tested, never throws).
@@ -30,4 +31,4 @@
 ### Notes
 - Recommender caps at 2 suggestions per report by design (subtle guidance, not a catalog).
 - Recommendations are silent for dosha-free charts — the section renders nothing.
-- Migrations `004`–`006` must be applied to the production database (SQL Editor or `supabase db push`); `PLAN.md` carries the exact apply steps and the Upstash env checklist.
+- Migrations `004`–`007` must be applied to the production database (SQL Editor or `supabase db push`); `PLAN.md` carries the exact apply steps and the Upstash env checklist.

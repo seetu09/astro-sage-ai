@@ -33,7 +33,7 @@ trace (Task 3.1) · NOT pushed — apply migrations before pushing (see below).
 
 ## Phase 4 — Strategic Enhancements (DEFERRED)
 - [ ] Task 4.1 — Personalized daily horoscope
-- [ ] Task 4.2 — doshaAliases storage
+- [x] Task 4.2 — doshaAliases storage — `007_artifact_dosha_aliases.sql` adds `artifacts.dosha_aliases jsonb not null default '{}'`; `loadArtifactCatalog` unions every row's map into the catalog-level `doshaAliases` the recommender already reads, and `writeArtifactCatalog` broadcasts the admin's map back onto each row. No backfill (admin authors the vocabulary). 4 new loader tests. Apply step below.
 - [ ] Task 4.3 — Artifact image upload (admin)
 - [ ] Task 4.4 — SEO and content (BLOCKED until brand name finalized)
 
@@ -116,11 +116,12 @@ trace (Task 3.1) · NOT pushed — apply migrations before pushing (see below).
 
 ## Apply steps for live systems (not executable from this workspace)
 
-1. **Migrations 004/005/006** — run `supabase/migrations/004_kundali_charts.sql`,
-   `005_purchased_artifacts.sql`, `006_blog_posts.sql` against the production Supabase
-   project (SQL Editor, in order; all are idempotent — `create table if not exists`,
-   `drop policy if exists`, `on conflict do nothing`). Recommended order relative to deploy:
-   apply **before** or **with** the code deploy (004 is safe either way; 005/006 are required
+1. **Migrations 004/005/006/007** — run `supabase/migrations/004_kundali_charts.sql`,
+   `005_purchased_artifacts.sql`, `006_blog_posts.sql`, `007_artifact_dosha_aliases.sql` against
+   the production Supabase project (SQL Editor, in order; all are idempotent — `create table if
+   not exists`, `add column if not exists`, `drop policy if exists`, `on conflict do nothing`).
+   Recommended order relative to deploy: apply **before** or **with** the code deploy (004 and 007
+   are safe either way — an unreadable `dosha_aliases` is skipped, never fatal; 005/006 are required
    before checkout / blog publishing work — until they land the code fails loudly with a
    clear console error rather than silently).
 2. **Make Upstash live in Vercel** (Task 1.2):
@@ -137,6 +138,13 @@ trace (Task 3.1) · NOT pushed — apply migrations before pushing (see below).
 ## Known follow-ups (out of scope for this plan)
 
 - Profile “Purchases” tab listing `purchased_artifacts` (ownership is recorded; UI deferred).
-- `doshaAliases` in Postgres (Phase 4.2), artifact image upload (Phase 4.3).
+- Artifact image upload (Phase 4.3).
+- **Aliases in the browser-rendered report.** Task 4.2 restores the alias map for every
+  SERVER-side consumer (`/store/[id]`, `/api/admin/artifacts`), but the report's
+  “Recommended for Your Chart” block runs client-side off `/api/artifacts`, which still
+  deliberately strips `doshaAliases` to unauthenticated callers — so `app/kundali/page.tsx`
+  hard-codes `doshaAliases: {}`. Serving the report's recommendations server-side (or deciding
+  the map is public enough to expose) is the remaining step; the report still matches on
+  canonical dosha keys meanwhile, which is what it has done since `19eecfe`.
 - `avatars` storage policies migration; `hasWalletCreditForPayment` fail-open hardening (Risk 4).
 
