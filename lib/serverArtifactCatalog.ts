@@ -205,3 +205,39 @@ export async function writeArtifactCatalog(catalog: ArtifactCatalog): Promise<vo
 function emptyCatalog(): ArtifactCatalog {
   return { version: undefined, artifacts: [], doshaAliases: {} };
 }
+
+/**
+ * Single-row catalog read for checkout (create-order, Task 1.3).
+ *
+ * Deliberately NOT wrapped in the per-request `loadArtifactCatalog` cache:
+ * order creation must see the current price, and caching it for the length of
+ * a request is the one place a stale price actually costs money. Returns null
+ * for an unknown id; THROWS on read/config failure so the route can answer 5xx
+ * instead of treating a database outage as "item does not exist" (which would
+ * tell buyers the wrong thing about a paid attempt).
+ */
+export async function getArtifactForCheckout(id: string): Promise<CatalogArtifact | null> {
+  const artifactId = (id ?? '').trim();
+  if (!artifactId) return null;
+  try {
+    const supabase = getServiceSupabase();
+    const { data, error } = await supabase
+      .from('artifacts')
+      .select('*')
+      .eq('id', artifactId)
+      .maybeSingle();
+    if (error) {
+      console.error('GET_ARTIFACT_FOR_CHECKOUT_FAILED', {
+        message: error.message,
+        code: (error as { code?: string }).code,
+      });
+      throw error;
+    }
+    return data ? mapRow(data as ArtifactRow) : null;
+  } catch (err) {
+    console.error('GET_ARTIFACT_FOR_CHECKOUT_ERR', err);
+    throw err;
+  }
+}
+
+

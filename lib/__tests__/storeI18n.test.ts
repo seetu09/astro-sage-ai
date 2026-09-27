@@ -28,7 +28,12 @@ const STORE_KEYS = [
   'store.notFound',
   'store.detail.priority',
   'store.detail.benefits',
-  'store.detail.addToCartSoon',
+  'store.detail.buyNow',
+  'store.detail.notAvailable',
+  'store.checkout.emailLabel',
+  'store.checkout.emailPlaceholder',
+  'store.checkout.successTitle',
+  'store.checkout.successBody',
 ] as const;
 
 /** The four strings that were ROMANIZED ("prathaminat", "labh", ...) before. */

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { getUserFromAuthHeader } from '@/lib/serverWallet';
+import { getArtifactForCheckout } from '@/lib/serverArtifactCatalog';
+import { resolveArtifactOrderAmount } from '@/lib/artifactPricing';
 
 const MIN_AMOUNT_INR = 20; // ₹20 minimum top-up
 const MIN_AMOUNT_PAISE = MIN_AMOUNT_INR * 100;
@@ -35,15 +37,21 @@ export async function POST(req: Request) {
       birthDate,
       birthTime,
       report,
+      // artifact_purchase extra — the item being bought. The PRICE never comes
+      // from the client: it is resolved from the catalog below (Task 1.3).
+      artifactId,
     } = body;
 
     // Wallet top-ups require a signed-in account so the credit is applied to the
     // right profile. For kundli_report purchases auth is OPTIONAL — the report is
     // owned by the checkout email and can be recovered without an account. We
     // capture the signed-in user_id when present so the profile tab surfaces the
-    // report for account holders too.
+    // report for account holders too. artifact_purchase follows the same optional
+    // model: ownership is keyed by checkout email, with user_id attached when
+    // the buyer happens to be signed in.
     let walletUserId: string | undefined;
     let reportOwnerUserId: string | null = null;
+    let artifactOwnerUserId: string | null = null;
     if (paymentType === 'wallet_topup') {
       const user = await getUserFromAuthHeader(req);
       if (!user) {
@@ -56,6 +64,9 @@ export async function POST(req: Request) {
     } else if (paymentType === 'kundli_report') {
       const user = await getUserFromAuthHeader(req);
       reportOwnerUserId = user?.id ?? null;
+    } else if (paymentType === 'artifact_purchase') {
+      const user = await getUserFromAuthHeader(req);
+      artifactOwnerUserId = user?.id ?? null;
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID;
@@ -69,21 +80,61 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate amount is a positive number and meets the ₹20 minimum
-    const amountNum = Number(amount);
-    if (!Number.isFinite(amountNum) || amountNum <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount. Please enter a valid top-up amount.' },
-        { status: 400 }
-      );
-    }
+    // Server-side amount resolution.
+    //  - artifact_purchase: the CATALOG price is authoritative (Task 1.3).
+    //    `amount` from the body is only a cross-check — a mismatch rejects the
+    //    order with a "price changed" message instead of charging a stale price.
+    //  - every other paymentType: client-supplied amount, validated as before.
+    let amountPaise: number;
+    let orderCurrency = currency.toUpperCase();
+    let checkoutArtifact: Awaited<ReturnType<typeof getArtifactForCheckout>> = null;
 
-    const amountPaise = Math.round(amountNum * 100);
-    if (amountPaise < MIN_AMOUNT_PAISE) {
-      return NextResponse.json(
-        { error: `Minimum top-up amount is ₹${MIN_AMOUNT_INR}. Please choose a higher amount.` },
-        { status: 400 }
-      );
+    if (paymentType === 'artifact_purchase') {
+      const requestedId = typeof artifactId === 'string' ? artifactId.trim() : '';
+      if (!requestedId) {
+        return NextResponse.json({ error: 'artifactId is required.' }, { status: 400 });
+      }
+      try {
+        checkoutArtifact = await getArtifactForCheckout(requestedId);
+      } catch {
+        // Catalog read failed (config/transport) — a 5xx, NOT "item not found".
+        return NextResponse.json(
+          { error: 'Store catalog is unavailable right now. Please try again shortly.' },
+          { status: 500 }
+        );
+      }
+      if (!checkoutArtifact || checkoutArtifact.isActive === false) {
+        return NextResponse.json(
+          { error: 'This item is not available for purchase.' },
+          { status: 404 }
+        );
+      }
+      const verdict = resolveArtifactOrderAmount({
+        catalogPriceInr: checkoutArtifact.priceInr,
+        clientAmount: amount,
+      });
+      if (!verdict.ok) {
+        return NextResponse.json({ error: verdict.error }, { status: 400 });
+      }
+      amountPaise = verdict.amountPaise;
+      orderCurrency = checkoutArtifact.currency.toUpperCase();
+    } else {
+      // Validate amount is a positive number and meets the ₹20 minimum
+      const amountNum = Number(amount);
+      if (!Number.isFinite(amountNum) || amountNum <= 0) {
+        return NextResponse.json(
+          { error: 'Invalid amount. Please enter a valid top-up amount.' },
+          { status: 400 }
+        );
+      }
+
+      amountPaise = Math.round(amountNum * 100);
+      if (amountPaise < MIN_AMOUNT_PAISE) {
+        return NextResponse.json(
+          { error: `Minimum top-up amount is ₹${MIN_AMOUNT_INR}. Please choose a higher amount.` },
+          { status: 400 }
+        );
+      }
     }
 
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
@@ -96,7 +147,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         amount: amountPaise,
-        currency: currency.toUpperCase(),
+        currency: orderCurrency,
         receipt: `rcpt_${Date.now()}`,
         notes: {
           userEmail: userEmail || 'unknown',
@@ -110,6 +161,16 @@ export async function POST(req: Request) {
                 birthTime: String(birthTime ?? ''),
                 report: typeof report === 'object' && report ? JSON.stringify(report) : '',
                 ...(reportOwnerUserId ? { reportOwnerUserId } : {}),
+              }
+            : {}),
+          ...(paymentType === 'artifact_purchase' && checkoutArtifact
+            ? {
+                // Snapshot of what was bought + who bought it, re-read by
+                // /api/payment/verify to record ownership after settlement.
+                artifactId: checkoutArtifact.id,
+                artifactName: checkoutArtifact.name?.en ?? checkoutArtifact.id,
+                artifactCurrency: checkoutArtifact.currency,
+                ...(artifactOwnerUserId ? { artifactOwnerUserId } : {}),
               }
             : {}),
         },

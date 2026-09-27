@@ -111,13 +111,6 @@ export interface Translations {
   contact: {
     title: string;
     subtitle: string;
-    name: string;
-    email: string;
-    subject: string;
-    message: string;
-    send: string;
-    success: string;
-    error: string;
     info: { title: string; email: string; phone: string; address: string };
   };
   store: {
@@ -145,7 +138,14 @@ export interface Translations {
     detail: {
       priority: string;
       benefits: string;
-      addToCartSoon: string;
+      buyNow: string;
+      notAvailable: string;
+    };
+    checkout: {
+      emailLabel: string;
+      emailPlaceholder: string;
+      successTitle: string;
+      successBody: string;
     };
   };
   blog: {
@@ -173,7 +173,6 @@ export interface Translations {
     dailyUpdates: string;
     updatesText: string;
     followers: string;
-    newsletter: { title: string; subtitle: string; placeholder: string; subscribe: string };
   };
   footer: {
     tagline: string;
@@ -981,13 +980,6 @@ export const translations: Record<Language, Translations> = {
     contact: {
       title: 'Contact Us',
       subtitle: "We'd love to hear from you",
-      name: 'Your Name',
-      email: 'Email Address',
-      subject: 'Subject',
-      message: 'Your Message',
-      send: 'Send Message',
-      success: 'Message sent successfully!',
-      error: 'Failed to send message. Please try again.',
       info: {
         title: 'Get in Touch',
         email: 'support@astroveda.com',
@@ -1020,7 +1012,14 @@ export const translations: Record<Language, Translations> = {
       detail: {
         priority: 'Priority',
         benefits: 'Benefits',
-        addToCartSoon: 'Add to cart - coming soon',
+        buyNow: 'Buy Now',
+        notAvailable: 'Not available for purchase',
+      },
+      checkout: {
+        emailLabel: 'Email for your order receipt',
+        emailPlaceholder: 'you@example.com',
+        successTitle: 'Purchase successful!',
+        successBody: 'Thank you! Your order is confirmed and your purchase has been recorded. Keep the payment id below for reference.',
       },
     },
     blog: {
@@ -1048,12 +1047,6 @@ export const translations: Record<Language, Translations> = {
       dailyUpdates: 'Daily Horoscope Updates',
       updatesText: 'Get your daily horoscope delivered to your favorite social platform.',
       followers: 'followers',
-      newsletter: {
-        title: 'Cosmic Newsletter',
-        subtitle: 'Get weekly horoscope updates and spiritual insights',
-        placeholder: 'Enter your email',
-        subscribe: 'Subscribe',
-      },
     },
     footer: {
       tagline: 'Guiding your cosmic journey with ancient wisdom and modern AI.',
@@ -2035,13 +2028,6 @@ export const translations: Record<Language, Translations> = {
     contact: {
       title: 'संपर्क करें',
       subtitle: 'हम आपसे सुनना पसंद करेंगे',
-      name: 'आपका नाम',
-      email: 'ईमेल पता',
-      subject: 'विषय',
-      message: 'आपका संदेश',
-      send: 'संदेश भेजें',
-      success: 'संदेश सफलतापूर्वक भेजा गया!',
-      error: 'संदेश भेजने में विथल। कृपया पुनः प्रयास करें।',
       info: {
         title: 'संपर्क में रहें',
         email: 'support@astroveda.com',
@@ -2074,7 +2060,14 @@ export const translations: Record<Language, Translations> = {
       detail: {
         priority: 'प्राथमिकता',
         benefits: 'लाभ',
-        addToCartSoon: 'कार्ट में जोड़ें - जल्द आएगा',
+        buyNow: 'अभी खरीदें',
+        notAvailable: 'खरीद हेतु उपलब्ध नहीं',
+      },
+      checkout: {
+        emailLabel: 'रसीद के लिए ईमेल',
+        emailPlaceholder: 'अपना ईमेल दर्ज करें',
+        successTitle: 'खरीदारी सफल रही!',
+        successBody: 'धन्यवाद! आपका ऑर्डर पुष्टि हो गया है और खरीद दर्ज कर दी गई है। संदर्भ हेतु नीचे दिया गया भुगतान आईडी सहेजें।',
       },
     },
     blog: {
@@ -2102,12 +2095,6 @@ export const translations: Record<Language, Translations> = {
       dailyUpdates: 'दैनिक राशिफल अपडेट',
       updatesText: 'अपने पसंदीदा सोशल प्लेटफॉर्म पर अपना दैनिक राशिफल प्राप्त करें।',
       followers: 'फॉलोअर्स',
-      newsletter: {
-        title: 'ब्रह्मांडीय न्यूज़लेटर',
-        subtitle: 'साप्ताहिक राशिफल अपडेट और आध्यात्मिक अंतर्दृष्टि प्राप्त करें',
-        placeholder: 'अपना ईमेल दर्ज करें',
-        subscribe: 'सब्सक्राइब करें',
-      },
     },
     footer: {
       tagline: 'प्राचीन ज्ञान और आधुनिक AI के साथ आपकी ब्रह्मांडीय यात्रा का मार्गदर्शन।',

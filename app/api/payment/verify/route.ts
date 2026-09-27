@@ -4,6 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { issueUnlockToken } from '@/lib/paymentUnlock';
 import { creditWallet, getUserFromAuthHeader, hasWalletCreditForPayment } from '@/lib/serverWallet';
 import { recordPurchasedKundliReport } from '@/lib/serverPurchasedReports';
+import { recordPurchasedArtifact } from '@/lib/serverPurchasedArtifacts';
 
 export async function POST(req: Request) {
   try {
@@ -161,6 +162,40 @@ export async function POST(req: Request) {
         paymentId: razorpay_payment_id,
         report: reportPayload,
       });
+    }
+
+    // Record permanent artifact ownership for store purchases (Task 2.1).
+    // What/for-how-much was pinned into the order notes at create-order time
+    // after server-side catalog price validation (Task 1.3); the amount re-read
+    // here comes from Razorpay's order, never the client. The RPC is idempotent
+    // on order_id, so re-submitting verification can't double-record. Unlike the
+    // report path above, a failed record here answers 500: the payment REALLY
+    // happened and the buyer must see an actionable error (support id), not a
+    // success screen with a lost purchase.
+    if (orderProductType === 'artifact_purchase' && orderStatus === 'paid') {
+      const ownerEmail = String(orderNotes?.userEmail ?? '').trim().toLowerCase();
+      const artifactOwnerUserId = orderNotes?.artifactOwnerUserId
+        ? String(orderNotes.artifactOwnerUserId)
+        : null;
+      const recorded = await recordPurchasedArtifact({
+        ownerEmail: ownerEmail || 'unknown@checkout',
+        userId: artifactOwnerUserId,
+        artifactId: String(orderNotes?.artifactId ?? ''),
+        artifactName: String(orderNotes?.artifactName ?? ''),
+        priceInr: (orderAmountPaise ?? 0) / 100,
+        currency: String(orderNotes?.artifactCurrency ?? 'INR'),
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+      });
+      if (!recorded) {
+        return NextResponse.json(
+          {
+            error: `Payment verified but the purchase could not be recorded. Contact support with payment id ${razorpay_payment_id}.`,
+            success: false,
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Mint the signed unlock token the paid report + PDF routes require.

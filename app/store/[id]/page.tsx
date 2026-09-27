@@ -10,6 +10,7 @@ import { recommendArtifacts } from '@/lib/artifactRecommender';
 import { LANGUAGE_COOKIE_KEY, isLanguage, getTranslation, type Language } from '@/lib/i18n';
 import ArtifactImage from '@/app/components/ArtifactImage';
 import StoreViewTracker from '@/app/components/StoreViewTracker';
+import ArtifactCheckoutButton from '@/app/components/ArtifactCheckoutButton';
 import { formatPrice } from '@/lib/formatPrice';
 
 export const dynamic = 'force-dynamic';
@@ -202,14 +203,26 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
             {formatPrice(artifact.priceInr, artifact.currency)}
           </p>
 
-          {/* TODO: wire checkout in Phase 4 */}
-          <button
-            disabled
-            type="button"
-            className="astro-button w-full py-4 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {t('store.detail.addToCartSoon')}
-          </button>
+          {/* Checkout (Task 2.1). Inactive / unpriced rows (e.g. the seeded
+              placeholders from migration 003) show a dead button instead —
+              the server would reject them with 404 anyway. */}
+          {artifact.isActive !== false && artifact.priceInr > 0 ? (
+            <ArtifactCheckoutButton
+              artifactId={artifact.id}
+              artifactName={name}
+              priceInr={artifact.priceInr}
+              currency={artifact.currency}
+              className="w-full"
+            />
+          ) : (
+            <button
+              disabled
+              type="button"
+              className="astro-button w-full py-4 text-base disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {t('store.detail.notAvailable')}
+            </button>
+          )}
         </article>
 
         <Suspense fallback={null}>

@@ -33,6 +33,10 @@ interface PaymentButtonProps {
   birthTime?: string;
   /** kundli_report: full paid report payload persisted on purchase (for later re-download). */
   report?: unknown;
+  /** Extra JSON fields merged into the create-order body (e.g. artifactId for store checkout). */
+  extraBody?: Record<string, unknown>;
+  /** Description line shown in the Razorpay checkout modal. */
+  description?: string;
 }
 
 export default function PaymentButton({
@@ -51,6 +55,8 @@ export default function PaymentButton({
   birthDate,
   birthTime,
   report,
+  extraBody,
+  description = 'Detailed Kundli Report',
 }: PaymentButtonProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -123,6 +129,9 @@ export default function PaymentButton({
                 report: report ?? {},
               }
             : {}),
+          // e.g. { artifactId } for paymentType "artifact_purchase" — the server
+          // re-resolves everything else (price, currency) from the catalog.
+          ...(extraBody ?? {}),
         }),
       });
 
@@ -142,7 +151,7 @@ export default function PaymentButton({
         amount: orderData.amount,
         currency: orderData.currency,
         name: "AstroVeda",
-        description: "Detailed Kundli Report",
+        description,
         order_id: orderData.orderId,
         handler: async function (response: any) {
           try {

@@ -9,6 +9,7 @@ process.env.RAZORPAY_KEY_SECRET = 'test_secret_hex_string';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import { creditWallet, getUserFromAuthHeader, hasWalletCreditForPayment } from '@/lib/serverWallet';
 import { recordPurchasedKundliReport } from '@/lib/serverPurchasedReports';
+import { recordPurchasedArtifact } from '@/lib/serverPurchasedArtifacts';
 import { issueUnlockToken } from '@/lib/paymentUnlock';
 import { POST } from '@/app/api/payment/verify/route';
 
@@ -25,6 +26,10 @@ vi.mock('@/lib/serverWallet', () => ({
 
 vi.mock('@/lib/serverPurchasedReports', () => ({
   recordPurchasedKundliReport: vi.fn(),
+}));
+
+vi.mock('@/lib/serverPurchasedArtifacts', () => ({
+  recordPurchasedArtifact: vi.fn(),
 }));
 
 vi.mock('@/lib/paymentUnlock', () => ({
@@ -76,6 +81,7 @@ describe('POST /api/payment/verify', () => {
     (getUserFromAuthHeader as any).mockResolvedValue(null);
     (creditWallet as any).mockResolvedValue(null);
     (recordPurchasedKundliReport as any).mockResolvedValue(null);
+    (recordPurchasedArtifact as any).mockResolvedValue({ id: 'row-1' });
     (issueUnlockToken as any).mockReturnValue('fake.unlock.token');
   });
 
@@ -429,6 +435,85 @@ describe('POST /api/payment/verify', () => {
 
     expect(res.status).toBe(200);
     expect(creditWallet).toHaveBeenCalledWith('user-1', 500, orderId, paymentId);
+  });
+
+
+  it('artifact purchase — records ownership from order notes with the Razorpay order amount', async () => {
+    const orderId = 'order_artifact_ok';
+    const paymentId = 'pay_artifact_ok';
+    const signature = validSignature(orderId, paymentId);
+
+    mockOrderFetch(200, {
+      status: 'paid',
+      amount: 129900,
+      notes: {
+        productType: 'artifact_purchase',
+        userEmail: 'Buyer@Example.com',
+        artifactId: 'example-neelam',
+        artifactName: 'Blue Sapphire (Neelam)',
+        artifactCurrency: 'INR',
+        artifactOwnerUserId: 'user-9',
+      },
+    });
+
+    const res = await POST(
+      req({
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signature,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(recordPurchasedArtifact).toHaveBeenCalledTimes(1);
+    expect(recordPurchasedArtifact).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ownerEmail: 'buyer@example.com', // lowercased from the order note
+        userId: 'user-9',
+        artifactId: 'example-neelam',
+        artifactName: 'Blue Sapphire (Neelam)',
+        priceInr: 1299, // (order amount 129900 paise) / 100 — from Razorpay, not the body
+        currency: 'INR',
+        orderId,
+        paymentId,
+      }),
+    );
+    // Wallet and report paths stay untouched.
+    expect(creditWallet).not.toHaveBeenCalled();
+    expect(recordPurchasedKundliReport).not.toHaveBeenCalled();
+  });
+
+
+  it('artifact purchase — answers 500 with the payment id when ownership cannot be recorded', async () => {
+    const orderId = 'order_artifact_fail';
+    const paymentId = 'pay_artifact_fail';
+    const signature = validSignature(orderId, paymentId);
+
+    mockOrderFetch(200, {
+      status: 'paid',
+      amount: 129900,
+      notes: {
+        productType: 'artifact_purchase',
+        userEmail: 'buyer@example.com',
+        artifactId: 'example-neelam',
+      },
+    });
+
+    (recordPurchasedArtifact as any).mockResolvedValue(null);
+
+    const res = await POST(
+      req({
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signature,
+      }),
+    );
+
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.success).toBe(false);
+    expect(json.error).toContain(paymentId);
+    expect(issueUnlockToken).not.toHaveBeenCalled();
   });
 });
 
