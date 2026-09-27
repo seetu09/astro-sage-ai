@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later.", retryAfter: rateLimitResult.retryAfter },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfter) } }
       );
     }
 

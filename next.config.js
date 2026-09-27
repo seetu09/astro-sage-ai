@@ -15,19 +15,27 @@ const withPWA = require('next-pwa')({
 
 const nextConfig = {
   reactStrictMode: true,
-  // Keep pdfkit and @react-pdf/renderer out of the serverless bundle.
-  // Vercel's bundler only copies .js files and skips non-JS assets, which
-  // causes "Cannot find module '.../Helvetica.cjs'" errors at runtime.
-  serverExternalPackages: ['pdfkit', '@react-pdf/renderer', '@react-pdf/pdfkit'],
-  outputFileTracingIncludes: {
-    '/api/kundali/pdf': [
-      'node_modules/pdfkit/js/data/*.afm',
-      'node_modules/pdfkit/js/standard-fonts/*.cjs',
-      'node_modules/@react-pdf/pdfkit/js/data/*.afm',
-      'node_modules/@react-pdf/pdfkit/js/standard-fonts/*.cjs',
-      'node_modules/@react-pdf/renderer/node_modules/pdfkit/js/data/*.afm',
-      'node_modules/@react-pdf/renderer/node_modules/pdfkit/js/standard-fonts/*.cjs'
-    ]
+  experimental: {
+    // Next 14.2 spells these under `experimental` — the Next 15 top-level
+    // names (`serverExternalPackages` / `outputFileTracingIncludes`) are not
+    // in next/dist/server/config-schema.js at all and were being silently
+    // ignored, which risked "Cannot find module '.../Helvetica.cjs'" at
+    // runtime on Vercel (see docs/status-reports/…2026-09-26.md Risk 6).
+    //
+    // Keep pdfkit and @react-pdf/renderer out of the serverless bundle.
+    // Vercel's bundler only copies .js files and skips non-JS assets, which
+    // causes "Cannot find module '.../Helvetica.cjs'" errors at runtime.
+    serverComponentsExternalPackages: ['pdfkit', '@react-pdf/renderer', '@react-pdf/pdfkit'],
+    outputFileTracingIncludes: {
+      '/api/kundali/pdf': [
+        'node_modules/pdfkit/js/data/*.afm',
+        'node_modules/pdfkit/js/standard-fonts/*.cjs',
+        'node_modules/@react-pdf/pdfkit/js/data/*.afm',
+        'node_modules/@react-pdf/pdfkit/js/standard-fonts/*.cjs',
+        'node_modules/@react-pdf/renderer/node_modules/pdfkit/js/data/*.afm',
+        'node_modules/@react-pdf/renderer/node_modules/pdfkit/js/standard-fonts/*.cjs',
+      ],
+    },
   },
 }
 

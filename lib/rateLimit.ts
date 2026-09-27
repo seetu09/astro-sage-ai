@@ -133,3 +133,19 @@ export async function checkRateLimit(
     return checkRateLimitInMemory(key, limit, windowMs);
   }
 }
+
+/**
+ * Which store the limiter is CONFIGURED to use on this instance:
+ *   'upstash' — both UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN were
+ *               present at module load, so limits are a shared cross-instance
+ *               sliding window.
+ *   'memory'  — env vars absent → per-instance fallback (weaker under
+ *               concurrency: N lambdas enforce N× the stated quota).
+ *
+ * Exposed via GET /api/health so an operator can verify the deployment env
+ * after a deploy. A runtime Redis ERROR still falls back per-call (see
+ * checkRateLimit); this reports configuration, not last-call health.
+ */
+export function getRateLimitBackend(): "upstash" | "memory" {
+  return redis ? "upstash" : "memory";
+}
