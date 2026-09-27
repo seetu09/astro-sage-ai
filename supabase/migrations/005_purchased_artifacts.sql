@@ -59,7 +59,6 @@ drop policy if exists "purchased artifacts select own" on public.purchased_artif
 create policy "purchased artifacts select own" on public.purchased_artifacts
   for select using (
     auth.uid() = user_id
-    -- email recovery, mirroring 002's policy
     or (lower(auth.email()) = lower(owner_email))
   );
 
@@ -69,14 +68,19 @@ create policy "purchased artifacts select own" on public.purchased_artifacts
 -- Idempotent record of a purchase: insert, and on a repeat verification of the
 -- same order (unique order_id) just refresh payment_id / backfill user_id.
 -- Returns the row id so verification can confirm the write.
+--
+-- NOTE ON PARAMETER ORDER: Postgres requires that parameters with DEFAULT
+-- values come after parameters without them. p_order_id and p_payment_id are
+-- therefore placed before the defaulted parameters, even though semantically
+-- it reads less naturally. Callers using named arguments are unaffected.
 create or replace function public.record_purchased_artifact(
   p_owner_email text,
   p_artifact_id text,
+  p_order_id text,
+  p_payment_id text,
   p_artifact_name text default '',
   p_price_inr numeric default 0,
   p_currency text default 'INR',
-  p_order_id text,
-  p_payment_id text,
   p_user_id uuid default null
 )
 returns uuid
@@ -107,7 +111,6 @@ begin
   on conflict (order_id)
   do update set
     payment_id = p_payment_id,
-    -- Never overwrite an existing account binding with null.
     user_id = coalesce(public.purchased_artifacts.user_id, p_user_id)
   returning id into v_id;
 
