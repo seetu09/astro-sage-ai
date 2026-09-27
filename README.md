@@ -1,30 +1,32 @@
 # AstroVeda 🔮
 
+[![CI](https://github.com/seetu09/astro-sage-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/seetu09/astro-sage-ai/actions/workflows/ci.yml)
+
 AI-powered Vedic astrology platform built with Next.js 14 (App Router) — Kundli (birth chart) generation, daily horoscopes, Kundali matching (Ashtakoot Guna Milan), numerology, tarot readings, and an AI astrology chat. Available in English & Hindi.
 
 ## Features
 
-- **Kundli Generator** — Vedic birth chart with planetary positions, dashas, yogas, doshas, and AI-written pillar narratives; paid PDF export via headless Chromium.
+- **Kundli Generator** — Vedic birth chart with planetary positions, dashas, yogas, doshas, and AI-written pillar narratives; paid PDF export via `@react-pdf/renderer`.
 - **Daily Horoscope** — 12-sign Rashifal with LLM-generated insights.
 - **Kundali Matching** — 8-koota Guna Milan (36 guna) engine with dosha detection.
 - **Numerology** — Moolank / Bhagyank / Namank profiles.
 - **Tarot** — AI-interpreted card readings.
 - **AI Chat** — astrology Q&A with a free-message quota and wallet top-ups.
-- **Payments** — Razorpay checkout for report unlocks & wallet recharges, with HMAC-verified server callbacks.
+- **Payments** — Razorpay checkout for report unlocks, wallet recharges, and artifact-store purchases, with HMAC-verified server callbacks.
 - **Auth** — Supabase (email + Google OAuth).
 - **i18n** — English/Hindi with a completeness check script.
 - **PWA** — installable, offline-friendly shell.
 
 ## Tech Stack
 
-Next.js 14 · React 18 · TypeScript · Tailwind CSS · Supabase · Razorpay · Google Gemini · Puppeteer (PDF) · Vitest
+Next.js 14 · React 18 · TypeScript · Tailwind CSS · Supabase (Auth + Postgres + Storage) · Razorpay · Google Gemini · @react-pdf/renderer (PDF) · Vitest
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
-- A Supabase project (auth + kundli cache)
+- Node.js 22+ (CI runs Node 22; `isomorphic-dompurify` requires ≥ 22.22)
+- A Supabase project — Auth plus Postgres tables from `supabase/migrations/` (apply `001`–`006` **in order**) and Storage buckets
 - Razorpay keys (test mode works fine locally)
 - Gemini API keys
 
@@ -64,7 +66,7 @@ app/
   */page.tsx      # Route pages (kundali, matchmaking, numerology, …)
 lib/              # Pure domain logic (astrology math, payment unlock tokens, rate limiting)
   __tests__/      # Vitest unit tests
-data/posts.json   # Blog posts (admin-published)
+supabase/migrations/ # SQL schema: wallet, report/artifact ownership, catalog, chart cache, blog
 public/           # PWA manifest, icons
 scripts/          # i18n consistency checker
 ```
@@ -73,6 +75,8 @@ scripts/          # i18n consistency checker
 
 - **Domain math is pure** (`lib/ashtakoot.ts`, `lib/numerology.ts`, `lib/astrology.ts`) — fully unit-testable, no I/O.
 - **Paid reports are server-gated**: `lib/paymentUnlock.ts` mints HMAC-signed unlock tokens that only `/api/payment/verify` issues after Razorpay confirms an order.
+- **Store checkout prices are server-validated**: `/api/payment/create-order` resolves the item from the `artifacts` table and rejects any client amount that disagrees with `price_inr` (`lib/artifactPricing.ts`); ownership lands in `purchased_artifacts` only after Razorpay reports the order as paid.
+- **Blog + catalog live in Supabase, never the filesystem**: the deployed FS on Vercel is read-only, so posts (`public.blog_posts`), covers (`blog-images` bucket) and the artifact catalog (`public.artifacts`) are all database-backed. Apply `supabase/migrations/` in order — the code logs a clear warning (blog) or a 5xx (catalog/checkout) until the tables exist.
 - **Rate limiting**: `lib/rateLimit.ts` provides IP sliding windows on all AI/payment routes, backed by Upstash Redis in production (set `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`). When those env vars are absent — or a Redis call fails — it falls back to an in-memory limiter so local dev, CI, and Redis outages never block requests.
 
 ## Testing
@@ -81,11 +85,16 @@ scripts/          # i18n consistency checker
 npm test
 ```
 
-Tests cover the numerology reduction rules and the Ashtakoot Guna Milan engine (guna totals, verdict bands, dosha detection). Add tests for any new pure domain logic under `lib/`.
+Tests cover the numerology reduction rules, the Ashtakoot Guna Milan engine (guna totals, verdict bands, dosha detection), payment verification (signature + order re-fetch, wallet credit idempotency, artifact ownership), and server-side artifact price validation. Add tests for any new pure domain logic under `lib/`.
 
 ## Deployment
 
 The app targets Vercel. Set every variable from `.env.example` in the project's Environment Variables (Production), including `NEXT_PUBLIC_APP_URL` set to the production origin — it drives the sitemap/robots URLs and OAuth redirects.
+
+After deploying, two live checks are worth doing:
+
+- `GET /api/health` → `"rateLimitBackend": "upstash"` confirms the Upstash env vars are present (a `"memory"` value means rate limits are per-instance only).
+- Apply `supabase/migrations/004`–`006` (SQL Editor or `supabase db push`) if they are not yet in the production database — see `PLAN.md` for the checklist.
 
 ## Security Notes
 
