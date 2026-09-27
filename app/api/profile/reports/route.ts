@@ -4,6 +4,7 @@ import { getUserFromAuthHeader } from "@/lib/serverWallet";
 import {
   listPurchasedReports,
   updatePurchasedReportPayload,
+  bindPurchasedKundliToUser,
 } from "@/lib/serverPurchasedReports";
 
 /**
@@ -30,6 +31,17 @@ export async function GET(req: Request) {
   const user = await getUserFromAuthHeader(req);
   if (!user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  // Auto-bind (Task 2.3): re-bind reports purchased with this email (e.g.
+  // before the account existed) to the account HERE, server-side, before the
+  // list is read. The profile modal used to do this via
+  // `await import("@/lib/serverPurchasedReports")` — a client component
+  // importing a service-role module, so SUPABASE_SERVICE_ROLE_KEY was
+  // undefined in the browser and the bind silently never ran. The helper
+  // logs and swallows its own failures, so this can't break the listing.
+  if (user.email) {
+    await bindPurchasedKundliToUser(user.email, user.id);
   }
 
   // List by account id AND by email so purchases tied to this email (even from

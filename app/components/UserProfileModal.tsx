@@ -130,21 +130,15 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
         const supabase = (await import("@/lib/supabase")).getSupabaseClient();
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
-        const sessionEmail = session.data.session?.user?.email ?? user.email ?? "";
         if (!token) {
           setPurchasedReports([]);
           return;
         }
-        // Auto-bind any reports purchased with this email (e.g. before account
-        // creation) to the signed-in account so they appear here immediately.
-        try {
-          const { bindPurchasedKundliToUser } = await import("@/lib/serverPurchasedReports");
-          if (sessionEmail) {
-            await bindPurchasedKundliToUser(sessionEmail, user.id);
-          }
-        } catch {
-          // binding is best-effort; ignore failures
-        }
+        // Auto-binding of email-keyed purchases runs server-side inside
+        // GET /api/profile/reports (Task 2.3). It used to happen here via
+        // `await import("@/lib/serverPurchasedReports")` — a service-role
+        // module in the browser bundle, where SUPABASE_SERVICE_ROLE_KEY can
+        // never exist, so the bind was a permanently silent no-op.
         const res = await fetch("/api/profile/reports", {
           headers: { Authorization: `Bearer ${token}` },
         });
