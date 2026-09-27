@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Instagram, Twitter, Youtube, Facebook, MessageCircle, Send, Users, Bell, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -16,10 +15,6 @@ const socialLinks = [
 
 export default function SocialPage() {
   const { language, t } = useLanguage();
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleSubscribe = (e: React.FormEvent) => { e.preventDefault(); if (email) { setSubscribed(true); setEmail(''); setTimeout(() => setSubscribed(false), 3000); } };
 
   return (
     <div className="min-h-screen py-12 px-4">
@@ -69,14 +64,10 @@ export default function SocialPage() {
           </motion.div>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="astro-card text-center">
-          <h2 className="text-2xl font-bold font-serif text-[var(--text-primary)] mb-2">{t.social.newsletter.title}</h2>
-          <p className="text-[var(--text-secondary)] mb-6 max-w-lg mx-auto">{t.social.newsletter.subtitle}</p>
-          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.social.newsletter.placeholder} required className="flex-1 astro-input" />
-            <button type="submit" className="astro-button whitespace-nowrap">{subscribed ? <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4" />{language === 'en' ? 'Subscribed!' : 'सब्सक्राइब्ड!'}</span> : t.social.newsletter.subscribe}</button>
-          </form>
-        </motion.div>
+        {/*
+          The newsletter form was removed (Task 3.5): like the old contact
+          form, it faked a "Subscribed!" state with no endpoint behind it.
+        */}
       </div>
     </div>
   );
