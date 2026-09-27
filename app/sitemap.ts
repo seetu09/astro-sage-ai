@@ -1,13 +1,11 @@
 import type { MetadataRoute } from "next";
-import fs from "fs/promises";
-import path from "path";
+import { loadBlogPosts } from "@/lib/serverBlogPosts";
 
 const BASE_URL = (
   process.env.NEXT_PUBLIC_APP_URL || "https://astro-sage-ai.vercel.app"
 ).replace(/\/$/, "");
 
 type ChangeFrequency = "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
-
 const STATIC_ROUTES: {
   path: string;
   priority: number;
@@ -32,12 +30,9 @@ const STATIC_ROUTES: {
   { path: "/disclaimer", priority: 0.3, changeFrequency: "yearly" },
 ];
 
-type BlogPost = { slug: string; createdAt: string };
-
 async function getBlogUrls(): Promise<MetadataRoute.Sitemap> {
   try {
-    const postsFile = path.join(process.cwd(), "data", "posts.json");
-    const posts: BlogPost[] = JSON.parse(await fs.readFile(postsFile, "utf-8"));
+    const posts = await loadBlogPosts();
     return posts.map((post) => ({
       url: `${BASE_URL}/blog/${post.slug}`,
       lastModified: post.createdAt ? new Date(post.createdAt) : new Date(),
@@ -45,6 +40,7 @@ async function getBlogUrls(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
   } catch {
+    // Blog storage unreachable → omit blog URLs rather than failing the sitemap.
     return [];
   }
 }

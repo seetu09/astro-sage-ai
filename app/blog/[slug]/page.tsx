@@ -1,29 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar } from 'lucide-react';
-import fs from 'fs/promises';
-import path from 'path';
+import { loadBlogPosts, type BlogPost } from '@/lib/serverBlogPosts';
 
 export const dynamic = 'force-dynamic';
 
-type Post = {
-  id: string;
-  slug: string;
-  title: string;
-  category: string;
-  excerpt: string;
-  content: string;
-  image: string;
-  createdAt: string;
-};
-
-const POSTS_FILE = path.join(process.cwd(), 'data', 'posts.json');
-
-async function getPost(slug: string): Promise<Post | undefined> {
+async function getPost(slug: string): Promise<BlogPost | undefined> {
   try {
-    const posts: Post[] = JSON.parse(await fs.readFile(POSTS_FILE, 'utf-8'));
+    const posts = await loadBlogPosts();
     return posts.find((p) => p.slug === slug);
-  } catch {
+  } catch (error) {
+    console.error('[blog post page] failed to load posts:', error);
     return undefined;
   }
 }

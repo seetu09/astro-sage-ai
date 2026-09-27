@@ -1,30 +1,8 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Calendar } from 'lucide-react';
-import fs from 'fs/promises';
-import path from 'path';
+import { loadBlogPosts, type BlogPost } from '@/lib/serverBlogPosts';
 
 export const dynamic = 'force-dynamic';
-
-type Post = {
-  id: string;
-  slug: string;
-  title: string;
-  category: string;
-  excerpt: string;
-  content: string;
-  image: string;
-  createdAt: string;
-};
-
-const POSTS_FILE = path.join(process.cwd(), 'data', 'posts.json');
-
-async function getPosts(): Promise<Post[]> {
-  try {
-    return JSON.parse(await fs.readFile(POSTS_FILE, 'utf-8'));
-  } catch {
-    return [];
-  }
-}
 
 const categoryColors: Record<string, string> = {
   'Vedic Astrology': 'bg-purple-500/20 text-purple-400',
@@ -37,7 +15,15 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default async function BlogPage() {
-  const posts = await getPosts();
+  // Posts live in Supabase (migration 006) — the previous data/posts.json read
+  // could never be updated on Vercel's read-only filesystem.
+  let posts: BlogPost[] = [];
+  try {
+    posts = await loadBlogPosts();
+  } catch (error) {
+    // Loud, but never take the page down: /blog degrades to its empty state.
+    console.error('[blog page] failed to load posts:', error);
+  }
 
   return (
     <div className="min-h-screen py-12 px-4">
