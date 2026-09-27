@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getServiceSupabase } from "@/lib/serverWallet";
 import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
 import { computeKundliCalculations } from "@/lib/kundli-report";
 import { NAKSHATRA_NAMES, localizePlanet } from "@/lib/astrologyDictionary";
@@ -819,16 +819,22 @@ export async function POST(req: NextRequest) {
     const cacheKey = buildCacheKey(details);
 
     // --- 1. Try Supabase cache first ---
+    // Service-role client (strict RLS on kundali_charts denies anon/authenticated
+    // entirely — see supabase/migrations/004_kundali_charts.sql). Both the read
+    // and the upsert inspect their returned {error}: PostgREST errors do NOT
+    // throw, so previously they slipped past the try/catch unlogged.
     let chartData: ChartData | null = null;
     try {
-      const supabase = getSupabaseClient();
+      const supabase = getServiceSupabase();
       const { data, error } = await supabase
         .from("kundali_charts")
         .select("chart_data")
         .eq("cache_key", cacheKey)
         .maybeSingle();
 
-      if (!error && data?.chart_data && isValidChartData(data.chart_data)) {
+      if (error) {
+        console.error("Kundali cache read failed:", error.message, error.code ?? "");
+      } else if (data?.chart_data && isValidChartData(data.chart_data)) {
         // Only trust rows stamped by the current engine with a valid flat
         // structure; legacy VedAstro-era / stale / corrupt rows fall through
         // to recomputation below and overwrite the row via the upsert.
@@ -844,8 +850,8 @@ export async function POST(req: NextRequest) {
       chartData = computeChart(details);
 
       try {
-        const supabase = getSupabaseClient();
-        await supabase.from("kundali_charts").upsert(
+        const supabase = getServiceSupabase();
+        const { error: upsertError } = await supabase.from("kundali_charts").upsert(
           {
             cache_key: cacheKey,
             birth_details: {
@@ -861,6 +867,9 @@ export async function POST(req: NextRequest) {
           },
           { onConflict: "cache_key" }
         );
+        if (upsertError) {
+          console.error("Kundali cache write failed:", upsertError.message, upsertError.code ?? "");
+        }
       } catch (cacheError) {
         // Cache write failures must never block the response
         console.error("Kundali cache write failed:", cacheError);
