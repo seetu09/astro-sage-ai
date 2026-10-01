@@ -128,7 +128,12 @@ function mapArtifactToRow(artifact: CatalogArtifact, doshaAliases: Record<string
     doshas: artifact.doshas,
     pitch: artifact.pitch,
     benefits: artifact.benefits,
-    image_url: artifact.imageUrl,
+    // `imageUrl` is optional in the schema (Task 4.3) so a product can be
+    // authored before its photo exists, but the COLUMN is `text not null` (003).
+    // An absent image is therefore stored as the empty string, which is what
+    // `mapRow` already reads back — so the round trip is stable and the storefront
+    // sees '' rather than null.
+    image_url: artifact.imageUrl ?? '',
     product_url: artifact.productUrl,
     priority: artifact.priority,
     disclaimer: artifact.disclaimer,

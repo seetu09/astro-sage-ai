@@ -34,7 +34,8 @@ trace (Task 3.1) · NOT pushed — apply migrations before pushing (see below).
 ## Phase 4 — Strategic Enhancements (DEFERRED)
 - [ ] Task 4.1 — Personalized daily horoscope
 - [x] Task 4.2 — doshaAliases storage — `007_artifact_dosha_aliases.sql` adds `artifacts.dosha_aliases jsonb not null default '{}'`; `loadArtifactCatalog` unions every row's map into the catalog-level `doshaAliases` the recommender already reads, and `writeArtifactCatalog` broadcasts the admin's map back onto each row. No backfill (admin authors the vocabulary). 4 new loader tests. Apply step below.
-- [ ] Task 4.3 — Artifact image upload (admin)
+- [x] Task 4.3 — Artifact image upload (admin) — `008_artifact_images_bucket.sql` creates the public `artifact-images` bucket; `POST /api/admin/artifact-image` (multipart → `{ url }`, session-cookie auth only — deliberately NOT the `x-admin-password` the catalog PUT requires) and `lib/serverArtifactImages.ts` (image/5 MB validation + `Date.now()`-prefixed sanitized filename, mirroring the blog cover path). `imageUrl` became OPTIONAL in `lib/catalogSchema.ts` so a product can be catalogued before it is photographed; the editor's new per-artifact control (file input + URL text input + preview) writes the returned URL through the existing `onChange → updateArtifact` path, so the JSON textarea stays the single source of truth and the next Save persists it. 9 new upload-route tests + 5 new schema tests. Apply step below.
+- [ ] Task 4.3b — artifact/blog image garbage collection — orphaned `artifact-images` / `blog-images` objects are documented, not deleted: uploads are not transactional with Save, and replacing an image leaves the previous object in the bucket with no delete path. Bounded to the public buckets only (never `avatars`); the admin editor would need a "remove image" affordance that clears the catalog field, plus a retention sweep. Explicitly deferred out of Task 4.3.
 - [ ] Task 4.4 — SEO and content (BLOCKED until brand name finalized)
 
 ---
@@ -116,12 +117,14 @@ trace (Task 3.1) · NOT pushed — apply migrations before pushing (see below).
 
 ## Apply steps for live systems (not executable from this workspace)
 
-1. **Migrations 004/005/006/007** — run `supabase/migrations/004_kundali_charts.sql`,
-   `005_purchased_artifacts.sql`, `006_blog_posts.sql`, `007_artifact_dosha_aliases.sql` against
+1. **Migrations 004/005/006/007/008** — run `supabase/migrations/004_kundali_charts.sql`,
+   `005_purchased_artifacts.sql`, `006_blog_posts.sql`, `007_artifact_dosha_aliases.sql`,
+   `008_artifact_images_bucket.sql` against
    the production Supabase project (SQL Editor, in order; all are idempotent — `create table if
    not exists`, `add column if not exists`, `drop policy if exists`, `on conflict do nothing`).
-   Recommended order relative to deploy: apply **before** or **with** the code deploy (004 and 007
-   are safe either way — an unreadable `dosha_aliases` is skipped, never fatal; 005/006 are required
+   Recommended order relative to deploy: apply **before** or **with** the code deploy (004, 007
+   and 008 are safe either way — an unreadable `dosha_aliases` is skipped, never fatal, and 008
+   only adds a bucket the editor needs for uploads; 005/006 are required
    before checkout / blog publishing work — until they land the code fails loudly with a
    clear console error rather than silently).
 2. **Make Upstash live in Vercel** (Task 1.2):
@@ -132,13 +135,15 @@ trace (Task 3.1) · NOT pushed — apply migrations before pushing (see below).
      then redeploy. No code change needed — `lib/rateLimit.ts` picks both up automatically.
    - Verify: `GET /api/health` → `"rateLimitBackend": "upstash"` (field added by this plan;
      `"memory"` means still degraded).
-3. **Storage buckets** — `006` creates the public `blog-images` bucket via SQL; the
+3. **Storage buckets** — `006` creates the public `blog-images` bucket and `008` the public
+   `artifact-images` bucket, both via SQL; the
    pre-existing `avatars` bucket still has no migration (documented drift, out of scope).
+   Neither public bucket has a delete path, so replaced and abandoned images accumulate —
+   tracked as Task 4.3b.
 
 ## Known follow-ups (out of scope for this plan)
 
 - Profile “Purchases” tab listing `purchased_artifacts` (ownership is recorded; UI deferred).
-- Artifact image upload (Phase 4.3).
 - **Aliases in the browser-rendered report.** Task 4.2 restores the alias map for every
   SERVER-side consumer (`/store/[id]`, `/api/admin/artifacts`), but the report's
   “Recommended for Your Chart” block runs client-side off `/api/artifacts`, which still

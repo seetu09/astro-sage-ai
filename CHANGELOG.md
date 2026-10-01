@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- **Artifact image upload (Task 4.3)** — the catalog editor at `/admin/artifacts` can now upload a product photo per artifact. `POST /api/admin/artifact-image` (multipart → `{ url }`) writes to the public `artifact-images` bucket (migration 008) via `lib/serverArtifactImages.ts`, which mirrors the blog-cover path exactly: `image/*` only, 5 MB ceiling, `Date.now()`-prefixed sanitized filename, `upsert: false`. The endpoint is gated by the **admin session cookie only** — deliberately not the `x-admin-password` header the catalog PUT requires, since that field is a save-time confirmation and requiring it here would block staging an image before the admin types it (documented in the route; a test guards it). `imageUrl` is now **optional** in `lib/catalogSchema.ts` so a product can be catalogued before it is photographed; the returned URL is written through the editor's existing `onChange → updateArtifact` path, so the JSON textarea stays the single source of truth and the next Save persists it. `ArtifactImage` now renders its placeholder for a missing `src` and releases its broken-image latch when the URL changes.
 - **Store checkout (Task 11)** — `artifact_purchase` payment type: prices are validated server-side against `artifacts.price_inr` (`lib/artifactPricing.ts` — a mismatching client amount is rejected, never charged), Razorpay orders carry an item snapshot in their notes, and `/api/payment/verify` records durable ownership in `purchased_artifacts` (migration 005, idempotent on `order_id`). The Buy Now flow on `/store/[id]` is live with an email field for guest buyers and a bilingual success receipt.
 - **Blog publishing that works on Vercel** — posts moved off the read-only filesystem (`data/posts.json` + `public/blogs/`) into `public.blog_posts` + the `blog-images` storage bucket (migration 006); the admin route re-checks the session cookie in-handler.
 - **Artifact dosha alias storage** — migration 007 adds `artifacts.dosha_aliases`; `loadArtifactCatalog` unions it into the catalog-level `doshaAliases` map so the recommender's alias expansion works again, and the admin catalog editor round-trips it. No backfill: the alias vocabulary is admin-authored content, and an empty map simply keeps matching on canonical dosha keys. The map stays server-side — `/api/artifacts` still does not publish it.
@@ -31,4 +32,16 @@
 ### Notes
 - Recommender caps at 2 suggestions per report by design (subtle guidance, not a catalog).
 - Recommendations are silent for dosha-free charts — the section renders nothing.
-- Migrations `004`–`007` must be applied to the production database (SQL Editor or `supabase db push`); `PLAN.md` carries the exact apply steps and the Upstash env checklist.
+- Migrations `004`–`008` must be applied to the production database (SQL Editor or `supabase db push`); `PLAN.md` carries the exact apply steps and the Upstash env checklist.
+
+### Known limitations
+- **Uploaded images are never deleted.** The `artifact-images` and `blog-images` buckets have
+  no delete path, so: an upload is **not transactional with Save** (the object is written to
+  the bucket immediately — abandoning the edit, or failing validation on a later Save,
+  orphans it); **replacing an image orphans the previous object**, because uploads are
+  `upsert: false` with a `Date.now()`-prefixed name so nothing is ever overwritten; and
+  **no delete endpoint exists**. This matches the existing blog-cover behaviour rather than
+  introducing a new class of problem, and is tracked as Task 4.3b (garbage collection) —
+  deliberately not built in Task 4.3. The cost is storage growth, not incorrect data: an
+  orphaned object is unreachable from the catalog, and removing a reference never breaks a
+  stored URL.

@@ -58,7 +58,23 @@ export const ArtifactSchema = z.object({
   doshas: z.array(z.string()).min(1),
   pitch: BilingualTextSchema,
   benefits: BilingualBenefitsSchema,
-  imageUrl: z.string().min(1),
+  // Product image, served to anonymous storefront visitors.
+  //
+  // OPTIONAL (Task 4.3): it was `z.string().min(1)`, which made an artifact
+  // unsavable until it already had a working image URL — and the only way to get
+  // one was to already know a URL to paste. The editor now uploads a file
+  // (POST /api/admin/artifact-image → the `artifact-images` bucket, migration
+  // 008) and patches the returned URL in here, so the two steps are independent
+  // and a product can be authored first and photographed second.
+  //
+  // Optional, NOT defaulted: `.default('')` would be re-validated by Zod 4 and
+  // rejected by a min(), and a default would also materialise the key on every
+  // artifact in the JSON the editor round-trips. Rows that carry a URL are
+  // unaffected — `z.object` ignores nothing, but an absent key and a present
+  // string are both valid. Consumers must treat it as possibly undefined:
+  // `ArtifactImage` renders its placeholder glyph, and the write path stores
+  // `''` (mapArtifactToRow) to satisfy the `not null` column.
+  imageUrl: z.string().optional(),
   productUrl: z.string().min(1),
   priority: z.number().int().min(0),
   disclaimer: BilingualTextSchema,

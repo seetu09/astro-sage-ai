@@ -2,8 +2,9 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, type ChangeEvent } from 'react';
 import { useToast } from '@/app/components/ToastProvider';
+import ArtifactImage from '@/app/components/ArtifactImage';
 import { useLanguage } from '@/app/context/LanguageContext';
 import {
   ArtifactCatalogSchema,
@@ -37,6 +38,86 @@ function ArtifactFields({
 
   const numberValue = Number.isFinite(artifact.priceInr) ? artifact.priceInr : 0;
 
+  // Feedback for the upload below. Called here rather than passed down so the
+  // component signature stays "artifact + onChange + translator".
+  const toast = useToast();
+
+  /**
+   * True while THIS row's image is uploading. Every control in the row is
+   * disabled while it is set, and that is load-bearing rather than cosmetic:
+   * `handleImageFile` closes over the `artifact` from the render that started the
+   * upload, so without the lock an edit to price/category/isActive made during
+   * the round trip would be silently reverted by the `onChange` it fires on
+   * completion. Disabling the row is the cheap, provable fix — the alternative
+   * (threading a functional updater through updateArtifact) changes the contract
+   * every other control in this component already depends on.
+   */
+  const [uploading, setUploading] = useState(false);
+
+  /**
+   * Upload a product image and patch the returned URL into the artifact.
+   *
+   * Goes through the same `onChange` as the price/category controls, which is
+   * what `updateArtifact` re-serializes back into the catalog JSON textarea — so
+   * the URL is persisted by the next ordinary Save, exactly as a hand-typed URL
+   * would be. The upload itself is NOT transactional with that Save: the object
+   * lands in the bucket immediately, and abandoning the edit orphans it. That is
+   * documented (CHANGELOG "Known limitations") and tracked as Task 4.3b.
+   */
+  const handleImageFile = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const input = event.target;
+      const file = input.files?.[0];
+      // Clear the input BEFORE awaiting: re-picking the same file must fire
+      // `change` again, and it will not while the input still holds that file.
+      // That is the normal way an admin retries after a failed upload.
+      input.value = '';
+      if (!file) return;
+
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        // Deliberately no Content-Type header — the browser must generate the
+        // multipart boundary itself; setting it by hand produces a body the
+        // server cannot parse.
+        const res = await fetch('/api/admin/artifact-image', {
+          method: 'POST',
+          body: formData,
+        });
+        const data: { url?: unknown; message?: unknown } = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(
+            _t('Image upload failed: ', 'Image upload fail ho gaya: ') +
+              (typeof data.message === 'string' ? data.message : res.statusText)
+          );
+          return;
+        }
+        const url = typeof data.url === 'string' ? data.url : '';
+        if (!url) {
+          toast.error(
+            _t('Upload finished but returned no URL', 'Upload ho gaya par URL nahi mila')
+          );
+          return;
+        }
+        onChange({ ...artifact, imageUrl: url });
+        toast.success(
+          _t(
+            'Image uploaded — press Save to store the URL in the catalog',
+            'Image upload ho gaya — catalog mein URL save karne ke liye Save dabayein'
+          )
+        );
+      } catch {
+        toast.error(
+          _t('Network error while uploading image', 'Image upload karte waqt network error')
+        );
+      } finally {
+        setUploading(false);
+      }
+    },
+    [artifact, onChange, toast, _t]
+  );
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div>
@@ -52,6 +133,7 @@ function ArtifactFields({
           step="0.01"
           min={0}
           value={numberValue}
+          disabled={uploading}
           onChange={(e) => {
             // Stored in rupees, not paise — the input maps 1:1 onto priceInr.
             const parsed = e.target.value === '' ? 0 : Number(e.target.value);
@@ -71,6 +153,7 @@ function ArtifactFields({
         <select
           id={`category-${artifact.id}`}
           value={artifact.category}
+          disabled={uploading}
           onChange={(e) => onChange({ ...artifact, category: e.target.value })}
           className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
         >
@@ -92,11 +175,91 @@ function ArtifactFields({
             id={`active-${artifact.id}`}
             type="checkbox"
             checked={artifact.isActive !== false}
+            disabled={uploading}
             onChange={(e) => onChange({ ...artifact, isActive: e.target.checked })}
             className="h-4 w-4 rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
           />
           {_t('Active (visible to buyers)', 'Sakriya (kharidaron ko dikhein)')}
         </label>
+      </div>
+
+      {/*
+        Product image (Task 4.3).
+
+        Three controls describing ONE field, laid out in a full-width row so they
+        line up with the three above. They are deliberately not three sources of
+        truth: the upload writes the returned URL through the same `onChange` the
+        text input edits, so both funnel into the catalog JSON textarea and are
+        persisted by the single Save button. Keeping the text input means an
+        admin who pastes a URL (or edits one that already exists) sees and
+        changes the same value the uploader writes, instead of the preview and
+        the catalog quietly disagreeing.
+      */}
+      <div className="sm:col-span-3 border-t border-[var(--border)] pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+        <div>
+          <label
+            htmlFor={`image-${artifact.id}`}
+            className="block text-xs font-medium text-[var(--text-secondary)] mb-1"
+          >
+            {_t('Product image', 'Utpad photo')}
+          </label>
+          <input
+            id={`image-${artifact.id}`}
+            type="file"
+            accept="image/*"
+            onChange={handleImageFile}
+            disabled={uploading}
+            className="w-full text-xs text-[var(--text-secondary)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--accent)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-[var(--accent-dark)] disabled:opacity-50"
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-1">
+            {uploading
+              ? _t('Uploading…', 'Upload ho raha hai…')
+              : _t(
+                  'Images only, up to 5 MB. Uploading adds the URL to the JSON above — press Save to keep it.',
+                  'Sirf image, 5 MB tak. Upload URL ko upar wale JSON mein daalta hai — rakhne ke liye Save dabayein.'
+                )}
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor={`image-url-${artifact.id}`}
+            className="block text-xs font-medium text-[var(--text-secondary)] mb-1"
+          >
+            {_t('Image URL', 'Image URL')}
+          </label>
+          <input
+            id={`image-url-${artifact.id}`}
+            type="text"
+            value={artifact.imageUrl ?? ''}
+            onChange={(e) => onChange({ ...artifact, imageUrl: e.target.value })}
+            disabled={uploading}
+            placeholder="https://…/artifact-images/…"
+            className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)] placeholder-[var(--text-muted)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:opacity-50"
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-1">
+            {_t(
+              'Paste a URL instead of uploading, or edit the current one. Leave empty for no image.',
+              'Upload ke bajaye URL paste karein, ya mojooda URL badlein. Koi image na ho to khaali chhodein.'
+            )}
+          </p>
+        </div>
+
+        <div>
+          <span className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+            {_t('Preview', 'Preview')}
+          </span>
+          {/* ArtifactImage rather than a bare <img>: with no imageUrl it renders
+              the Package glyph, and its onError fallback means a bad pasted URL
+              shows the same thing as no URL at all. */}
+          <div className="aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)]">
+            <ArtifactImage
+              src={artifact.imageUrl}
+              alt={artifact.name?.en ?? artifact.id}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -299,7 +462,7 @@ export default function AdminArtifactsPage() {
         {catalog && catalog.artifacts.length > 0 && (
           <section className="astro-card mt-6">
             <h2 className="text-lg font-bold font-serif text-[var(--text-primary)] mb-1">
-              {_t('Price & Category', 'Keemat aur shreni')}
+              {_t('Price, Category & Image', 'Keemat, shreni aur photo')}
             </h2>
             <p className="text-xs text-[var(--text-muted)] mb-4">
               {_t(

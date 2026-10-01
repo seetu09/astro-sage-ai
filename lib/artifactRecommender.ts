@@ -66,7 +66,13 @@ export interface Artifact {
   doshas: string[];
   pitch: ArtifactText;
   benefits: ArtifactBenefits;
-  imageUrl: string;
+  // Optional to mirror `lib/catalogSchema.ts`, where `imageUrl` became optional
+  // in Task 4.3 (a product may be catalogued before it is photographed). Kept
+  // optional here so a `CatalogArtifact` stays assignable to this interface
+  // without a cast at the call sites — the same reason the optional fields below
+  // exist. Every reader must already tolerate absence: the report card guards
+  // with `artifact.imageUrl &&` and `ArtifactImage` renders a placeholder.
+  imageUrl?: string;
   productUrl: string;
   priority: number;
   disclaimer: ArtifactText;

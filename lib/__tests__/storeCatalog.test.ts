@@ -100,6 +100,73 @@ describe('storeCatalog', () => {
     });
   });
 
+  /**
+   * Task 4.3: `imageUrl` became optional so a product can be catalogued BEFORE it
+   * is photographed, and the editor's uploader patches the returned URL in
+   * afterwards. These pin the two states that has to allow.
+   */
+  describe('optional imageUrl (Task 4.3)', () => {
+    it('accepts an artifact with NO imageUrl at all', () => {
+      const { imageUrl: _omit, ...withoutImage } = makeArtifact();
+      const result = ArtifactCatalogSchema.safeParse(
+        makeCatalog({ artifacts: [withoutImage] })
+      );
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      // Absent, NOT defaulted to '': a default would materialise the key on every
+      // artifact in the JSON the admin editor round-trips.
+      expect(result.data.artifacts[0].imageUrl).toBeUndefined();
+    });
+
+    it('round-trips an uploaded imageUrl unchanged', () => {
+      const url =
+        'https://xyz.supabase.co/storage/v1/object/public/artifact-images/1700000000000-neelam.jpg';
+      const result = ArtifactCatalogSchema.safeParse(
+        makeCatalog({ artifacts: [makeArtifact({ imageUrl: url })] })
+      );
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.artifacts[0].imageUrl).toBe(url);
+    });
+
+    it('accepts an empty imageUrl (what the write path stores for a missing image)', () => {
+      // `artifacts.image_url` is `text not null`, so lib/serverArtifactCatalog.ts
+      // writes '' when the field is absent. The schema must not reject what its
+      // own writer produces, or an image-less artifact would be unsavable.
+      const result = ArtifactCatalogSchema.safeParse(
+        makeCatalog({ artifacts: [makeArtifact({ imageUrl: '' })] })
+      );
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.artifacts[0].imageUrl).toBe('');
+    });
+
+    it('still rejects a NON-string imageUrl (optional, not unconstrained)', () => {
+      const result = ArtifactCatalogSchema.safeParse(
+        makeCatalog({ artifacts: [makeArtifact({ imageUrl: 42 })] })
+      );
+      expect(result.success).toBe(false);
+    });
+
+    it('keeps accepting the whole catalog when only one artifact lacks an image', () => {
+      // The editor sends the full catalog on every save, so one image-less row
+      // must not invalidate its siblings.
+      const { imageUrl: _omit, ...withoutImage } = makeArtifact();
+      const result = ArtifactCatalogSchema.safeParse(
+        makeCatalog({
+          artifacts: [
+            makeArtifact({ id: 'example-rudraksha' }),
+            { ...withoutImage, id: 'example-yantra' },
+          ],
+        })
+      );
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.data.artifacts[0].imageUrl).toBe('/store/example-neelam.jpg');
+      expect(result.data.artifacts[1].imageUrl).toBeUndefined();
+    });
+  });
+
   describe('StorefrontCatalogSchema (the public /api/artifacts response)', () => {
     /** Exactly what app/api/artifacts/route.ts returns: no _note, no doshaAliases. */
     function makePublicResponse() {

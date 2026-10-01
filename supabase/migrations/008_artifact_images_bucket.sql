@@ -1,0 +1,41 @@
+-- AstroVeda artifact product-image storage bucket.
+--
+-- WHY THIS BUCKET EXISTS
+-- ----------------------
+-- The artifact catalog has always carried an `image_url` (migration 003), but
+-- nothing could ever PUT an image there: the admin editor made the admin paste a
+-- URL as text into the catalog JSON, and the placeholder values seeded in 003
+-- (`/store/example-neelam.jpg`, `/store/example-rudraksha.jpg`) point at files
+-- that do not exist in `public/` — which is why every storefront card rendered
+-- the `ArtifactImage` broken-image fallback.
+--
+-- Task 4.3 adds a real upload: `POST /api/admin/artifact-image` writes the file
+-- here and returns its public URL, and the editor writes that URL into the
+-- artifact's `imageUrl` in the catalog JSON so the next PUT persists it. The
+-- uploaded object is therefore referenced by URL, not by a foreign key, which is
+-- why this migration creates the bucket and touches no column.
+--
+-- THIS MIGRATION CHANGES NO COLUMN
+-- --------------------------------
+-- `artifacts.image_url text not null` (003) already exists and already stores
+-- exactly this value. The schema change in `lib/catalogSchema.ts` only makes the
+-- field OPTIONAL so an artifact can be authored before its image is uploaded;
+-- `lib/serverArtifactCatalog.ts` then writes `''` for an absent image, which
+-- satisfies `not null` without a migration. Nothing to backfill: existing rows
+-- keep whatever URL they already carry, placeholder paths included.
+--
+-- CONVENTIONS (mirrors 006_blog_posts.sql): idempotent, safe to run before or
+-- after the code deploy, and created via SQL because bucket setup otherwise
+-- exists only by hand in the dashboard (the drift class that already bit
+-- kundali_charts and avatars).
+--
+-- PUBLIC, and why that is safe: product images are served to anonymous
+-- storefront visitors through storage.getPublicUrl, exactly like blog covers in
+-- `blog-images`. Writes go through the service role, which bypasses storage
+-- RLS — so no storage.objects policies are required for the upload path. Only
+-- non-sensitive product imagery belongs in this bucket: the upload endpoint is
+-- gated by the admin session cookie alone (see the auth note in
+-- app/api/admin/artifact-image/route.ts), so a session holder can write here.
+insert into storage.buckets (id, name, public)
+values ('artifact-images', 'artifact-images', true)
+on conflict (id) do update set public = true;
