@@ -6,6 +6,8 @@ import {
   updatePurchasedReportPayload,
   bindPurchasedKundliToUser,
 } from "@/lib/serverPurchasedReports";
+import { saveUserProfile } from "@/lib/serverUserProfiles";
+
 
 /**
  * GET /api/profile/reports — purchased kundli reports for the signed-in user.
@@ -84,8 +86,84 @@ export async function POST(req: Request) {
   if (!fingerprint) {
     return NextResponse.json({ error: "chartFingerprint is required" }, { status: 400 });
   }
-  if (!body.report || typeof body.report !== "object") {
-    return NextResponse.json({ error: "report payload is required" }, { status: 400 });
+
+  const ok = await updatePurchasedReportPayload(
+    user.email ?? "",
+    fingerprint,
+    body.report,
+    user.id
+  );
+  return NextResponse.json({ ok });
+}
+
+/**
+ * PUT /api/profile/reports — attach the paid report's birth details to the
+ * server-side persistent profile row (same shape as /api/profile/me/PUT).
+ *
+ * This is called by the paid-flow after a verified payment, so the user's
+ * DOB/time/place — which the free kundli page already captured — are written
+ * to `public.user_profiles` and survive refresh / device / session loss.
+ * The birth fields are reused by the dashboard's server-side PDF rebuilds.
+ *
+ * Body: { chartFingerprint: string, report: object, birthDate, birthTime, birthPlace, latitude?, longitude?, timezone? }
+ */
+export async function PUT(req: Request) {
+  const { allowed, retryAfter } = await checkRateLimit(
+    `profile-reports:put:${getClientIp(req)}`,
+    60,
+    60_000
+  );
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
+  const user = await getUserFromAuthHeader(req);
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const fingerprint =
+    typeof body.chartFingerprint === "string" ? body.chartFingerprint.trim() : "";
+  if (!fingerprint) {
+    return NextResponse.json({ error: "chartFingerprint is required" }, { status: 400 });
+  }
+
+  // Persist the birth details onto the server-side profile row (best-effort,
+  // so a glitch here never breaks the paid-report publish).
+  const birthDate = typeof body.birthDate === "string" ? body.birthDate : "";
+  const birthTime = typeof body.birthTime === "string" ? body.birthTime : "";
+  const birthPlace =
+    typeof body.birthPlace === "string" ? body.birthPlace : "";
+  const latitude =
+    typeof body.latitude === "number" ? body.latitude : null;
+  const longitude =
+    typeof body.longitude === "number" ? body.longitude : null;
+  const timezone =
+    typeof body.timezone === "string" ? body.timezone : "Asia/Kolkata";
+
+  if (birthDate || birthTime || birthPlace) {
+    await saveUserProfile({
+      userId: user.id,
+      email: user.email ?? "",
+      profile: {
+        name: user.email?.split("@")[0] || "User",
+        dob: birthDate,
+        tob: birthTime,
+        place: birthPlace,
+        latitude,
+        longitude,
+        timezone,
+      },
+    });
   }
 
   const ok = await updatePurchasedReportPayload(

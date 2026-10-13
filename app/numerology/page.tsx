@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Hash,
@@ -23,6 +23,7 @@ import {
   type NumerologyProfile,
 } from "@/lib/numerology";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface FormState {
   name: string;
@@ -125,6 +126,24 @@ export default function NumerologyPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<NumerologyProfile | null>(null);
   const [loading, setLoading] = useState(false);
+  const { profile } = useUserProfile();
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Pre-fill name + DOB from the persisted birth-details profile (server row
+  // for a signed-in user, localStorage for a guest) so the user doesn't
+  // re-type them on this tool page.
+  useEffect(() => {
+    if (!profile || profileLoaded) return;
+    const [y, m, d] = (profile.dob || "").split("-");
+    setForm((prev) => ({
+      ...prev,
+      name: profile.name || prev.name,
+      day: (d || prev.day).replace(/^0+(?=[0-9])/, ""),
+      month: (m || prev.month).replace(/^0+(?=[0-9])/, ""),
+      year: y || prev.year,
+    }));
+    setProfileLoaded(true);
+  }, [profile, profileLoaded]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, FormEvent, ChangeEvent } from "react";
+import React, { useState, useEffect, FormEvent, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Shield, AlertTriangle, CheckCircle2, Moon, Flame, Sparkles, Activity, MapPin, Calendar, Clock } from "lucide-react";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/dosha-checker";
 import { useLanguage } from "@/app/context/LanguageContext";
 import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const SEVERITY_STYLES: Record<ManglikSeverity, { badge: string; label: string }> = {
   none: { badge: "bg-green-500/10 text-green-500 border-green-500/20", label: "None" },
@@ -53,6 +54,25 @@ export default function DoshaCheckerPage() {
   const [result, setResult] = useState<DoshaCheckResultWithPositions | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useUserProfile();
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Pre-fill from the persisted birth-details profile (server row for a
+  // signed-in user, localStorage for a guest) so the user doesn't re-type
+  // DOB/time/place on every tool page.
+  useEffect(() => {
+    if (!profile || profileLoaded) return;
+    setForm((prev) => ({
+      ...prev,
+      name: profile.name || prev.name,
+      dob: profile.dob || prev.dob,
+      tob: profile.tob || prev.tob,
+      place: profile.city || prev.place,
+      latitude: profile.lat ?? prev.latitude,
+      longitude: profile.lon ?? prev.longitude,
+    }));
+    setProfileLoaded(true);
+  }, [profile, profileLoaded]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
