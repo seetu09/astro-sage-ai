@@ -146,6 +146,11 @@ export interface Translations {
       emailPlaceholder: string;
       successTitle: string;
       successBody: string;
+      legalPrefix: string;
+      termsLink: string;
+      legalAnd: string;
+      refundLink: string;
+      legalSuffix: string;
     };
   };
   blog: {
@@ -181,9 +186,13 @@ export interface Translations {
     legal: string;
     privacy: string;
     terms: string;
+    refund: string;
     disclaimer: string;
     copyright: string;
     madeWith: string;
+    contactUs: string;
+    email: string;
+    followUs: string;
   };
   theme: {
     dark: string;
@@ -1026,6 +1035,11 @@ export const translations: Record<Language, Translations> = {
         emailPlaceholder: 'you@example.com',
         successTitle: 'Purchase successful!',
         successBody: 'Thank you! Your order is confirmed and your purchase has been recorded. Keep the payment id below for reference.',
+        legalPrefix: 'By purchasing, you agree to our',
+        termsLink: 'Terms',
+        legalAnd: 'and',
+        refundLink: 'Refund Policy',
+        legalSuffix: '.',
       },
     },
     blog: {
@@ -1061,9 +1075,13 @@ export const translations: Record<Language, Translations> = {
       legal: 'Legal',
       privacy: 'Privacy Policy',
       terms: 'Terms of Service',
+      refund: 'Refund Policy',
       disclaimer: 'Disclaimer',
       copyright: 'AstroVeda. All rights reserved.',
       madeWith: 'Made with',
+      contactUs: 'Contact Us',
+      email: 'Email',
+      followUs: 'Follow Us',
     },
     theme: {
       dark: 'Dark',
@@ -2080,6 +2098,11 @@ export const translations: Record<Language, Translations> = {
         emailPlaceholder: 'अपना ईमेल दर्ज करें',
         successTitle: 'खरीदारी सफल रही!',
         successBody: 'धन्यवाद! आपका ऑर्डर पुष्टि हो गया है और खरीद दर्ज कर दी गई है। संदर्भ हेतु नीचे दिया गया भुगतान आईडी सहेजें।',
+        legalPrefix: 'खरीदारी करके, आप हमारी',
+        termsLink: 'सेवा की शर्तें',
+        legalAnd: 'और',
+        refundLink: 'रिफंड नीति',
+        legalSuffix: ' से सहमत होते हैं।',
       },
     },
     blog: {
@@ -2115,9 +2138,13 @@ export const translations: Record<Language, Translations> = {
       legal: 'कानूनी',
       privacy: 'गोपनीयता नीति',
       terms: 'सेवा की शर्तें',
+      refund: 'रिफंड नीति',
       disclaimer: 'अस्वीकरण',
       copyright: 'AstroVeda. सर्वाधिकार सुरक्षित।',
       madeWith: 'के साथ बनाया गया',
+      contactUs: 'हमसे संपर्क करें',
+      email: 'ईमेल',
+      followUs: 'हमें फॉलो करें',
     },
     theme: {
       dark: 'डार्क',

@@ -223,6 +223,19 @@ export default async function StoreIdPage({ params }: { params: { id: string } }
               {t('store.detail.notAvailable')}
             </button>
           )}
+
+          {/* Purchase consent micro-copy (Razorpay merchant compliance). */}
+          <p className="mt-3 text-xs text-center text-[var(--text-muted)] leading-relaxed">
+            {t('store.checkout.legalPrefix')}{' '}
+            <Link href="/terms" className="underline hover:text-[var(--accent)] transition-colors">
+              {t('store.checkout.termsLink')}
+            </Link>{' '}
+            {t('store.checkout.legalAnd')}{' '}
+            <Link href="/refund" className="underline hover:text-[var(--accent)] transition-colors">
+              {t('store.checkout.refundLink')}
+            </Link>
+            {t('store.checkout.legalSuffix')}
+          </p>
         </article>
 
         <Suspense fallback={null}>

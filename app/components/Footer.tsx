@@ -28,8 +28,18 @@ export default function Footer() {
   const legal = [
     { label: t.footer?.privacy || "गोपनीयता नीति", href: "/privacy" },
     { label: t.footer?.terms || "सेवा की शर्तें", href: "/terms" },
+    { label: t.footer?.refund || "रिफंड नीति", href: "/refund" },
     { label: t.footer?.disclaimer || "अस्वीकरण", href: "/disclaimer" },
   ];
+
+  // Placeholder social links — swap the `href`s for real profile URLs.
+  const socials = [
+    { label: "X (Twitter)", href: "https://twitter.com/astroveda" },
+    { label: "Instagram", href: "https://instagram.com/astroveda" },
+    { label: "Facebook", href: "https://facebook.com/astroveda" },
+  ];
+
+  const supportEmail = "support@astroveda.com";
 
   const linkClasses = `
     text-sm
@@ -111,8 +121,39 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Contact & Socials */}
+        <div className="mt-10 pt-6 border-t border-amber-200/60 dark:border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <h3 className={headingClasses}>{t.footer?.contactUs || "हमसे संपर्क करें"}</h3>
+            <a
+              href={`mailto:${supportEmail}`}
+              className="block text-sm text-amber-800/60 dark:text-[#9CA3AF] hover:text-amber-700 dark:hover:text-[#FFD166] transition-colors duration-200"
+            >
+              {supportEmail}
+            </a>
+          </div>
+          <div className="space-y-3 sm:text-right">
+            <h3 className={headingClasses}>{t.footer?.followUs || "हमें फॉलो करें"}</h3>
+            <ul className="flex sm:justify-end gap-4">
+              {socials.map((social) => (
+                <li key={social.label}>
+                  <a
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="text-sm text-amber-800/60 dark:text-[#9CA3AF] hover:text-amber-700 dark:hover:text-[#FFD166] transition-colors duration-200"
+                  >
+                    {social.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
         {/* Bottom Bar */}
-        <div className="mt-10 pt-6 border-t border-amber-200/60 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-6 pt-6 border-t border-amber-200/60 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-amber-700/60 dark:text-[#6B7280]">
             © {new Date().getFullYear()} {t.footer.copyright}
           </p>
