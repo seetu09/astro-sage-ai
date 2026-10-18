@@ -13,6 +13,7 @@ import {
 import { deriveMoonDetails } from "@/lib/astrology";
 import PlaceAutocomplete from "@/app/components/PlaceAutocomplete";
 import ShareCard from "@/app/components/ShareCard";
+import ShareResultButton from "@/app/components/ShareResultButton";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/app/components/ToastProvider";
@@ -124,7 +125,7 @@ const inputClass =
   "w-full px-4 py-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
 
 export default function MatchmakingPage() {
-  const { language, t } = useLanguage();
+  const { language, t, translate } = useLanguage();
   const { profile, saveProfile } = useUserProfile();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<"form" | "results">("form");
@@ -553,13 +554,23 @@ export default function MatchmakingPage() {
                   </div>
                   <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{getVerdict(result.totalPoints)}</h2>
                   <p className="text-[var(--text-secondary)] max-w-xl mx-auto">{result.compatibilitySummary}</p>
-                  <button
-                    onClick={() => setShowShare(true)}
-                    className="mt-6 flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    {language === "hi" ? "संगतता स्कोर साझा करें" : "Share Compatibility Score"}
-                  </button>
+                  <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={() => setShowShare(true)}
+                      className="flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      {language === "hi" ? "संगतता स्कोर साझा करें" : "Share Compatibility Score"}
+                    </button>
+                    {/* Secondary link-share: native share sheet / copy URL (distinct from the
+                        image-based ShareCard above). URL carries no user params yet. */}
+                    <ShareResultButton
+                      variant="secondary"
+                      title={translate("share.shareResult")}
+                      text={translate("share.shareResult")}
+                      url={typeof window !== "undefined" ? `${window.location.origin}/matchmaking` : "/matchmaking"}
+                    />
+                  </div>
                   <div className="mt-4">
                     <button
                       onClick={() => setActiveTab("form")}

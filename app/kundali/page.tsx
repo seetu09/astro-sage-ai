@@ -20,6 +20,7 @@ import ReportContainer from '@/app/components/ReportContainer';
 import KundaliLoadingSkeleton from '@/app/components/KundaliLoadingSkeleton';
 import KundliReport, { type KundliReportProps } from '@/app/components/KundliReport';
 import KundliPdfButton from '@/app/components/KundliPdfButton';
+import ShareResultButton from '@/app/components/ShareResultButton';
 import Preview from './components/Preview';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useTranslation } from '@/app/lib/i18n/useTranslation';
@@ -1048,6 +1049,17 @@ export default function KundaliPage() {
                 )}
               </div>
 
+              {/* Share result (free tier) — native share sheet / copy link. URL has no
+                  user-specific params yet (that arrives with the OG-image task). */}
+              <div className="flex justify-center">
+                <ShareResultButton
+                  variant="outline"
+                  title={t('share.shareResult')}
+                  text={t('share.shareResult')}
+                  url={typeof window !== 'undefined' ? `${window.location.origin}/kundali` : '/kundali'}
+                />
+              </div>
+
               {/* Real-data wired preview: Lagna/Moon/Sun (client-side Lahiri),
                   Dasha, yogas fetched from the generate API, 50-char locked
                   teasers over real narratives, blur gating, /payment CTA */}
@@ -1272,13 +1284,22 @@ export default function KundaliPage() {
                   <Sparkles className="w-4 h-4 text-violet-600 dark:text-[#FFD166] shrink-0" />
                   {t('kundali.sections.kundliReport')}
                 </h2>
-                <button
-                  type="button"
-                  onClick={handleNewReport}
-                  className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300/70 dark:border-white/15 text-indigo-950 dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  {t('kundali.sections.newReport')}
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <ShareResultButton
+                    variant="outline"
+                    className="shrink-0"
+                    title={t('share.shareResult')}
+                    text={t('share.shareResult')}
+                    url={typeof window !== 'undefined' ? `${window.location.origin}/kundali` : '/kundali'}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleNewReport}
+                    className="shrink-0 px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300/70 dark:border-white/15 text-indigo-950 dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    {t('kundali.sections.newReport')}
+                  </button>
+                </div>
               </div>
             </div>
           )}

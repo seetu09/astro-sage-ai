@@ -200,6 +200,12 @@ export interface Translations {
     action: string;
     instructions: string;
   };
+  share: {
+    shareResult: string;
+    share: string;
+    linkCopied: string;
+    copyFailed: string;
+  };
   auth: {
     titleLogin: string;
     titleRegister: string;
@@ -1073,6 +1079,12 @@ export const translations: Record<Language, Translations> = {
       subtitle: 'Get daily horoscopes & Kundali on your home screen',
       action: 'Add to Home Screen',
       instructions: 'Tap the menu (⋮) → "Add to Home Screen"',
+    },
+    share: {
+      shareResult: 'Share result',
+      share: 'Share',
+      linkCopied: 'Link copied',
+      copyFailed: 'Could not copy link',
     },
     auth: {
       titleLogin: 'Sign In',
@@ -2121,6 +2133,12 @@ export const translations: Record<Language, Translations> = {
       subtitle: 'अपनी होम स्क्रीन पर दैनिक राशिफल और कुंडली प्राप्त करें',
       action: 'होम स्क्रीन में जोड़ें',
       instructions: 'मेनू (⋮) पर टैप करें → "होम स्क्रीन में जोड़ें"',
+    },
+    share: {
+      shareResult: 'परिणाम साझा करें',
+      share: 'साझा करें',
+      linkCopied: 'लिंक कॉपी हो गया',
+      copyFailed: 'लिंक कॉपी नहीं हो सका',
     },
     auth: {
       titleLogin: 'साइन इन',
