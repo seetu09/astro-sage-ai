@@ -21,3 +21,6 @@ public/sw.js
 _context-bundle.txt
 _filelist.txt
 test-font-coverage.js
+
+# Supabase CLI local state
+supabase/.temp/
