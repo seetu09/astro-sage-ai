@@ -1,4 +1,7 @@
 import { getServiceSupabase } from '@/lib/serverWallet';
+import { chartFingerprint } from '@/lib/chartFingerprint';
+
+export { chartFingerprint };
 
 /**
  * Durable ownership records for artifact purchases (store checkout, Task 2.1).
@@ -50,5 +53,65 @@ export async function recordPurchasedArtifact(params: {
   } catch (err) {
     console.error('RECORD_PURCHASED_ARTIFACT_ERR', err);
     return null;
+  }
+}
+
+/** Shape returned by `listPurchasedArtifacts` (camelCased for the client). */
+export interface PurchasedArtifactSummary {
+  id: string;
+  artifactId: string;
+  artifactName: string;
+  priceInr: number;
+  currency: string;
+  orderId: string;
+  paymentId: string;
+  ownerEmail: string;
+  createdAt: string;
+}
+
+/**
+ * Full list of purchased artifacts for the signed-in user's profile
+ * ("My Purchases" tab). Mirrors `listPurchasedReports` in
+ * `lib/serverPurchasedReports.ts`: rows are listed by user id AND owner email
+ * so store items bought before the account existed (same checkout email) also
+ * surface for the signed-in user. Gracefully degrades to `[]` if the table is
+ * missing (project not migrated yet) or the service key is absent.
+ */
+export async function listPurchasedArtifacts(
+  ownerEmail: string,
+  userId?: string | null
+): Promise<PurchasedArtifactSummary[]> {
+  const email = (ownerEmail ?? '').trim().toLowerCase();
+  try {
+    const supabase = getServiceSupabase();
+    let query = supabase
+      .from('purchased_artifacts')
+      .select(
+        'id, owner_email, artifact_id, artifact_name, price_inr, currency, order_id, payment_id, created_at'
+      )
+      .order('created_at', { ascending: false })
+      .limit(50);
+    query = userId
+      ? query.or(`owner_email.eq.${email},user_id.eq.${userId}`)
+      : query.eq('owner_email', email);
+    const { data, error } = await query;
+    if (error) {
+      console.error('LIST_PURCHASED_ARTIFACTS_FAILED', error.message);
+      return [];
+    }
+    return (data ?? []).map((row: Record<string, unknown>) => ({
+      id: String(row.id),
+      artifactId: String(row.artifact_id ?? ''),
+      artifactName: String(row.artifact_name ?? ''),
+      priceInr: Number(row.price_inr ?? 0),
+      currency: String(row.currency ?? 'INR'),
+      orderId: String(row.order_id ?? ''),
+      paymentId: String(row.payment_id ?? ''),
+      ownerEmail: String(row.owner_email ?? email),
+      createdAt: String(row.created_at ?? ''),
+    }));
+  } catch (err) {
+    console.error('LIST_PURCHASED_ARTIFACTS_ERR', err);
+    return [];
   }
 }

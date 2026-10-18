@@ -7,6 +7,7 @@ import {
   FileClock,
   LogOut,
   MessageCircleMore,
+  Package,
   ReceiptText,
   WalletCards,
 } from "lucide-react";
@@ -30,6 +31,8 @@ const accountItems = [
 const billingItems = [
   { action: "wallet-details", label: "Wallet Balance / Details", icon: WalletCards },
   { action: "payment-history", label: "Payment History & Receipts", icon: ReceiptText },
+  { action: "purchases", label: "My Purchases", icon: Package },
+  { action: "purchased-reports", label: "Downloaded Reports", icon: FileClock },
 ] as const;
 
 function UserAvatar({ user }: { user: User }) {

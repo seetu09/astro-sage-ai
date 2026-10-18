@@ -10,6 +10,7 @@ import {
   FileClock,
   Loader2,
   MessageCircleMore,
+  Package,
   Plus,
   ReceiptText,
   Save,
@@ -22,6 +23,7 @@ import { useToast } from "./ToastProvider";
 import { useTranslation } from "@/app/lib/i18n/useTranslation";
 import { ReportData } from "@/lib/pdfHtmlTemplate";
 import { getKundaliHistory, getChatHistory } from "@/lib/user-history";
+import { formatPrice } from "@/lib/formatPrice";
 import type {
   ChatHistoryEntry,
   KundaliHistoryEntry,
@@ -38,6 +40,7 @@ interface UserProfileModalProps {
 const sections = [
   { action: "personal-details" as const, key: "profile.titlePersonal", icon: CircleUserRound },
   { action: "wallet-details" as const, key: "profile.titleWallet", icon: WalletCards },
+  { action: "purchases" as const, key: "profile.titlePurchases", icon: Package },
   { action: "purchased-reports" as const, key: "profile.titlePurchasedReports", icon: FileClock },
   { action: "kundali-history" as const, key: "profile.titleKundaliHistory", icon: FileClock },
   { action: "chat-history" as const, key: "profile.titleChatHistory", icon: MessageCircleMore },
@@ -65,6 +68,19 @@ interface PurchasedReportEntry {
   ownerEmail: string | null;
   createdAt: string;
   report: Record<string, unknown>;
+}
+
+/** A store item the user paid for and owns — loaded from /api/profile/purchases. */
+interface PurchasedArtifactEntry {
+  id: string;
+  artifactId: string;
+  artifactName: string;
+  priceInr: number;
+  currency: string;
+  orderId: string;
+  paymentId: string;
+  ownerEmail: string;
+  createdAt: string;
 }
 
 function downloadReceipt(transaction: WalletTransaction, customerName: string, email: string, t: (key: string) => string) {
@@ -107,6 +123,12 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
   const [chatHistory, setChatHistory] = useState<ChatHistoryEntry[]>([]);
   const [purchasedReports, setPurchasedReports] = useState<PurchasedReportEntry[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
+  const [purchasedArtifacts, setPurchasedArtifacts] = useState<PurchasedArtifactEntry[]>([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
+  // Keep the last signed-in user's purchases/reports so switching tabs (or
+  // re-opening the modal) never flashes the empty state for a user who does
+  // own things — the data only clears when a *different* user signs in.
+  const lastLoadedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !user) return;
@@ -122,6 +144,14 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     setChatHistory(getChatHistory(user.id));
     setSaveMessage("");
     setUploadMessage("");
+
+    // Only re-fetch if this is a different user (or first load). Re-fetching on
+    // every open/tab switch made the tab flash empty while the request was in
+    // flight, which read as "you own nothing".
+    if (lastLoadedUserIdRef.current === user.id) return;
+    lastLoadedUserIdRef.current = user.id;
+    setPurchasedReports([]);
+    setPurchasedArtifacts([]);
 
     // Load the user's purchased (owned) reports from the server.
     setReportsLoading(true);
@@ -155,6 +185,35 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
       }
     };
     void loadReports();
+
+    // Load everything the user owns (store items + paid reports) for the
+    // "My Purchases" tab. Uses the same Bearer-token auth as the reports tab.
+    setPurchasesLoading(true);
+    const loadPurchases = async () => {
+      try {
+        const supabase = (await import("@/lib/supabase")).getSupabaseClient();
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) {
+          setPurchasedArtifacts([]);
+          return;
+        }
+        const res = await fetch("/api/profile/purchases", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          setPurchasedArtifacts([]);
+          return;
+        }
+        const json = (await res.json()) as { artifacts?: PurchasedArtifactEntry[] };
+        setPurchasedArtifacts(json.artifacts ?? []);
+      } catch {
+        setPurchasedArtifacts([]);
+      } finally {
+        setPurchasesLoading(false);
+      }
+    };
+    void loadPurchases();
   }, [initialView, isOpen, user]);
 
   useEffect(() => {
@@ -449,6 +508,110 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     );
   };
 
+  // "My Purchases" — every store item and paid report the user owns, from the
+  // combined /api/profile/purchases payload. Store items link to their detail
+  // page (`/store/[artifactId]`); reports reuse the same Bearer-authorized PDF
+  // download as the "Downloaded Reports" tab (no re-payment).
+  const renderPurchases = () => {
+    if (purchasesLoading) {
+      return (
+        <div className="flex items-center justify-center gap-2 py-10 text-sm text-amber-900/60 dark:text-[#9CA3AF]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {t("profile.purchasesLoading")}
+        </div>
+      );
+    }
+
+    if (!purchasedArtifacts.length && !purchasedReports.length) {
+      return (
+        <EmptyList
+          icon={Package}
+          title={t("profile.purchasesNoItemsYet")}
+          description={t("profile.purchasesNoItemsYetDesc")}
+          actionHref="/store"
+          actionLabel={t("profile.purchasesBrowseStore")}
+        />
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        <section aria-label={t("profile.purchasesArtifactsHeading")}>
+          <h3 className="mb-3 font-semibold text-amber-950 dark:text-[#F3F4F6]">
+            {t("profile.purchasesArtifactsHeading")}
+          </h3>
+          {purchasedArtifacts.length ? (
+            <div className="divide-y divide-amber-200/60 overflow-hidden rounded-lg border border-amber-200/70 dark:divide-white/10 dark:border-white/10">
+              {purchasedArtifacts.map((item) => (
+                <div key={item.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-amber-600 dark:text-[#FFD166]" />
+                      <p className="truncate font-semibold text-amber-950 dark:text-[#F3F4F6]">
+                        {item.artifactName || item.artifactId}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-xs text-amber-800/60 dark:text-[#9CA3AF]">
+                      {formatDate(item.createdAt)} ·{" "}
+                      {t("profile.purchasesItemPrice", { price: formatPrice(item.priceInr, item.currency) })}
+                    </p>
+                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{t("profile.purchasesOwned")}</p>
+                  </div>
+                  <Link
+                    href={`/store/${item.artifactId}`}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white dark:bg-[#FFD166] dark:text-[#080811]"
+                  >
+                    <Package className="h-4 w-4" /> {t("profile.purchasesViewItem")}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-amber-300 p-4 text-sm text-amber-800/60 dark:border-white/15 dark:text-[#9CA3AF]">
+              {t("profile.purchasesNoItemsYet")}
+            </p>
+          )}
+        </section>
+
+        <section aria-label={t("profile.purchasesReportsHeading")}>
+          <h3 className="mb-3 font-semibold text-amber-950 dark:text-[#F3F4F6]">
+            {t("profile.purchasesReportsHeading")}
+          </h3>
+          {purchasedReports.length ? (
+            <div className="divide-y divide-amber-200/60 overflow-hidden rounded-lg border border-amber-200/70 dark:divide-white/10 dark:border-white/10">
+              {purchasedReports.map((entry) => (
+                <div key={entry.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Download className="h-4 w-4 text-amber-600 dark:text-[#FFD166]" />
+                      <p className="truncate font-semibold text-amber-950 dark:text-[#F3F4F6]">
+                        {t("profile.reportsChartFor", { name: entry.clientName })}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-xs text-amber-800/60 dark:text-[#9CA3AF]">
+                      {formatDate(entry.createdAt)} · {entry.paymentId || entry.orderId}
+                    </p>
+                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">{t("profile.purchasesOwned")}</p>
+                  </div>
+                  <button
+                    onClick={() => void downloadOwnedReport(entry)}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white dark:bg-[#FFD166] dark:text-[#080811]"
+                  >
+                    <Download className="h-4 w-4" /> {t("profile.reportsDownload")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-amber-300 p-4 text-sm text-amber-800/60 dark:border-white/15 dark:text-[#9CA3AF]">
+              {t("profile.noPurchasedReports")}
+            </p>
+          )}
+        </section>
+      </div>
+    );
+  };
+
   const renderChatHistory = () => chatHistory.length ? (
     <div className="space-y-3">
       {chatHistory.map((entry) => (
@@ -470,6 +633,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
     "personal-details": t('profile.titlePersonal'),
     "wallet-details": t('profile.titleWallet'),
     "payment-history": t('profile.titleWallet'),
+    purchases: t('profile.titlePurchases'),
     "purchased-reports": t('profile.titlePurchasedReports'),
     "kundali-history": t('profile.titleKundaliHistory'),
     "chat-history": t('profile.titleChatHistory'),
@@ -500,6 +664,7 @@ export default function UserProfileModal({ isOpen, initialView, onClose }: UserP
             {activeView === "personal-details" && renderPersonalDetails()}
             {(activeView === "wallet-details" || activeView === "payment-history") && renderWallet()}
             {activeView === "purchased-reports" && renderPurchasedReports()}
+            {activeView === "purchases" && renderPurchases()}
             {activeView === "kundali-history" && renderKundaliHistory()}
             {activeView === "chat-history" && renderChatHistory()}
           </div>

@@ -845,6 +845,16 @@ export interface Translations {
     reportsSignInRequired: string;
     noPurchasedReports: string;
     noPurchasedReportsDesc: string;
+    titlePurchases: string;
+    purchasesLoading: string;
+    purchasesArtifactsHeading: string;
+    purchasesReportsHeading: string;
+    purchasesItemPrice: string;
+    purchasesOwned: string;
+    purchasesViewItem: string;
+    purchasesNoItemsYet: string;
+    purchasesNoItemsYetDesc: string;
+    purchasesBrowseStore: string;
   };
   payment: {
     messages: {
@@ -1747,6 +1757,16 @@ export const translations: Record<Language, Translations> = {
       reportsSignInRequired: 'You must be signed in to download a saved report.',
       noPurchasedReports: 'No downloaded reports yet',
       noPurchasedReportsDesc: 'Reports you purchase are saved here so you can re-download them anytime. Bought a report with this email before signing up? It will appear here automatically once you sign in.',
+      titlePurchases: 'My Purchases',
+      purchasesLoading: 'Loading your purchases…',
+      purchasesArtifactsHeading: 'Store items',
+      purchasesReportsHeading: 'Kundli reports',
+      purchasesItemPrice: 'Price: {price}',
+      purchasesOwned: 'You own this — access it anytime',
+      purchasesViewItem: 'View item',
+      purchasesNoItemsYet: 'You haven\'t purchased anything yet',
+      purchasesNoItemsYetDesc: 'Your store items and paid kundli reports will appear here after checkout — accessible from any device, anytime.',
+      purchasesBrowseStore: 'Browse the Store',
     },
     payment: {
       messages: {
@@ -2810,6 +2830,16 @@ export const translations: Record<Language, Translations> = {
       reportsSignInRequired: 'एक सहेज़ रिपोर्ट डाउनलोड करने के लिए आपको साइन इन करना पड़ेगा।',
       noPurchasedReports: 'अभी कोई डाउनलोडेड रिपोर्ट नहीं',
       noPurchasedReportsDesc: 'आपके द्वारा खरीदी गई रिपोर्टें यहाँ सहेजी जाती हैं, ताकि आप कभी भी उन्हें डाउनलोड कर सकें। साइन अप से पहले इस ईमेल से कोई रिपोर्ट खरीदी थी? साइन इन करते ही वह यहाँ अपने आप दिखेगी।',
+      titlePurchases: 'मेरी खरीदारी',
+      purchasesLoading: 'आपकी खरीदारी लोड हो रही है…',
+      purchasesArtifactsHeading: 'स्टोर उत्पाद',
+      purchasesReportsHeading: 'कुंडली रिपोर्टें',
+      purchasesItemPrice: 'मूल्य: {price}',
+      purchasesOwned: 'यह आपका है — कभी भी उपलब्ध',
+      purchasesViewItem: 'उत्पाद देखें',
+      purchasesNoItemsYet: 'आपने अभी कुछ नहीं खरीदा है',
+      purchasesNoItemsYetDesc: 'चेकआउट के बाद आपके स्टोर उत्पाद और सशुल्क कुंडली रिपोर्टें यहाँ दिखेंगी — किसी भी डिवाइस से, कभी भी उपलब्ध।',
+      purchasesBrowseStore: 'स्टोर देखें',
     },
     payment: {
       messages: {

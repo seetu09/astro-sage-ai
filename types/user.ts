@@ -18,7 +18,8 @@ export type ProfileMenuAction =
   | "chat-history"
   | "wallet-details"
   | "payment-history"
-  | "purchased-reports";
+  | "purchased-reports"
+  | "purchases";
 
 export interface WalletTransaction {
   id: string;
