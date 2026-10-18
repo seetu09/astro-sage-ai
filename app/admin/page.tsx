@@ -2,11 +2,24 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, ImagePlus, Loader2, Sparkles, XCircle } from 'lucide-react';
+import { CheckCircle, ImagePlus, Loader2, Sparkles, Trash2, XCircle } from 'lucide-react';
 
 const CATEGORIES = ['Vedic Astrology', 'Love & Compatibility', 'Planetary Transits', 'Remedies'] as const;
 
 type Notification = { type: 'success' | 'error'; message: string } | null;
+
+/** One orphaned image reported by POST /api/admin/clean-storage (dry run). */
+type StorageOrphan = { bucket: string; path: string; size: number };
+
+/** Scan result state: null = never scanned, otherwise the last dry-run response. */
+type StorageScan = { orphanCount: number; totalBytes: number; orphans: StorageOrphan[] } | null;
+
+/** Human-readable size for the scan/delete summaries (e.g. 2.1 MB). */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default function AdminPage() {
   // Access is enforced server-side by middleware.ts via the httpOnly
@@ -25,6 +38,11 @@ export default function AdminPage() {
   const [publishing, setPublishing] = useState(false);
   const [notification, setNotification] = useState<Notification>(null);
   const previewUrlRef = useRef<string | null>(null);
+
+  // Storage Maintenance state
+  const [storageScan, setStorageScan] = useState<StorageScan>(null);
+  const [scanning, setScanning] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Auto-dismiss notifications
   useEffect(() => {
@@ -99,6 +117,64 @@ export default function AdminPage() {
       setNotification({ type: 'error', message: 'Network error — could not reach the server.' });
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleScanStorage = async () => {
+    setNotification(null);
+    setScanning(true);
+    try {
+      const res = await fetch('/api/admin/clean-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setStorageScan({
+          orphanCount: data.orphanCount ?? 0,
+          totalBytes: data.totalBytes ?? 0,
+          orphans: data.orphans ?? [],
+        });
+      } else {
+        setNotification({ type: 'error', message: data.message || 'Storage scan failed.' });
+      }
+    } catch {
+      setNotification({ type: 'error', message: 'Network error — could not reach the server.' });
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleDeleteOrphans = async () => {
+    if (!storageScan || storageScan.orphanCount === 0) return;
+    const ok = window.confirm(
+      `Are you sure you want to delete ${storageScan.orphanCount} orphaned image(s)? This cannot be undone.`
+    );
+    if (!ok) return;
+
+    setNotification(null);
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/admin/clean-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: false }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setNotification({
+          type: 'success',
+          message: `Deleted ${data.deletedCount ?? 0} image(s), freeing ${formatBytes(data.deletedBytes ?? 0)}.`,
+        });
+        setStorageScan(null);
+      } else {
+        setNotification({ type: 'error', message: data.message || 'Delete failed.' });
+      }
+    } catch {
+      setNotification({ type: 'error', message: 'Network error — could not reach the server.' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -225,6 +301,73 @@ export default function AdminPage() {
                 'Publish Post'
               )}
             </button>
+          </motion.div>
+
+          {/* ---------- Storage Maintenance (orphaned-image cleanup) ---------- */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="astro-card mt-8 space-y-4"
+          >
+            <div>
+              <h2 className="text-xl font-bold font-serif text-[var(--text-primary)]">Storage Maintenance</h2>
+              <p className="astro-text-secondary text-sm mt-1">
+                Find and delete uploaded images that are no longer referenced by any artifact or blog post.
+              </p>
+            </div>
+
+            <button
+              onClick={handleScanStorage}
+              disabled={scanning || deleting}
+              className="astro-button w-full disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {scanning ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Scanning...
+                </span>
+              ) : (
+                'Scan for Orphaned Images'
+              )}
+            </button>
+
+            {storageScan && (
+              <div className="space-y-3">
+                {storageScan.orphanCount === 0 ? (
+                  <p className="text-sm text-green-400">No orphaned images found. Storage is clean.</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-[var(--text-primary)]">
+                      Found {storageScan.orphanCount} orphaned image
+                      {storageScan.orphanCount === 1 ? '' : 's'}, totaling ~{formatBytes(storageScan.totalBytes)}.
+                    </p>
+                    <ul className="max-h-40 overflow-y-auto space-y-1 text-xs astro-text-secondary">
+                      {storageScan.orphans.map((o) => (
+                        <li key={`${o.bucket}/${o.path}`} className="truncate">
+                          <span className="text-[var(--accent)]">[{o.bucket}]</span> {o.path} ({formatBytes(o.size)})
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={handleDeleteOrphans}
+                      disabled={deleting}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-red-500/40 bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {deleting ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" /> Deleting...
+                        </span>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          Delete {storageScan.orphanCount} Orphaned Image{storageScan.orphanCount === 1 ? '' : 's'}
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </motion.div>
         </div>
     </div>
