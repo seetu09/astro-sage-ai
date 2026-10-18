@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   );
   if (!allowed) {
     return NextResponse.json(
-      { message: 'Too many attempts. Please try again later.' },
+      { error: 'Too many attempts. Please try again later.', success: false },
       { status: 429, headers: { 'Retry-After': String(retryAfter) } }
     );
   }

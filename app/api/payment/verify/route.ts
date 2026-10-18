@@ -45,7 +45,18 @@ export async function POST(req: Request) {
     hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
     const generated = hmac.digest('hex');
 
-    if (generated !== razorpay_signature) {
+    // Timing-safe comparison — a plain !== comparison can leak information
+    // about how many leading characters matched via response-time differences,
+    // so we use crypto.timingSafeEqual (same pattern as lib/paymentUnlock.ts).
+    // If the buffers differ in length, timingSafeEqual throws, so we treat
+    // any length mismatch as an invalid signature instead of calling it.
+    const generatedBuf = Buffer.from(generated);
+    const signatureBuf = Buffer.from(razorpay_signature);
+    const signatureMatches =
+      generatedBuf.length === signatureBuf.length &&
+      crypto.timingSafeEqual(generatedBuf, signatureBuf);
+
+    if (!signatureMatches) {
       return NextResponse.json(
         { error: 'Invalid signature', success: false },
         { status: 400 }
