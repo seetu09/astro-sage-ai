@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { loadArtifactCatalog } from '@/lib/serverArtifactCatalog';
+import { hasValidSession } from '@/lib/adminSession';
 
 export const runtime = 'nodejs';
 // REQUIRED: without it Next 14 may statically render this route at build time,
@@ -23,15 +24,19 @@ export const revalidate = 0;
  * The catalog is read from Supabase via `loadArtifactCatalog`, which throws on
  * config/transport failure so this route can answer 500 with the real reason.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   // ── Diagnostics ─────────────────────────────────────────────────────────
   // ?debug=1 reports env-var HEALTH ONLY — booleans and lengths, never values.
   // Reports health for BOTH SUPABASE_URL (the server-preferred var, read at
   // runtime) and NEXT_PUBLIC_SUPABASE_URL (the build-inlined fallback), so a
   // healthy public var can't mask a malformed server var.
-  // Safe to leave on permanently: no secret, no key fragment, and no query
-  // leaves the process. Exists so a broken deploy is diagnosable from a URL.
-  const debug = new URL(request.url).searchParams.get('debug') === '1';
+  // SECURITY: gated on the admin session cookie (defense in depth on top of
+  // middleware, which does not match this public route) — without a valid
+  // admin_session the debug param is IGNORED and the normal public catalog is
+  // returned, so an anonymous caller can never use it for env reconnaissance.
+  const debug =
+    new URL(request.url).searchParams.get('debug') === '1' &&
+    hasValidSession(request);
 
   if (debug) {
     const pubUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';

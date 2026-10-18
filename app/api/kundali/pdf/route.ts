@@ -162,11 +162,17 @@ export async function POST(req: NextRequest) {
     // ── Strict monetization guard ────────────────────────────────────────────
     // Free users must never receive the full report. A download is authorized
     // through EITHER of two independent, server-verifiable paths:
-    //   1) The signed-in user OWNS this chart (a durable server-side purchase
-    //      recorded by /api/payment/verify) — lets buyers re-download from
-    //      their profile any time without paying again.
+    //   1) The AUTHENTICATED user OWNS this chart (a durable server-side
+    //      purchase recorded by /api/payment/verify, matched by their
+    //      server-verified user_id / account email) — lets buyers re-download
+    //      from their profile any time without paying again.
     //   2) A fresh, server-verified signed payment token from /api/payment/verify.
-    // A caller-only `isPaid` flag or spoofed localStorage can never unlock it.
+    // SECURITY: the owner identity is derived ONLY from the authenticated
+    // user (Bearer token → authUser.email). It is NEVER read from the request
+    // body — a client-supplied `ownerEmail` would let anyone who knows a
+    // buyer's email + birth details download that buyer's paid report for
+    // free. A caller-only `isPaid` flag or spoofed localStorage can never
+    // unlock it either.
     const chartFp =
       typeof body.chartFingerprint === "string" && body.chartFingerprint
         ? body.chartFingerprint
@@ -176,15 +182,23 @@ export async function POST(req: NextRequest) {
     let ownsReport = false;
     if (chartFp) {
       const authUser = await getUserFromAuthHeader(req);
-      const ownerEmail =
-        typeof body.ownerEmail === "string" && body.ownerEmail
-          ? body.ownerEmail.trim().toLowerCase()
-          : authUser?.email
-            ? authUser.email.trim().toLowerCase()
-            : "";
-      // Signed-in user: check by user_id AND by account email.
-      // Anonymous / recovered: check by the checkout email alone.
-      ownsReport = await hasPurchasedReport(ownerEmail, chartFp, authUser?.id ?? null);
+      // Derived ONLY from the authenticated session — never from the body.
+      const ownerEmail = authUser?.email ? authUser.email.trim().toLowerCase() : "";
+      if (ownerEmail || authUser?.id) {
+        // Signed-in user: check by user_id AND by account email.
+        ownsReport = await hasPurchasedReport(ownerEmail, chartFp, authUser?.id ?? null);
+      }
+      // Unauthenticated: ownsReport stays false. The ONLY remaining path to
+      // the paid PDF is a valid paymentToken (checked below).
+      if (!ownsReport && !authUser && !verifyUnlockToken(body.paymentToken)) {
+        // Not logged in as the owner and no proof of payment → refuse before
+        // doing anything else. (401: authentication required to attribute the
+        // purchase; the buyer's own token or session is the way through.)
+        return NextResponse.json(
+          { error: "Sign in as the report owner or provide a valid payment token to download this report." },
+          { status: 401 }
+        );
+      }
     }
 
     if (!(paidTierFlag && (ownsReport || verifyUnlockToken(body.paymentToken)))) {

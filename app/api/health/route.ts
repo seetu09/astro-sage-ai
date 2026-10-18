@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 // redeployed without changing code) — never bake this into a static build.
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getRateLimitBackend } from '@/lib/rateLimit';
 import { getServiceSupabase } from '@/lib/serverWallet';
 
@@ -60,19 +60,60 @@ async function probeReadOnlyRpc(
   }
 }
 
+// --- Migration 010 probe (anon EXECUTE revoked?) -----------------------------
+// 010_revoke_profile_rpcs.sql revokes client-role EXECUTE on get_user_profile.
+// The only way to observe that over HTTP is to attempt the call the way an
+// attacker would: with the ANON key (which ships in every browser bundle) and
+// NO user session. Two outcomes, both safe:
+//   * permission denied (SQLSTATE 42501 / PostgREST 401-403) → the revoke is
+//     in place → 'present'.
+//   * the call SUCCEEDS (returns a value, even an empty array) → anon can
+//     still execute the security-definer function → 010 is NOT applied →
+//     'missing'.
+// The probe uses the same all-zero dummy uuid as probeReadOnlyRpc, so it
+// reads at most zero rows and writes nothing regardless of outcome. It NEVER
+// throws: any transport/config failure is reported as 'unknown'.
+async function probeAnonProfileRpc(): Promise<RpcStatus> {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !anonKey) return 'unknown';
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(url, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { error } = await supabase.rpc('get_user_profile', { p_user_id: ZERO_UUID });
+    if (!error) return 'missing'; // anon could call it → 010 not applied
+    // 42501 = insufficient_privilege; 401/403 = not authenticated/authorized.
+    // Any of these means the EXECUTE grant is gone → 010 applied.
+    if (error.code === '42501' || error.code === '401' || error.code === '403') {
+      return 'present';
+    }
+    // PGRST202 (function doesn't exist at all) means 009 never ran either;
+    // 010 cannot be verified as applied → report it as not-known-present.
+    if (error.code === 'PGRST202') return 'missing';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 async function checkMigrations(): Promise<{
   upsert_user_profile: RpcStatus;
   get_user_profile: RpcStatus;
+  profile_rpc_revoked: RpcStatus;
   overall: 'ok' | 'degraded' | 'unknown';
 }> {
   // Upsert probe intentionally skipped — see SAFETY CONTRACT above.
   const upsert: RpcStatus = 'unknown';
   const get = await probeReadOnlyRpc('get_user_profile');
+  // Run both probes together; they are independent single RPC calls.
+  const revoked = await probeAnonProfileRpc();
 
   const overall =
-    get === 'unknown' && upsert === 'unknown'
+    get === 'unknown' && upsert === 'unknown' && revoked === 'unknown'
       ? 'unknown'
-      : get === 'missing'
+      : get === 'missing' || revoked === 'missing'
         ? 'degraded'
         : get === 'present'
           ? 'ok'
@@ -81,6 +122,7 @@ async function checkMigrations(): Promise<{
   return {
     upsert_user_profile: upsert,
     get_user_profile: get,
+    profile_rpc_revoked: revoked,
     overall,
   };
 }

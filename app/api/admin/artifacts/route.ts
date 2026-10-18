@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { ArtifactCatalogSchema } from "@/lib/catalogSchema";
 import { hasValidSession } from "@/lib/adminSession";
 import { loadArtifactCatalog, writeArtifactCatalog } from "@/lib/serverArtifactCatalog";
@@ -57,7 +58,18 @@ export async function PUT(req: NextRequest) {
 
     const adminPassword = req.headers.get("x-admin-password");
 
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
+    // Timing-safe comparison (same pattern as /api/payment/verify): a plain
+    // !== on a secret can leak how many leading characters matched via
+    // response-time differences. timingSafeEqual throws on unequal lengths,
+    // which would itself leak the password length, so a length mismatch is
+    // treated as an invalid password without calling it.
+    const expectedBuf = Buffer.from(process.env.ADMIN_PASSWORD, "utf8");
+    const providedBuf = Buffer.from(adminPassword ?? "", "utf8");
+    const passwordMatches =
+      expectedBuf.length === providedBuf.length &&
+      crypto.timingSafeEqual(expectedBuf, providedBuf);
+
+    if (!passwordMatches) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
