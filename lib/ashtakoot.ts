@@ -50,11 +50,6 @@ export const NAKSHATRA_NAMES = [
   "Purva Bhadrapada", "Uttara Bhadrapada", "Revati",
 ];
 
-// Nakshatra lords (planet index: 0=Sun, 1=Moon, 2=Mars, 3=Mercury, 4=Jupiter, 5=Venus, 6=Saturn)
-const NAKSHATRA_LORDS = [
-  2, 5, 0, 1, 2, 6, 4, 6, 3, 2, 5, 0, 1, 2, 6, 4, 6, 3, 2, 5, 0, 1, 2, 6, 4, 6, 3,
-];
-
 // Gana: 0=Deva, 1=Manushya, 2=Rakshasa
 const GANA = [
   0, 2, 2, 0, 0, 2, 0, 0, 2, 2, 2, 0, 0, 2, 0, 2, 0, 2, 2, 0, 0, 0, 2, 2, 0, 0, 0,

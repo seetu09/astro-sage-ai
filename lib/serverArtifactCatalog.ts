@@ -275,11 +275,6 @@ export async function writeArtifactCatalog(catalog: ArtifactCatalog): Promise<vo
   }
 }
 
-/** An empty but well-formed catalog, used for every degraded path. */
-function emptyCatalog(): ArtifactCatalog {
-  return { version: undefined, artifacts: [], doshaAliases: {} };
-}
-
 /**
  * Single-row catalog read for checkout (create-order, Task 1.3).
  *

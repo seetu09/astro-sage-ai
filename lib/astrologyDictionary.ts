@@ -1106,7 +1106,6 @@ export function getDivisionalSign(
   degree: number,
   type: ChartType
 ): number {
-  const totalDeg = (sign - 1) * 30 + degree;
   switch (type) {
     case 'D1':
       return sign;
@@ -1121,7 +1120,6 @@ export function getDivisionalSign(
     }
     case 'D3': {
       // Drekkana: each sign divided into 3 parts of 10°
-      const part = Math.floor(degree / 10);
       if (sign % 3 === 1) return sign;
       if (sign % 3 === 2) return ((sign + 8) % 12) + 1;
       return ((sign + 4) % 12) + 1;

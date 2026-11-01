@@ -7,7 +7,7 @@
 import { NAKSHATRA_NAMES } from "@/lib/astrologyDictionary";
 import { parseFixedOffsetMinutes, resolveOffsetMinutes } from "@/lib/timezone";
 
-export const DEFAULT_NOON_TIME = "12:00";
+const DEFAULT_NOON_TIME = "12:00";
 
 export type LocaleCode = 'en' | 'hi';
 
@@ -76,7 +76,7 @@ export function calculateJulianDay(
  * Anchored so that Spica (Chitra) sits at exactly 180°00' sidereal.
  * Formula: 23.85 + 0.0137 * T, where T is centuries since J2000.0.
  */
-export function calculateAyanamsa(jd: number): number {
+function calculateAyanamsa(jd: number): number {
   const t = (jd - 2451545.0) / 36525;
   return 23.85 + 0.0137 * t;
 }
@@ -138,7 +138,6 @@ function heliocentricLongitude(planet: keyof typeof ORBITS | "Earth", jd: number
 
   const M = norm360(L - w / DEG) * DEG; // mean anomaly
   const nu = solveKepler(M, e);          // eccentric anomaly ≈ true anomaly here
-  const r = a * (1 - e * Math.cos(nu));  // heliocentric distance
 
   // Argument of latitude & heliocentric longitude in the orbital plane
   const xp = a * (Math.cos(nu) - e);
@@ -146,7 +145,7 @@ function heliocentricLongitude(planet: keyof typeof ORBITS | "Earth", jd: number
 
   // Rotate to ecliptic coordinates
   const cosO = Math.cos(O), sinO = Math.sin(O);
-  const cosI = Math.cos(i), sinI = Math.sin(i);
+  const cosI = Math.cos(i);
 
   const x = (cosO * cosW(w) - sinO * sinW(w) * cosI) * xp + (-cosO * sinW(w) - sinO * cosW(w) * cosI) * yp;
   const y = (sinO * cosW(w) + cosO * sinW(w) * cosI) * xp + (-sinO * sinW(w) + cosO * cosW(w) * cosI) * yp;
@@ -199,7 +198,7 @@ function heliocentricDistance(planet: keyof typeof ORBITS | "Earth", jd: number)
 /**
  * Apparent tropical longitude of the Sun (degrees).
  */
-export function getSunLongitude(jd: number): number {
+function getSunLongitude(jd: number): number {
   const t = (jd - 2451545.0) / 36525;
   let longitude = 280.46646 + 36000.76983 * t + 0.0003032 * t * t;
   const meanAnomaly = 357.52911 + 35999.05029 * t - 0.0001537 * t * t;
@@ -216,7 +215,7 @@ export function getSunLongitude(jd: number): number {
  * Apparent tropical longitude of the Moon (degrees).
  * Truncated ELP series — good to ~0.3°.
  */
-export function getMoonLongitude(jd: number): number {
+function getMoonLongitude(jd: number): number {
   const t = (jd - 2451545.0) / 36525;
   const Lp =
     218.3164477 +
@@ -252,7 +251,7 @@ export function getMoonLongitude(jd: number): number {
  * Mean tropical longitude of Rahu (Moon's ascending node, degrees).
  * Moves retrograde ~19.3°/year.
  */
-export function getRahuLongitude(jd: number): number {
+function getRahuLongitude(jd: number): number {
   const t = (jd - 2451545.0) / 36525;
   return norm360(125.04452 - 1934.136261 * t + 0.0020708 * t * t + t * t * t / 450000);
 }
@@ -280,7 +279,7 @@ export function signNumberToName(signNum: number): string {
 }
 
 /** Get the sign name with Hindi transliteration, e.g. "Aquarius (कुंभ)". */
-export function signNameWithHindi(signNum: number): string {
+function signNameWithHindi(signNum: number): string {
   const en = signNumberToName(signNum);
   const hi = SIGN_NAMES_HI[(signNum - 1 + 12) % 12] ?? en;
   return `${en} (${hi})`;
@@ -298,14 +297,14 @@ export function getNakshatra(longitude: number): { index: number; pada: number }
 }
 
 /** Get the nakshatra name for a longitude, optionally localized. */
-export function getNakshatraName(longitude: number, locale: LocaleCode = 'en'): string {
+function getNakshatraName(longitude: number, locale: LocaleCode = 'en'): string {
   const { index } = getNakshatra(longitude);
   const i = index - 1;
   return NAKSHATRA_NAMES[locale]?.[i] ?? NAKSHATRA_NAMES.en[i] ?? "Revati";
 }
 
 /** Get the nakshatra name with Hindi, e.g. "Shravana (श्रवण)". */
-export function getNakshatraNameWithHindi(longitude: number): string {
+function getNakshatraNameWithHindi(longitude: number): string {
   const { index } = getNakshatra(longitude);
   const en = NAKSHATRA_NAMES.en[index - 1] ?? "Revati";
   const hi = NAKSHATRA_NAMES.hi[index - 1] ?? en;
@@ -313,7 +312,7 @@ export function getNakshatraNameWithHindi(longitude: number): string {
 }
 
 /** Format a degree (0-30) as a zero-padded DMS string like "23°14'" / "04°05'". */
-export function formatDegreeDMS(degree: number): string {
+function formatDegreeDMS(degree: number): string {
   const d = Math.min(29, Math.max(0, Math.floor(degree)));
   const m = Math.round((degree - d) * 60);
   const mm = m === 60 ? 59 : m;
@@ -387,7 +386,7 @@ const KARANA_LIST_HI = [...CHARA_KARANAS_HI, ...STHIRA_KARANAS_HI, KIMSTUGHNA_HI
  * Result of a Panchang limb computation for one instant.
  * `number` is the canonical index; `name` is localized and ready to render.
  */
-export interface PanchangResult {
+interface PanchangResult {
   tithi: string;
   tithiNumber: number;
   karana: string;
@@ -587,7 +586,7 @@ export function getSaturnMeanSign(date: Date): number {
 
 // ─── MoonDetails (legacy interface, kept for backward compatibility) ───────
 
-export interface MoonDetails {
+interface MoonDetails {
   rashi: number; // 1-12
   nakshatra: number; // 1-27
   pada: number; // 1-4
@@ -650,7 +649,7 @@ export interface PlanetResult {
   longitude: number; // exact sidereal longitude in degrees (0-360)
 }
 
-export interface HouseResult {
+interface HouseResult {
   house: number;
   sign: string;
   planets: string[];
@@ -761,7 +760,6 @@ export function computeChart(details: BirthDetails): ChartData {
 
   // ── Summary values ─────────────────────────────────────────────────────
   const moon = planetResults.find((p) => p.name === "Moon")!;
-  const sun = planetResults.find((p) => p.name === "Sun")!;
   const moonSignNum = longitudeToSign(getSiderealLongitude(jdUT, "Moon"));
   const sunSignNum = longitudeToSign(getSiderealLongitude(jdUT, "Sun"));
 

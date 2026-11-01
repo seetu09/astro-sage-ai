@@ -892,7 +892,7 @@ export async function POST(req: NextRequest) {
     const birthDateKey = details.birthDate;
     let interpretation = "";
     let structured: StructuredReport | null = null;
-    let pillars: LifePillarConfig[] = buildFallbackPillars(fallbackContext(chartData, calculations), lang);
+    let pillars: LifePillarConfig[] = buildFallbackPillars(fallbackContext(chartData, calculations));
     let aiSource = false;
     let richPredictions: RichPredictionReport | null = null;
 
@@ -920,7 +920,7 @@ export async function POST(req: NextRequest) {
         };
         const parsedPillars = parseAndValidatePillars(
           JSON.stringify(complete.pillars || {}),
-          buildFallbackPillars(fallbackContext(chartData, calculations), lang)
+          buildFallbackPillars(fallbackContext(chartData, calculations))
         );
         if (parsedPillars && parsedPillars.length === 6) {
           pillars = parsedPillars;

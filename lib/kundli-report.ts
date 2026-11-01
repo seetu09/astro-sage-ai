@@ -34,7 +34,6 @@ import { computeAshtakvarga, type PlanetPosition } from "@/lib/ashtakvarga";
 import type {
   AntardashaNode,
   AshtakavargaReport,
-  CalculationMetadata,
   CurrentDashaInfo,
   DashaDateRange,
   DhaiyaPhase,
@@ -155,7 +154,7 @@ function asRange(start: Date | null, end: Date | null): DashaDateRange | null {
  * divisional sign, degree/minutes, whole-sign house and retrograde flag,
  * plus the 12 cusp signs derived from the divisional ascendant.
  */
-export function computeDivisionalCharts(chart: ChartData): Record<DivisionalChartType, DivisionalChartMatrix> {
+function computeDivisionalCharts(chart: ChartData): Record<DivisionalChartType, DivisionalChartMatrix> {
   const out = {} as Record<DivisionalChartType, DivisionalChartMatrix>;
   const lagnaLon = chart.ascendantLongitude;
   const lagnaSign = longitudeToSign(lagnaLon);
@@ -216,7 +215,7 @@ export function computeDivisionalCharts(chart: ChartData): Record<DivisionalChar
  * scale-invariant rule so the result is meaningful regardless of internal
  * conventions used by the ashtakavarga engine.
  */
-export function computeAshtakavargaReport(chart: ChartData): AshtakavargaReport {
+function computeAshtakavargaReport(chart: ChartData): AshtakavargaReport {
   const ascSign = longitudeToSign(chart.ascendantLongitude);
   const positions: PlanetPosition[] = chart.planets.map((p) => ({
     planet: p.name,
@@ -247,7 +246,7 @@ export function computeAshtakavargaReport(chart: ChartData): AshtakavargaReport 
  * Antardashas (nested start/end dates). The Mahadasha running at birth is
  * determined by the Moon's Nakshatra index (1-27 → 0-8 via modulo 9).
  */
-export function computeVimshottari(
+function computeVimshottari(
   birthDate: string,
   chart: ChartData,
   referenceDate: Date = new Date()
@@ -436,29 +435,6 @@ const KAAL_SARP_REMEDIES_PRESENT_HI = [
 const KAAL_SARP_REMEDIES_ABSENT_EN = ["No Kaal Sarp Dosha remedies are required."];
 const KAAL_SARP_REMEDIES_ABSENT_HI = ["कोई काल सर्प दोष उपाय आवश्यक नहीं है।"];
 
-// ─── Yoga Descriptions (bilingual) ──────────────────────────────────────────
-
-const YOGA_NAME_EN: Record<string, string> = {
-  "Gajakesari Yoga": "Gajakesari Yoga",
-  "Budha-Aditya Yoga": "Budha-Aditya Yoga",
-  "Eleventh-lord in 11th": "Eleventh-lord in 11th",
-  "Second-lord in Kendra": "Second-lord in Kendra",
-  "Lakshmi Yoga": "Lakshmi Yoga",
-  "Parardhi Dhan Yoga": "Parardhi Dhan Yoga",
-  "Chamunda Yoga": "Chamunda Yoga",
-  "Venus in 2nd/11th from Moon": "Venus in 2nd/11th from Moon",
-};
-
-const YOGA_NAME_HI: Record<string, string> = {
-  "Gajakesari Yoga": "गजकेसरी योग",
-  "Budha-Aditya Yoga": "बुधादित्य योग",
-  "Eleventh-lord in 11th": "11वें भाव का स्वामी 11वें भाव में",
-  "Second-lord in Kendra": "2वें भाव का स्वामी केंद्र में",
-  "Lakshmi Yoga": "लक्ष्मी योग",
-  "Parardhi Dhan Yoga": "परार्धि धन योग",
-  "Chamunda Yoga": "चामुंदा योग",
-  "Venus in 2nd/11th from Moon": "चंद्रमा से गृह में शुक्रा योग",
-};
 
 // ─── Dosha checks ───────────────────────────────────────────────────────────
 
@@ -467,7 +443,7 @@ const YOGA_NAME_HI: Record<string, string> = {
  * plus the classical cancellation rules (own/exalted sign, Mangal-Shukra
  * conjunction, Jupiter in kendra, Mars in kendra from Lagna & Moon).
  */
-export function computeMangalDosha(chart: ChartData, locale: LocaleCode = "en"): MangalDoshaReport {
+function computeMangalDosha(chart: ChartData, locale: LocaleCode = "en"): MangalDoshaReport {
   const ascLon = chart.ascendantLongitude;
   const mars = planetByName(chart, "Mars");
   const moon = planetByName(chart, "Moon");
@@ -591,7 +567,7 @@ function findSignEquals(from: Date, targetSign: number, maxDays: number): Date |
  * Boundaries are computed from Saturn's *mean* sidereal longitude (monotonic,
  * no retrograde wobble) so the half-open phase windows are reproducible.
  */
-export function computeSadeSati(chart: ChartData, referenceDate: Date = new Date(), locale: LocaleCode = "en"): SadeSatiReport {
+function computeSadeSati(chart: ChartData, referenceDate: Date = new Date(), locale: LocaleCode = "en"): SadeSatiReport {
   const moon = planetByName(chart, "Moon");
   const moonSign = longitudeToSign(moon ? moon.longitude : 0);
 
@@ -688,7 +664,7 @@ export function computeSadeSati(chart: ChartData, referenceDate: Date = new Date
  * Deterministic Kaal Sarp Dosha: all 7 natural planets sit on one
  * 180° semicircle between Rahu and Ketu.
  */
-export function computeKaalSarp(chart: ChartData, locale: LocaleCode = "en"): KaalSarpReport {
+function computeKaalSarp(chart: ChartData, locale: LocaleCode = "en"): KaalSarpReport {
   const rahu = planetByName(chart, "Rahu");
   const ketu = planetByName(chart, "Ketu");
   if (!rahu || !ketu) {
@@ -727,7 +703,7 @@ export function computeKaalSarp(chart: ChartData, locale: LocaleCode = "en"): Ka
 }
 
 /** Aggregate of all deterministic dosha checks. */
-export function computeDoshaReport(chart: ChartData, referenceDate: Date = new Date(), locale: LocaleCode = "en"): DoshaReport {
+function computeDoshaReport(chart: ChartData, referenceDate: Date = new Date(), locale: LocaleCode = "en"): DoshaReport {
   return {
     mangal: computeMangalDosha(chart, locale),
     sadeSati: computeSadeSati(chart, referenceDate, locale),
@@ -767,7 +743,7 @@ function yogaStrength(present: boolean, strong = false): YogaStrength {
  * Deterministic major yoga detection: Gajakesari, Budha-Aditya and a set of
  * classic Dhana (wealth) yogas, all derived from the birth chart positions.
  */
-export function computeYogaReport(chart: ChartData, locale: LocaleCode = "en"): YogaReport {
+function computeYogaReport(chart: ChartData): YogaReport {
   const moonSign = planetSign(chart, "Moon");
   const jupiterSign = planetSign(chart, "Jupiter");
   const sunSign = planetSign(chart, "Sun");
@@ -938,7 +914,7 @@ export function computeKundliCalculations(
     ashtakavarga: computeAshtakavargaReport(chart),
     vimshottari: computeVimshottari(birthDate, chart, referenceDate),
     doshas: computeDoshaReport(chart, referenceDate, locale),
-    yogas: computeYogaReport(chart, locale),
+    yogas: computeYogaReport(chart),
     metadata: {
       engineVersion: CHART_ENGINE_VERSION,
       referenceDate: isoDate(new Date(referenceDate)),

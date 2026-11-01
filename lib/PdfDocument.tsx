@@ -390,7 +390,7 @@ function TableRow({ cells }: { cells: string[] }) {
 }
 
 function renderYogaCard(
-  y: any, key: string, idx: number, isHi: boolean, t: Translations,
+  y: any, key: string, idx: number, t: Translations,
 ): React.ReactElement | null {
   if (!y || typeof y !== "object") return null;
   const present = y.isPresent === true || y.presence === true || y.isActive === true;
@@ -652,11 +652,11 @@ export function PdfDocument({ data }: { data: PdfData }): React.ReactElement {
           if (!y || typeof y !== "object") return;
           if (Array.isArray(y)) {
             y.forEach((item: any, idx: number) => {
-              const card = renderYogaCard(item, key, idx, isHi, t);
+              const card = renderYogaCard(item, key, idx, t);
               if (card) yogaElements.push(card);
             });
           } else {
-            const card = renderYogaCard(y, key, 0, isHi, t);
+            const card = renderYogaCard(y, key, 0, t);
             if (card) yogaElements.push(card);
           }
         });

@@ -326,7 +326,6 @@ export function buildPillarUserPrompt(report: FullKundliReportData, lang: "en" |
   const l = PILLAR_LIMITS;
 
   const pillarInstructions = PILLAR_KEYS.map((key) => {
-    const meta = TITLES[key];
     const badges = DEFAULT_BADGES[key];
     const guidance = PILLAR_GUIDANCE[key];
     return `"${key}": {
@@ -470,7 +469,7 @@ export function parseAndValidatePillars(
 // ─── Deterministic fallback builder (no AI dependency) ─────────────────────
 
 /** Build a chart-aware, deterministic pillar set that always renders. */
-export function buildFallbackPillars(report: FullKundliReportData, lang: "en" | "hi"): LifePillarConfig[] {
+export function buildFallbackPillars(report: FullKundliReportData): LifePillarConfig[] {
   const facts = collectFacts(report);
 
   const lagna = facts.lagna;

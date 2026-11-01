@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const fallback: LifePillarConfig[] = buildFallbackPillars(report, lang);
+    const fallback: LifePillarConfig[] = buildFallbackPillars(report);
     let pillars: LifePillarConfig[] = fallback;
     let source: "ai" | "fallback" = "fallback";
 
