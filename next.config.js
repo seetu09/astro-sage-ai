@@ -37,6 +37,39 @@ const nextConfig = {
       ],
     },
   },
+headers: async () => {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Content-Security-Policy-Report-Only',
+            value: 'default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https://checkout.razorpay.com https://*.razorpay.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com data:; img-src \'self\' data: blob: https://*.supabase.co; connect-src \'self\' https://*.supabase.co https://*.razorpay.com https://api.razorpay.com https://www.googletagmanager.com wss://*.supabase.co; frame-src https://checkout.razorpay.com https://api.razorpay.com; object-src \'none\'; base-uri \'self\'; form-action \'self\'; frame-ancestors \'none\'',
+          },
+        ],
+      },
+    ];
+  },
 }
 
 module.exports = withPWA(nextConfig)
