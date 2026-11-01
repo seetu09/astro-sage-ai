@@ -1,0 +1,392 @@
+=== 1. Full directory tree under app/, lib/, components/ ===
+
+app/ (files only - relative paths from project root):
+/app/about/layout.tsx
+/app/about/page.tsx
+/app/admin/artifacts/page.tsx
+/app/admin/login/page.tsx
+/app/admin/page.tsx
+/app/api/admin/artifact-image/route.ts
+/app/api/admin/artifacts/route.ts
+/app/api/admin/blogs/route.ts
+/app/api/admin/clean-storage/route.ts
+/app/api/admin/login/route.ts
+/app/api/artifacts/route.ts
+/app/api/chat/route.ts
+/app/api/dosha-check/route.ts
+/app/api/health/route.ts
+/app/api/horoscope/route.ts
+/app/api/kundali/generate/route.ts
+/app/api/kundali/narratives/route.ts
+/app/api/kundali/pdf/route.ts
+/app/api/payment/create-order/route.ts
+/app/api/payment/reset/route.ts
+/app/api/payment/validate/route.ts
+/app/api/payment/verify/route.ts
+/app/api/profile/me/route.ts
+/app/api/profile/purchases/route.ts
+/app/api/profile/reports/route.ts
+/app/api/tarot/interpret/route.ts
+/app/api/wallet/route.ts
+/app/blog/[slug]/page.tsx
+/app/blog/layout.tsx
+/app/blog/page.tsx
+/app/chat/ChatScrollLock.tsx
+/app/chat/layout.tsx
+/app/chat/page.tsx
+/app/components/ArtifactCheckoutButton.tsx
+/app/components/ArtifactImage.tsx
+/app/components/ArtifactRecommendations.tsx
+/app/components/AuthModal.tsx
+/app/components/BirthDetailsModal.tsx
+/app/components/CosmicBackground.tsx
+/app/components/EmptyState.tsx
+/app/components/ErrorBoundary.tsx
+/app/components/Footer.tsx
+/app/components/HeroSection.tsx
+/app/components/HowItWorks.tsx
+/app/components/HtmlLangSync.tsx
+/app/components/InstallBanner.tsx
+/app/components/InstallPrompt.tsx
+/app/components/KundaliChart.tsx
+/app/components/KundaliLoadingSkeleton.tsx
+/app/components/KundaliPaywallBanner.tsx
+/app/components/KundaliPreview.tsx
+/app/components/KundaliView.tsx
+/app/components/KundliPdfButton.tsx
+/app/components/KundliReport.tsx
+/app/components/LanguageSelectModal.tsx
+/app/components/LanguageToggle.tsx
+/components/LiveDemo.tsx
+/components/LiveTicker.tsx
+/components/LoveMeter.tsx
+/components/MarkdownView.tsx
+/components/Navbar.tsx
+/components/NorthIndianChart.tsx
+/components/PWARegister.tsx
+/components/PaymentButton.tsx
+/components/PlaceAutocomplete.tsx
+/components/RatingStars.tsx
+/components/Remedies.tsx
+/components/ReportContainer.tsx
+/components/SEOWrapper.tsx
+/components/ShareCard.tsx
+/components/ShareResultButton.tsx
+/components/SkeletonLoader.tsx
+/components/StarBackground.tsx
+/components/StatsSection.tsx
+/components/StoreViewTracker.tsx
+/components/Testimonials.tsx
+/components/ThemeToggle.tsx
+/components/ToastProvider.tsx
+/components/TopUpModal.tsx
+/components/UserProfileDropdown.tsx
+/components/UserProfileModal.tsx
+/components/WarmGlow.tsx
+/components/ZodiacSelector.tsx
+/components/report/PageShell.tsx
+/components/report/ReportRenderer.tsx
+/components/report/primitives.tsx
+/components/report/reportModel.ts
+/components/report/sections/CareerRoadmap.tsx
+/components/report/sections/Charts.tsx
+/components/report/sections/DailyGuidance.tsx
+/components/report/sections/DashaDetail.tsx
+/components/report/sections/DashaPages.tsx
+/components/report/sections/GrahaSthiti.tsx
+/components/report/sections/HealthAnalysis.tsx
+/components/report/sections/HouseGrid.tsx
+/components/report/sections/LagnaMoon.tsx
+/components/report/sections/LifePillars.tsx
+/components/report/sections/MangalDosha.tsx
+/components/report/sections/NakshatraGuna.tsx
+/components/report/sections/NativitySummary.tsx
+/components/report/sections/Panchang.tsx
+/components/report/sections/Remedies.tsx
+/components/report/sections/SadeSati.tsx
+/components/report/sections/SpecialYogas.tsx
+/components/report/sections/Transit.tsx
+/components/report/sections/WealthAnalysis.tsx
+/app/contact/layout.tsx
+/app/contact/page.tsx
+/app/daily-horoscope/layout.tsx
+/app/daily-horoscope/page.tsx
+/debug-kundli/page.tsx
+/disclaimer/page.tsx
+/app/horoscope/[sign]/layout.tsx
+/app/horoscope/[sign]/page.tsx
+/app/horoscope/page.tsx
+/app/kundali/components/Preview.tsx
+/app/kundali/layout.tsx
+/app/kundali/page.tsx
+/app/layout.tsx
+/app/lib/i18n/useTranslation.ts
+/app/lib/i18n/translations.ts
+/app/love-meter/layout.tsx
+/app/love-meter/page.tsx
+/app/matchmaking/layout.tsx
+/app/matchmaking/page.tsx
+/app/numerology/page.tsx
+/app/opengraph-image.tsx
+/app/page.tsx
+/app/privacy/page.tsx
+/app/refund/page.tsx
+/app/robots.ts
+/app/seo-config.ts
+/app/sitemap.ts
+/app/social/layout.tsx
+/app/social/page.tsx
+/app/store/[id]/page.tsx
+/app/store/layout.tsx
+/app/store/page.tsx
+/app/terms/page.tsx
+/app/tarot/page.tsx
+
+lib/ (files only - relative paths from project root):
+/lib/PdfDocument.tsx
+/lib/__tests__/adminSession.test.ts
+/lib/__tests__/artifactImageUpload.test.ts
+/lib/__tests__/artifactPricing.test.ts
+/lib/__tests__/artifactRecommender.test.ts
+/lib/__tests__/ashtakoot.test.ts
+/lib/__tests__/astrology.test.ts
+/lib/__tests__/astrologyTimezone.test.ts
+/lib/__tests__/createOrderArtifact.test.ts
+/lib/__tests__/dosha-checker.test.ts
+/lib/__tests__/doshaTimezone.test.ts
+/lib/__tests__/formatPrice.test.ts
+/lib/__tests__/kundliTimezone.test.ts
+/lib/__tests__/numerology.test.ts
+/lib/__tests__/paymentVerify.test.ts
+/lib/__tests__/purchasedReports.test.ts
+/lib/__tests__/rateLimit.test.ts
+/lib/__tests__/sanitizeHtml.test.ts
+/lib/__tests__/serverArtifactCatalog.test.ts
+/lib/__tests__/storeCatalog.test.ts
+/lib/__tests__/storeI18n.test.ts
+/lib/__tests__/timezone.test.ts
+/lib/adminSession.ts
+/lib/analytics.ts
+/lib/artifactPricing.ts
+/lib/artifactRecommender.ts
+/lib/ashtakoot.ts
+/lib/ashtakvarga.ts
+/lib/astrology.ts
+/lib/astrologyDictionary.ts
+/lib/catalogSchema.ts
+/lib/chartFingerprint.ts
+/lib/dosha-checker.ts
+/lib/formatPrice.ts
+/lib/geminiRetry.ts
+/lib/i18n/index.ts
+/lib/i18n/translations.ts
+/lib/kundli-report.ts
+/lib/kundliChart.ts
+/lib/localizedData.ts
+/lib/numerology.ts
+/lib/paymentUnlock.ts
+/lib/pdfHtmlTemplate.test.ts
+/lib/pdfHtmlTemplate.ts
+/lib/pillarNarratives.ts
+/lib/rateLimit.ts
+/lib/richPredictions.ts
+/lib/sanitizeHtml.ts
+/lib/serverArtifactCatalog.ts
+/lib/serverArtifactImages.ts
+/lib/serverBlogPosts.ts
+/lib/serverPurchasedArtifacts.ts
+/lib/serverPurchasedReports.ts
+/lib/serverUserProfiles.ts
+/lib/serverWallet.ts
+/lib/supabase.ts
+/lib/tarot-data.ts
+/lib/tarot-dictionary.ts
+/lib/timezone.ts
+/lib/user-history.ts
+
+components/ (app/components/ only - relative paths from project root):
+/components/ArtifactCheckoutButton.tsx
+/components/ArtifactImage.tsx
+/components/ArtifactRecommendations.tsx
+/components/AuthModal.tsx
+/components/BirthDetailsModal.tsx
+/components/CosmicBackground.tsx
+/components/EmptyState.tsx
+/components/ErrorBoundary.tsx
+/components/Footer.tsx
+/components/HeroSection.tsx
+/components/HowItWorks.tsx
+/components/HtmlLangSync.tsx
+/components/InstallBanner.tsx
+/components/InstallPrompt.tsx
+/components/KundaliChart.tsx
+/components/KundaliLoadingSkeleton.tsx
+/components/KundaliPaywallBanner.tsx
+/components/KundaliPreview.tsx
+/components/KundaliView.tsx
+/components/KundliPdfButton.tsx
+/components/KundliReport.tsx
+/components/LanguageSelectModal.tsx
+/components/LanguageToggle.tsx
+/components/LiveDemo.tsx
+/components/LiveTicker.tsx
+/components/LoveMeter.tsx
+/components/MarkdownView.tsx
+/components/Navbar.tsx
+/components/NorthIndianChart.tsx
+/components/PWARegister.tsx
+/components/PaymentButton.tsx
+/components/PlaceAutocomplete.tsx
+/components/RatingStars.tsx
+/components/Remedies.tsx
+/components/ReportContainer.tsx
+/components/SEOWrapper.tsx
+/components/ShareCard.tsx
+/components/ShareResultButton.tsx
+/components/SkeletonLoader.tsx
+/components/StarBackground.tsx
+/components/StatsSection.tsx
+/components/StoreViewTracker.tsx
+/components/Testimonials.tsx
+/components/ThemeToggle.tsx
+/components/ToastProvider.tsx
+/components/TopUpModal.tsx
+/components/UserProfileDropdown.tsx
+/components/UserProfileModal.tsx
+/components/WarmGlow.tsx
+/components/ZodiacSelector.tsx
+/components/report/PageShell.tsx
+/components/report/ReportRenderer.tsx
+/components/report/primitives.tsx
+/components/report/reportModel.ts
+/components/report/sections/CareerRoadmap.tsx
+/components/report/sections/Charts.tsx
+/components/report/sections/DailyGuidance.tsx
+/components/report/sections/DashaDetail.tsx
+/components/report/sections/DashaPages.tsx
+/components/report/sections/GrahaSthiti.tsx
+/components/report/sections/HealthAnalysis.tsx
+/components/report/sections/HouseGrid.tsx
+/components/report/sections/LagnaMoon.tsx
+/components/report/sections/LifePillars.tsx
+/components/report/sections/MangalDosha.tsx
+/components/report/sections/NakshatraGuna.tsx
+/components/report/sections/NativitySummary.tsx
+/components/report/sections/Panchang.tsx
+/components/report/sections/Remedies.tsx
+/components/report/sections/SadeSati.tsx
+/components/report/sections/SpecialYogas.tsx
+/components/report/sections/Transit.tsx
+/components/report/sections/WealthAnalysis.tsx
+
+=== 2. Full contents of package.json ===
+{
+  "name": "astroveda",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "next lint && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:i18n": "node scripts/check-i18n.mjs"
+  },
+  "dependencies": {
+    "@react-pdf/renderer": "^4.9.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "@upstash/ratelimit": "^2.1.0",
+    "@upstash/redis": "^1.39.0",
+    "clsx": "^2.1.0",
+    "framer-motion": "^11.0.0",
+    "html2canvas": "^1.4.1",
+    "isomorphic-dompurify": "^4.3.0",
+    "lucide-react": "^0.344.0",
+    "next": "^14.2.0",
+    "next-pwa": "^5.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.2.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5",
+    "vitest": "^1.6.0"
+  }
+}
+
+=== 3. Full contents of tsconfig.json ===
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
+
+=== 4. Files under app/api/**/route.ts with one-line descriptions ===
+
+/app/api/admin/artifact-image/route.ts - Handles artifact image upload for admin
+/app/api/admin/artifacts/route.ts - Admin artifact management endpoint
+/app/api/admin/blogs/route.ts - Admin blog management endpoint
+/app/api/admin/clean-storage/route.ts - Admin storage cleanup endpoint
+/app/api/admin/login/route.ts - Admin login authentication endpoint
+/app/api/artifacts/route.ts - Public artifact catalog endpoint
+/app/api/chat/route.ts - Chat endpoint with rate limiting and credit consumption
+/app/api/dosha-check/route.ts - Dosha checking endpoint using birth details
+/app/api/health/route.ts - Health check endpoint (force-dynamic)
+/app/api/horoscope/route.ts - Horoscope endpoint with Gemini retry
+/app/api/kundali/generate/route.ts - Kundli generation endpoint
+/app/api/kundali/narratives/route.ts - Kundli narratives endpoint
+/app/api/kundali/pdf/route.ts - Kundli PDF generation endpoint
+/app/api/payment/create-order/route.ts - Payment order creation endpoint
+/app/api/payment/reset/route.ts - Payment reset endpoint
+/app/api/payment/validate/route.ts - Payment token validation endpoint
+/app/api/payment/verify/route.ts - Payment verification endpoint
+/app/api/profile/me/route.ts - User profile endpoint
+/app/api/profile/purchases/route.ts - User purchased reports/artifacts endpoint
+/app/api/profile/reports/route.ts - User reports endpoint
+/app/api/tarot/interpret/route.ts - Tarot card interpretation endpoint
+/app/api/wallet/route.ts - Wallet balance and transaction endpoint
