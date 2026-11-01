@@ -368,7 +368,7 @@ export default function KundaliPdfButton({
         inFlight.current = false;
       }
     },
-    [chartData, calculations, freeTier, paidTier, pillars, paymentToken, resolvedToken, toast, t, userName]
+    [chartData, calculations, freeTier, paidTier, pillars, resolvedToken, toast, t, userName]
   );
 
   const displayLabel = label || t(DEFAULT_LABEL_KEY);
