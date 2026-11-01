@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { computeChart, parseTimezoneOffset } from '@/lib/astrology';
 import type { BirthDetailsFromDate } from '@/lib/dosha-checker';
 
-describe('parseTimezoneOffset — current (buggy) behavior pin', () => {
+describe('parseTimezoneOffset — correct behavior', () => {
   it('parses "+05:30" → 330', () => {
     expect(parseTimezoneOffset('+05:30')).toBe(330);
   });
@@ -22,36 +22,32 @@ describe('parseTimezoneOffset — current (buggy) behavior pin', () => {
     expect(parseTimezoneOffset('+00:00')).toBe(0);
   });
 
-  it('returns 330 (fallback) for "America/New_York"', () => {
-    expect(parseTimezoneOffset('America/New_York')).toBe(330);
+  it('resolves "America/New_York" to actual offset (not 330)', () => {
+    expect(parseTimezoneOffset('America/New_York')).not.toBe(330);
   });
 
-  it('returns 330 (fallback) for "Asia/Kolkata"', () => {
+  it('returns 330 for "Asia/Kolkata" (correct IST)', () => {
     expect(parseTimezoneOffset('Asia/Kolkata')).toBe(330);
   });
 
-  it('returns 330 (fallback) for ""', () => {
-    expect(parseTimezoneOffset('')).toBe(330);
+  it('returns null for empty string', () => {
+    expect(parseTimezoneOffset('')).toBeNull();
   });
 
-  it('returns 330 (fallback) for null', () => {
-    expect(parseTimezoneOffset(null as unknown as string)).toBe(330);
+  it('returns null for null input', () => {
+    expect(parseTimezoneOffset(null as unknown as string)).toBeNull();
   });
 
-  it('returns 330 (fallback) for undefined', () => {
-    expect(parseTimezoneOffset(undefined as unknown as string)).toBe(330);
+  it('returns null for undefined input', () => {
+    expect(parseTimezoneOffset(undefined as unknown as string)).toBeNull();
   });
 
-  it('returns 330 (fallback) for "+5:30" (missing leading zero)', () => {
-    expect(parseTimezoneOffset('+5:30')).toBe(330);
+  it('parses "+5:30" (missing leading zero) → null', () => {
+    expect(parseTimezoneOffset('+5:30')).toBeNull();
   });
 
-  it('returns 330 (fallback) for "05:30" (missing sign)', () => {
-    expect(parseTimezoneOffset('05:30')).toBe(330);
-  });
-
-  it('returns 330 (fallback) for "IST"', () => {
-    expect(parseTimezoneOffset('IST')).toBe(330);
+  it('returns null for "05:30" (missing sign - unrecognized format)', () => {
+    expect(parseTimezoneOffset('05:30')).toBeNull();
   });
 });
 

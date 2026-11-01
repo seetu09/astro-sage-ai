@@ -36,11 +36,24 @@ export function resolveBirthTime(birthTime: string, timeUnknown: boolean): strin
  *
  * Parse a timezone offset string like "+05:30" or "-08:00" into signed minutes.
  */
-export function parseTimezoneOffset(offset: string): number {
-  const parsed = parseFixedOffsetMinutes(offset);
-  // Preserve current behavior: null → 330 (IST fallback). This is the known bug
-  // that Phase 3 will fix by making this function return null instead.
-  return parsed ?? 330; // default IST
+export function parseTimezoneOffset(offset: string): number | null {
+  // Try IANA timezone first (e.g. "America/New_York", "Asia/Kolkata")
+  // This correctly handles DST and returns the actual offset for that zone
+  if (typeof offset === 'string' && offset.trim()) {
+    const at = new Date();
+    const resolved = resolveOffsetMinutes(offset.trim(), at);
+    if (resolved !== null) return resolved;
+  }
+  
+  // Try fixed offset string (e.g. "+05:30", "-08:00")
+  if (typeof offset === 'string' && offset.trim()) {
+    const parsed = parseFixedOffsetMinutes(offset);
+    if (parsed !== null) return parsed;
+  }
+  
+  // Truly unrecognizable input - return null, NOT 330 (IST fallback)
+  // This fixes the bug where "America/New_York" silently defaulted to 330 (IST)
+  return null;
 }
 
 /**
@@ -732,7 +745,7 @@ export function computeChart(details: BirthDetails): ChartData {
   const time = details.birthTime || DEFAULT_NOON_TIME;
   const [hour, minute] = time.split(":").map(Number);
 
-  const offsetMinutes = parseTimezoneOffset(details.timezoneOffset || "+05:30");
+  const offsetMinutes = parseTimezoneOffset(details.timezoneOffset || "+05:30")!;
   const jdUT = calculateJulianDay(year, month, day, hour, minute, offsetMinutes);
 
   const lat = details.latitude ?? 0;

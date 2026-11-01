@@ -58,11 +58,18 @@ function teaserText(narrative: string, max = 50): string {
  */
 function useChartPoints(birthData: PreviewBirthData) {
   return useMemo(() => {
+    let timezoneOffset: number | null;
     try {
       const [year, month, day] = birthData.dateOfBirth.split('-').map(Number);
       const [hour, minute] = birthData.timeOfBirth.split(':').map(Number);
       if ([year, month, day].some((n) => !Number.isFinite(n))) {
         throw new Error('invalid date');
+      }
+      timezoneOffset = parseTimezoneOffset(birthData.timezoneOffset);
+      if (timezoneOffset === null) {
+        // Show error: timezone could not be resolved
+        // Don't silently default to 330 (IST) - that's the bug we're fixing
+        throw new Error('Invalid or unrecognized timezone. Please select a valid timezone.');
       }
       const jd = calculateJulianDay(
         year,
@@ -70,7 +77,7 @@ function useChartPoints(birthData: PreviewBirthData) {
         day,
         Number.isFinite(hour) ? hour : 12,
         Number.isFinite(minute) ? minute : 0,
-        parseTimezoneOffset(birthData.timezoneOffset)
+        timezoneOffset
       );
       const asc = calculateAscendant(jd, birthData.latitude, birthData.longitude);
       const moonLong = getSiderealLongitude(jd, 'Moon');
