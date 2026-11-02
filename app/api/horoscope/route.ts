@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { geminiWithRetry } from "@/lib/geminiRetry";
+import { hasValidSession } from "@/lib/adminSession";
 
 // Serve deterministic mock data in development (and as the automatic fallback
 // whenever the production LLM call fails or returns unparsable output). In
@@ -179,18 +181,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!hasValidSession(request)) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const sign = searchParams.get("sign")?.toLowerCase() || "aries";
-    const period = searchParams.get("period")?.toLowerCase() || "today";
-    const lang = searchParams.get("lang")?.toLowerCase() || "en";
 
-    if (!SIGN_NAMES[sign]) {
-      return NextResponse.json({ error: "Invalid zodiac sign" }, { status: 400 });
+    const HoroscopeQuerySchema = z.object({
+      sign: z.string().min(1, "sign is required").toLowerCase(),
+      period: z.string().optional().refine((val) => !val || ["yesterday", "today", "tomorrow"].includes(val), "Invalid period"),
+      lang: z.string().optional().default("en"),
+    });
+
+    const parsed = HoroscopeQuerySchema.safeParse({
+      sign: searchParams.get("sign")?.toLowerCase() || "aries",
+      period: searchParams.get("period")?.toLowerCase() || "today",
+      lang: searchParams.get("lang")?.toLowerCase() || "en",
+    });
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
-    if (!["yesterday", "today", "tomorrow"].includes(period)) {
-      return NextResponse.json({ error: "Invalid period" }, { status: 400 });
-    }
+    const sign = parsed.data.sign;
+    const period: string = parsed.data.period || "today";
+    const lang: string = parsed.data.lang || "en";
 
     if (DEV_MODE) {
       await new Promise((resolve) => setTimeout(resolve, 600));

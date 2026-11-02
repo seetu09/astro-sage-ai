@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { getCardById, type DrawnCard, type TarotTopic } from "@/lib/tarot-data";
+import { hasValidSession } from "@/lib/adminSession";
 
 const DEV_MODE = process.env.NODE_ENV !== "production";
 
@@ -61,26 +63,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!hasValidSession(request)) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const body: InterpretRequest = await request.json();
 
-    if (!body.cards || !Array.isArray(body.cards) || body.cards.length !== 3) {
+    const TarotInterpretSchema = z.object({
+      topic: z.string().min(1, "topic is required").refine((val) => ["love", "career", "general"].includes(val), "Invalid topic"),
+      cards: z.array(z.object({
+        cardId: z.string().min(1, "cardId is required"),
+        position: z.string().min(1, "position is required"),
+        reversed: z.boolean(),
+      })),
+    });
+
+    const parsed = TarotInterpretSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    const parsedBody = parsed.data;
+
+    if (!parsedBody.cards || !Array.isArray(parsedBody.cards) || parsedBody.cards.length !== 3) {
       return NextResponse.json({ error: "Exactly 3 drawn cards are required" }, { status: 400 });
     }
 
-    if (!body.topic || !["love", "career", "general"].includes(body.topic)) {
+    if (!parsedBody.topic || !["love", "career", "general"].includes(parsedBody.topic)) {
       return NextResponse.json({ error: "Valid topic is required (love, career, general)" }, { status: 400 });
     }
 
     if (DEV_MODE) {
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      return NextResponse.json({ interpretation: buildMockInterpretation(body) });
+      return NextResponse.json({ interpretation: buildMockInterpretation(parsedBody as unknown as InterpretRequest) });
     }
 
      // Production: call LLM API
-     const cardDescriptions = body.cards
+     const cardDescriptions = parsedBody.cards
        .map((c) => {
-         const card = getCardById(c.cardId);
-         return `${POSITION_NAMES[c.position]}: ${card?.name} (${c.reversed ? "reversed" : "upright"}) - ${c.reversed ? card?.reversed : card?.upright}`;
+         const card = getCardById(c.cardId as unknown as number);
+         return `${POSITION_NAMES[c.position as "past" | "present" | "future"]}: ${card?.name} (${c.reversed ? "reversed" : "upright"}) - ${c.reversed ? card?.reversed : card?.upright}`;
        })
        .join("; ");
 
@@ -104,7 +126,7 @@ export async function POST(request: NextRequest) {
                role: "user",
                parts: [
                  {
-                   text: `Topic: ${body.topic}. Drawn cards: ${cardDescriptions}. Provide the interpretation.`,
+                   text: `Topic: ${parsedBody.topic}. Drawn cards: ${cardDescriptions}. Provide the interpretation.`,
                  },
                ],
              },
@@ -125,7 +147,7 @@ export async function POST(request: NextRequest) {
     if (typeof interpretation === "string" && interpretation.trim()) {
       return NextResponse.json({ interpretation: interpretation.trim() });
     }
-    return NextResponse.json({ interpretation: buildMockInterpretation(body) });
+    return NextResponse.json({ interpretation: buildMockInterpretation(parsedBody as unknown as InterpretRequest) });
   } catch {
     return NextResponse.json({ error: "Failed to generate interpretation" }, { status: 500 });
   }
