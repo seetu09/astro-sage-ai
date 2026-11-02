@@ -75,7 +75,8 @@ describe('POST /api/payment/create-order — artifact checkout', () => {
     (global.fetch as any) = vi.fn();
     (getClientIp as any).mockReturnValue('127.0.0.1');
     (checkRateLimit as any).mockResolvedValue({ allowed: true, retryAfter: 0 });
-    (getUserFromAuthHeader as any).mockResolvedValue(null);
+    // Authenticate all requests for the new secure route
+    (getUserFromAuthHeader as any).mockResolvedValue({ id: 'user-1' });
     (getArtifactForCheckout as any).mockResolvedValue(ARTIFACT);
   });
 
