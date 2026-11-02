@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { getCardById, type DrawnCard, type TarotTopic } from "@/lib/tarot-data";
-import { hasValidSession } from "@/lib/adminSession";
+import { getUserFromAuthHeader } from "@/lib/serverWallet";
 
 const DEV_MODE = process.env.NODE_ENV !== "production";
 
@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!hasValidSession(request)) {
+    const user = getUserFromAuthHeader(request);
+    if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { geminiWithRetry } from "@/lib/geminiRetry";
-import { hasValidSession } from "@/lib/adminSession";
+import { getUserFromAuthHeader } from "@/lib/serverWallet";
 
 // Serve deterministic mock data in development (and as the automatic fallback
 // whenever the production LLM call fails or returns unparsable output). In
@@ -181,7 +181,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!hasValidSession(request)) {
+    const user = getUserFromAuthHeader(request);
+    if (!user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
