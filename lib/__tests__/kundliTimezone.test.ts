@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/lib/rateLimit', () => ({
   getClientIp: vi.fn(),
   checkRateLimit: vi.fn(),
+getUserFromAuthHeader: vi.fn(() => ({ id: "test-user-123" })),
 }));
 
 // Mock Supabase so the route never touches the network (cache read/write both
@@ -17,8 +18,8 @@ vi.mock('@/lib/supabase', () => ({
 // Mock the Gemini retry helper at the module boundary. Individual callers bail
 // out early when GEMINI_API_KEY is unset, but mocking here guarantees the test
 // stays hermetic even on a dev machine that has the key exported.
-vi.mock('@/lib/geminiRetry', () => ({
-  geminiWithRetry: vi.fn(),
+vi.mock('@/lib/serverWallet', () => ({
+  getUserFromAuthHeader: vi.fn(() => ({ id: 'test-user-123' })),
 }));
 
 import { getClientIp, checkRateLimit } from '@/lib/rateLimit';

@@ -1,6 +1,7 @@
+import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { getServiceSupabase } from "@/lib/serverWallet";
+import { getServiceSupabase, getUserFromAuthHeader } from "@/lib/serverWallet";
 import { computeChart, BirthDetails, ChartData, isValidChartData } from "@/lib/astrology";
 import { computeKundliCalculations } from "@/lib/kundli-report";
 import { NAKSHATRA_NAMES, localizePlanet } from "@/lib/astrologyDictionary";
@@ -31,7 +32,31 @@ import { applyRichPredictions } from "@/lib/richPredictions";
 import { verifyUnlockToken } from "@/lib/paymentUnlock";
 import { DEFAULT_TIMEZONE, parseFixedOffsetMinutes, resolveOffsetMinutes } from "@/lib/timezone";
 
-// --- Language-aware system prompt builder ---
+// ── Zod schema for kundali generation request ──────────────────────────
+/**
+ * Strict validation that ALL required birth details are present and properly typed.
+ * - birthDate: YYYY-MM-DD format string (required)
+ * - birthTime: HH:MM 24-hour format string (required)
+ * - birthPlace: free-text location name (required, min 1 char)
+ * - latitude: optional number (decimal degrees, can be null)
+ * - longitude: optional number (decimal degrees, can be null)
+ * - timezoneOffset: string like "+05:30" or IANA zone name (required)
+ */
+const BirthDetailsSchema = z.object({
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "birthDate must be YYYY-MM-DD"),
+  birthTime: z.string().regex(/^\d{2}:\d{2}$/, "birthTime must be HH:MM 24-hour"),
+  birthPlace: z.string().min(1, "birthPlace is required"),
+  latitude: z.number().optional().refine((v) => v === undefined || (typeof v === "number" && !isNaN(v)), {
+    message: "latitude must be a valid number",
+  }),
+  longitude: z.number().optional().refine((v) => v === undefined || (typeof v === "number" && !isNaN(v)), {
+    message: "longitude must be a valid number",
+  }),
+  timezoneOffset: z.string().min(1, "timezoneOffset is required"),
+  debug: z.boolean().optional(),
+});
+
+// ── Language helpers (unchanged below) ─────────────────────────────────
 function getSystemPrompt(lang: "en" | "hi"): string {
   const safetyBoundaryEn = `SAFETY BOUNDARY — you must refuse to make definitive predictions on:
 - Medical emergencies or critical health diagnoses
@@ -759,9 +784,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    // --- Auth check: require a logged-in user ---
+    const user = await getUserFromAuthHeader(req);
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-    const debug = body.debug === true;
+    // Validate and parse the request body using Zod schema
+    const body = await req.json();
+    const result = BirthDetailsSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: result.error.format() },
+        { status: 400 }
+      );
+    }
+    const validatedData = result.data;
+
+    const debug = validatedData.debug === true;
 
     const { language, lang: langLegacy } = body;
     // Accept both the canonical `language` field and the legacy `lang` key.
