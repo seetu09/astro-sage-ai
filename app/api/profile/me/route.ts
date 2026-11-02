@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromAuthHeader } from "@/lib/serverWallet";
+import { z } from "zod";
 import {
   getUserProfile,
   saveUserProfile,
@@ -56,49 +57,48 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
-  let body: {
-    name: string;
-    dob: string;
-    tob: string;
-    place: string;
-    latitude: number | null;
-    longitude: number | null;
-    timezone: string;
-  };
+  // Zod schema: allow all profile fields to be updated.
+  // The server identifies the user via the auth token (getUserFromAuthHeader),
+  // so we never trust a user ID from the body — this prevents cross-user writes.
+  const schema = z.object({
+    name: z.string().optional(),
+    dob: z.string().optional(),
+    tob: z.string().optional(),
+    place: z.string().optional(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+    timezone: z.string().optional(),
+  });
+
+  let body;
   try {
-    body = await req.json();
-  } catch {
+    body = schema.parse(await req.json());
+  } catch (e) {
     return NextResponse.json(
-      { error: "Invalid JSON body" },
+      { error: "Invalid body" },
       { status: 400 }
     );
   }
 
-  // Client validates most fields; guard against empty strings here too.
-  if (!body.dob || !body.tob || !body.place) {
-    return NextResponse.json(
-      { error: "dob, tob, and place are required" },
-      { status: 400 }
-    );
-  }
-
+  // Update all profile fields for the authenticated user only.
+  // The user ID comes from the server-side auth token, not from the body.
   const profile = await saveUserProfile({
     userId: user.id,
     email: user.email ?? "",
     profile: {
       name: body.name || "User",
-      dob: body.dob,
-      tob: body.tob,
-      place: body.place,
+      dob: body.dob || "1970-01-01",
+      tob: body.tob || "00:00",
+      place: body.place || "",
       latitude: body.latitude ?? null,
       longitude: body.longitude ?? null,
-      timezone: body.timezone || "Asia/Kolkata",
+      timezone: body.timezone || "UTC",
     },
   });
 
   if (!profile) {
     return NextResponse.json(
-      { error: "Failed to persist birth details" },
+      { error: "Failed to persist profile update" },
       { status: 500 }
     );
   }
